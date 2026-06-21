@@ -2,7 +2,7 @@ package com.sut.lwjgl3;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
-import com.sut.Main;
+import com.sut.hollowknight.HollowKnight;
 
 /** Launches the desktop (LWJGL3) application. */
 public class Lwjgl3Launcher {
@@ -12,7 +12,13 @@ public class Lwjgl3Launcher {
     }
 
     private static Lwjgl3Application createApplication() {
-        return new Lwjgl3Application(new Main(), getDefaultConfiguration());
+        Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
+
+        config.setFullscreenMode(Lwjgl3ApplicationConfiguration.getDisplayMode());
+        config.setResizable(false);
+        config.useVsync(true);
+
+        return new Lwjgl3Application(new HollowKnight(), config);
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
