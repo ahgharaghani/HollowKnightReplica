@@ -9,7 +9,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 
-public class GuideScreen extends AbstractScreen {
+public class GuideScreen extends AbstractMenuScreen {
     private Skin skin;
 
     public GuideScreen(Game game) {
