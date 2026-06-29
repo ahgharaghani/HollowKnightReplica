@@ -3,19 +3,27 @@ package com.sut.hollowknight.view.screens;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
+import com.badlogic.gdx.utils.Array;
 import com.sut.hollowknight.controller.MenuController;
 import com.sut.hollowknight.view.MenuUi;
+import com.sut.hollowknight.view.assets.Assets;
+import com.sut.hollowknight.view.ui.AnimatedPointerButton;
+import org.w3c.dom.Text;
 
 public class MainMenuScreen extends AbstractMenuScreen {
     private MenuController controller;
     private Skin skin;
     private BitmapFont trajanFont;
+    private TextureAtlas pointerButtonAtlas;
 
     public MainMenuScreen(Game game) {
         super(game);
@@ -34,11 +42,13 @@ public class MainMenuScreen extends AbstractMenuScreen {
         table.center();
         uiStage.addActor(table);
 
-        TextButton btnStart = new TextButton("Start Game", skin, "headingBtn");
-        TextButton btnSettings = new TextButton("Settings", skin, "headingBtn");
-        TextButton btnGuide = new TextButton("Guide", skin, "headingBtn");
-        TextButton btnAchievements = new TextButton("Achievements", skin, "headingBtn");
-        TextButton btnQuit = new TextButton("Quit Game", skin, "headingBtn");
+
+
+        TextButton btnStart = new AnimatedPointerButton("Start Game", skin, "headingBtn");
+        TextButton btnSettings = new AnimatedPointerButton("Settings", skin, "headingBtn");
+        TextButton btnGuide = new AnimatedPointerButton("Guide", skin, "headingBtn");
+        TextButton btnAchievements = new AnimatedPointerButton("Achievements", skin, "headingBtn");
+        TextButton btnQuit = new AnimatedPointerButton("Quit Game", skin, "headingBtn");
 
         btnStart.addListener(new ClickListener() {
             @Override

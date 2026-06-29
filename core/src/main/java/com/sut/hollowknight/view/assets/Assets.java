@@ -18,6 +18,7 @@ public class Assets {
         for (MenuTheme theme : MenuTheme.values()) {
             manager.load(theme.getPathToFile(), Texture.class);
         }
+        manager.load("ui/menu/pointer/MainMenuPointer.atlas", TextureAtlas.class);
     }
 
     public static boolean update() {

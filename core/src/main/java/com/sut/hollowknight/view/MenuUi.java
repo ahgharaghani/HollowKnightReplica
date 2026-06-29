@@ -72,6 +72,13 @@ public final class MenuUi {
         TextButton.TextButtonStyle style = new TextButton.TextButtonStyle(
             skin.get(TextButton.TextButtonStyle.class));
         style.font = trajanFont;
+
+        // Clear backgrounds on the new style
+        style.up = null;
+        style.over = null;
+        style.down = null;
+        style.checked = null;
+
         skin.add("headingBtn", style);
         return style;
     }
@@ -83,7 +90,23 @@ public final class MenuUi {
         TextButton.TextButtonStyle style = new TextButton.TextButtonStyle(
             skin.get(TextButton.TextButtonStyle.class));
         style.font = perpetuaFont;
+
+        style.up = null;
+        style.over = null;
+        style.down = null;
+        style.checked = null;
+
         skin.add("bodyBtn", style);
+        return style;
+    }
+
+    public static TextButton.TextButtonStyle removeTextBtnBackground(Skin skin) {
+        TextButton.TextButtonStyle style = skin.get(TextButton.TextButtonStyle.class);
+        style.up = null;
+        style.over = null;
+        style.down = null;
+        style.checked = null;
+
         return style;
     }
 }

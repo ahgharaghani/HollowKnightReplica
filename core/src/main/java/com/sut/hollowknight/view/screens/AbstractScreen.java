@@ -9,6 +9,8 @@ import com.badlogic.gdx.scenes.scene2d.Stage;
 import com.badlogic.gdx.utils.viewport.ExtendViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import com.sut.hollowknight.model.GameSettings;
+import com.sut.hollowknight.view.ui.BrightnessPostProcessor;
 
 public abstract class AbstractScreen implements Screen {
     protected final Game game;
@@ -17,6 +19,8 @@ public abstract class AbstractScreen implements Screen {
     protected OrthographicCamera uiCamera;
     protected Viewport worldViewport;
     protected Viewport uiViewport;
+
+    protected BrightnessPostProcessor brightnessProcessor;
 
     protected Stage uiStage;
 
@@ -30,6 +34,8 @@ public abstract class AbstractScreen implements Screen {
         uiCamera = new OrthographicCamera();
         uiViewport = new ExtendViewport(1920, 1080, uiCamera);
         uiCamera.position.set(uiViewport.getWorldWidth() / 2, uiViewport.getWorldHeight() / 2, 0);
+
+        brightnessProcessor = new BrightnessPostProcessor();
 
         uiStage = new Stage(uiViewport);
     }
@@ -63,7 +69,12 @@ public abstract class AbstractScreen implements Screen {
     @Override
     public void render(float delta) {
         updateLogic(delta);
+
+        float brightness = GameSettings.getInstance().getBrightness();
+
+        brightnessProcessor.begin();
         renderGraphics();
+        brightnessProcessor.end(brightness);
     }
 
     public abstract void updateLogic(float delta);
@@ -73,6 +84,7 @@ public abstract class AbstractScreen implements Screen {
     public void resize(int width, int height) {
         worldViewport.update(width, height);
         uiViewport.update(width, height, true);
+        brightnessProcessor.resize(width, height);
     }
 
     @Override public void pause() {}
@@ -81,6 +93,11 @@ public abstract class AbstractScreen implements Screen {
 
     @Override
     public void dispose() {
-        uiStage.dispose();
+        if (brightnessProcessor != null) {
+            brightnessProcessor.dispose();
+        }
+        if (uiStage != null) {
+            uiStage.dispose();
+        }
     }
 }

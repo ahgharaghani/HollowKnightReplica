@@ -1,6 +1,7 @@
 package com.sut.hollowknight.model;
 
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.math.MathUtils;
 import com.sut.hollowknight.model.enums.MenuTheme;
 
 public final class GameSettings {
@@ -15,7 +16,9 @@ public final class GameSettings {
     private boolean sfxMuted     = false;
     private float sfxVolume      = 0.8f;
     private float sfxReducedGain = 0.4f;
-    private float brightness     = 0.5f;   // 0..1 (0 dark, 1 bright); 0.5 == neutral
+    private float brightness     = 1.0f;
+    private static final float MIN_BRIGHTNESS = 0.2f;
+    private static final float MAX_BRIGHTNESS = 1.8f;
     private Language language    = Language.ENGLISH;
 
     // Default keyboard bindings
@@ -55,7 +58,9 @@ public final class GameSettings {
     public void   setSfxReducedGain(float v) { this.sfxReducedGain = clamp01(v); }
 
     public float  getBrightness()            { return brightness; }
-    public void   setBrightness(float b)     { this.brightness = clamp01(b); }
+    public void   setBrightness(float b)     {
+        this.brightness = MathUtils.clamp(b, MIN_BRIGHTNESS, MAX_BRIGHTNESS);
+    }
 
     public Language getLanguage()            { return language; }
     public void     setLanguage(Language l)  { this.language = l; }

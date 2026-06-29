@@ -17,6 +17,7 @@ import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
 import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.enums.MenuTheme;
 import com.sut.hollowknight.view.MenuUi;
+import com.sut.hollowknight.view.ui.AnimatedPointerButton;
 import org.w3c.dom.Text;
 
 public class SettingsScreen extends AbstractMenuScreen {
@@ -37,7 +38,7 @@ public class SettingsScreen extends AbstractMenuScreen {
 
         this.skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         this.trajanFont = MenuUi.buildTrajanFont(44);
-        this.perpetuaFont = MenuUi.buildPerpetuaFont(22);
+        this.perpetuaFont = MenuUi.buildPerpetuaFont(33);
         MenuUi.registerHeadingStyle(skin, trajanFont);
         MenuUi.registerBodyStyle(skin, perpetuaFont);
 
@@ -108,7 +109,7 @@ public class SettingsScreen extends AbstractMenuScreen {
 
         // --- Brightness slider ---
         Label brightnessLabel = new Label("Brightness", rowLabelStyle);
-        Slider brightnessSlider = new Slider(0f, 1f, 0.01f, false, skin);
+        Slider brightnessSlider = new Slider(0.2f, 1.8f, 0.01f, false, skin);
         brightnessSlider.setValue(settings.getBrightness());
         brightnessValueLabel = new Label(
             String.format("%d%%", (int)(settings.getBrightness() * 100)),
@@ -127,7 +128,7 @@ public class SettingsScreen extends AbstractMenuScreen {
 
         // --- Keyboard controls reset ---
         Label controlsLabel = new Label("Keyboard Controls", rowLabelStyle);
-        TextButton btnReset = new TextButton("Reset to Default", skin, "bodyBtn");
+        TextButton btnReset = new AnimatedPointerButton("Reset to Default", skin, "bodyBtn");
         btnReset.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -140,7 +141,7 @@ public class SettingsScreen extends AbstractMenuScreen {
         // --- Language toggle ---
         Label langLabel = new Label("Language", rowLabelStyle);
         languageValueLabel = new Label(settings.getLanguage().name(), rowLabelStyle);
-        TextButton btnLang = new TextButton("Change Language", skin, "bodyBtn");
+        TextButton btnLang = new AnimatedPointerButton("Change Language", skin, "bodyBtn");
         btnLang.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -158,7 +159,7 @@ public class SettingsScreen extends AbstractMenuScreen {
 
         Label themeLabel = new Label("Theme", rowLabelStyle);
         themeValueLabel = new Label(settings.getCurrentMenuTheme().name(), rowLabelStyle);
-        TextButton btnTheme = new TextButton("Change Theme", skin, "bodyBtn");
+        TextButton btnTheme = new AnimatedPointerButton("Change Theme", skin, "bodyBtn");
         btnTheme.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -179,7 +180,7 @@ public class SettingsScreen extends AbstractMenuScreen {
         root.add(body).growX().row();
 
         // ----- Footer: Back button -----
-        TextButton btnBack = new TextButton("Back to Main Menu", skin, "headingBtn");
+        TextButton btnBack = new AnimatedPointerButton("Back to Main Menu", skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -204,11 +205,7 @@ public class SettingsScreen extends AbstractMenuScreen {
 
     @Override
     public void renderGraphics() {
-        // Background brightness subtly tracks the settings value, so the
-        // player can see the brightness setting taking effect.
-        float b = settings.getBrightness();
-        float bg = 0.05f + 0.06f * b;
-        Gdx.gl.glClearColor(bg, bg + 0.01f, bg + 0.04f, 1);
+        Gdx.gl.glClearColor(MenuUi.BG_DARK.r, MenuUi.BG_DARK.g, MenuUi.BG_DARK.b, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
         uiStage.act(Gdx.graphics.getDeltaTime());
