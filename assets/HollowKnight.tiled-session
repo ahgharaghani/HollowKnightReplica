@@ -1,0 +1,270 @@
+{
+    "activeFile": "CityOfTears.tmx",
+    "expandedProjectPaths": [
+        "ui",
+        "."
+    ],
+    "fileStates": {
+        "": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx": {
+            "expandedGroupLayers": [
+                12
+            ],
+            "expandedObjectLayers": [
+                6
+            ],
+            "scale": 0.25,
+            "selectedLayer": 6,
+            "viewCenter": {
+                "x": 4018,
+                "y": 2276
+            }
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#BG_far_0008_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#antique_r_0004_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#antique_r_0008_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#antique_r_0009_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#msk_generic": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin house brick2": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_add_doorbg_straight": {
+            "scaleInDock": 2
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_add_wall": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_layered_0020_w": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_layered_0021_w": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_layered_0027_Layer-53": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_layered_0035_Layer-60": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_layered_0055_w": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_layered_0086_l": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_plat_float_06": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruin_pole_knob": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruind_bridge_roof_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruind_bridge_roof_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruind_bridge_roof_04_spikes": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruind_dressing_light_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruind_plat_float_01": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruind_window_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_additions_0021_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_additions_0036_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_additions_0037_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_bg_building_mid": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_core_0005_a": {
+            "scaleInDock": 1.5
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_fancy_shelf_0000_2": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_resting_extra_bits_0069_Layer-171": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#ruins_resting_extra_bits_0071_Layer-173": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#single_arch": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx#town_bench": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx": {
+            "expandedGroupLayers": [
+                12
+            ],
+            "scale": 0.125,
+            "selectedLayer": 3,
+            "viewCenter": {
+                "x": 1596,
+                "y": 2704
+            }
+        },
+        "CityOfTears.tmx#BG_far_0008_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#CityOfTears": {
+            "dynamicWrapping": true
+        },
+        "CityOfTears.tmx#antique_r_0004_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#antique_r_0008_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#antique_r_0009_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#msk_generic": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin house brick2": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_add_doorbg_straight": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "CityOfTears.tmx#ruin_add_wall": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0020_w": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0021_w": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0027_Layer-53": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0035_Layer-60": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0055_w": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0064_Layer-90": {
+            "scaleInEditor": 1
+        },
+        "CityOfTears.tmx#ruin_layered_0086_l": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_plat_float_06": {
+            "dynamicWrapping": false,
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruin_pole_knob": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruind_bridge_roof_01": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruind_bridge_roof_02": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruind_bridge_roof_04_spikes": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruind_dressing_light_01": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruind_plat_float_01": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruind_window_03": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_additions_0021_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_additions_0035_a": {
+            "dynamicWrapping": false
+        },
+        "CityOfTears.tmx#ruins_additions_0036_a": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "CityOfTears.tmx#ruins_additions_0037_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_bg_building_mid": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_core_0005_a": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_fancy_shelf_0000_2": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_resting_extra_bits_0069_Layer-171": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#ruins_resting_extra_bits_0071_Layer-173": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#single_arch": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#town_bench": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "ruin_plat_float_06.tsx": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        }
+    },
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 8,
+    "map.tileWidth": 8,
+    "openFiles": [
+        "CityOfTears.tmx"
+    ],
+    "project": "HollowKnight.tiled-project",
+    "property.type": "bool",
+    "recentFiles": [
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx",
+        "CityOfTears.tmx",
+        "ruin_plat_float_06.tsx"
+    ],
+    "tileset.embedInMap": true,
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 8,
+        "width": 8
+    },
+    "tileset.transparentColor": "#050408",
+    "tileset.type": 0
+}

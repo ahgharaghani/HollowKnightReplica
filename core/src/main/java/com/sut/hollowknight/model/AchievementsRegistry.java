@@ -3,13 +3,6 @@ package com.sut.hollowknight.model;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Holds the global state of all Hollow Knight achievements.
- *
- * <p>Modeled as a singleton so both the {@code AchievementsScreen} (for
- * display) and any future gameplay code (for unlocking) can reach the same
- * list without having to thread the object through every screen.</p>
- */
 public final class AchievementsRegistry {
 
     private static AchievementsRegistry instance;
@@ -17,7 +10,6 @@ public final class AchievementsRegistry {
     private final List<Achievement> achievements = new ArrayList<>();
 
     private AchievementsRegistry() {
-        // The five achievements required by the assignment.
         achievements.add(new Achievement(
             "completion",
             "Completion",
@@ -83,7 +75,6 @@ public final class AchievementsRegistry {
         return achievements.size();
     }
 
-    /** Unlock the achievement with the given id. Returns true if it was newly unlocked. */
     public boolean unlock(String id) {
         for (Achievement a : achievements) {
             if (a.getId().equals(id)) {

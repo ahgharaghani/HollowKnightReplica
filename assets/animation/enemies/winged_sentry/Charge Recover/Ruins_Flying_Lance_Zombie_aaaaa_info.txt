@@ -1,0 +1,10 @@
+version: 2
+type: animation
+name: Charge Recover
+consistent_sprite_size: true
+enable_borders: false
+use_sprite_name: true
+sprites: 3
+0	Charge Recover_charge_attack0007_000.png
+1	Charge Recover_charge_attack0008_001.png
+2	Charge Recover_charge_attack0009_002.png

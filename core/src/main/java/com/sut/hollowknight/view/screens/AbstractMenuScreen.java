@@ -3,27 +3,24 @@ package com.sut.hollowknight.view.screens;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.scenes.scene2d.actions.Actions;
 import com.badlogic.gdx.scenes.scene2d.ui.Image;
-import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.enums.MenuTheme;
-import com.sut.hollowknight.view.MenuUi;
 import com.sut.hollowknight.view.assets.Assets;
 
 public abstract class AbstractMenuScreen extends AbstractScreen {
-    protected static Texture sharedMenuBackground;
-    protected static Image sharedMenuBackgroundImage;
+    protected Texture menuBackground;
+    protected Image menuBackgroundImage;
 
     public AbstractMenuScreen(Game game) {
         super(game);
 
         MenuTheme menuTheme = GameSettings.getInstance().getCurrentMenuTheme();
-        sharedMenuBackground = Assets.manager.get(menuTheme.getPathToFile(), Texture.class);
-        sharedMenuBackgroundImage = new Image(sharedMenuBackground);
-        sharedMenuBackgroundImage.setFillParent(true);
-        uiStage.addActor(sharedMenuBackgroundImage);
+        menuBackground = Assets.manager.get(menuTheme.getPathToFile(), Texture.class);
+        menuBackgroundImage = new Image(menuBackground);
+        menuBackgroundImage.setFillParent(true);
+        uiStage.addActor(menuBackgroundImage);
     }
 
     @Override
@@ -34,18 +31,21 @@ public abstract class AbstractMenuScreen extends AbstractScreen {
     }
 
     protected void reloadBackground() {
-        if (sharedMenuBackground != null) {
-            sharedMenuBackground.dispose();
+        MenuTheme theme = GameSettings.getInstance().getCurrentMenuTheme();
+        // Only reload if theme actually changed
+        if (menuBackground != null
+            && menuBackground.toString().equals(theme.getPathToFile())) {
+            return;
         }
-
-        MenuTheme currentTheme = GameSettings.getInstance().getCurrentMenuTheme();
-
-        sharedMenuBackground = new Texture(Gdx.files.internal(currentTheme.getPathToFile()));
+        if (menuBackground != null) {
+            menuBackground.dispose();
+        }
+        menuBackground = new Texture(Gdx.files.internal(theme.getPathToFile()));
     }
 
     protected void refreshBackgroundImage() {
         reloadBackground();
 
-        sharedMenuBackgroundImage.setDrawable(new TextureRegionDrawable(sharedMenuBackground));
+        menuBackgroundImage.setDrawable(new TextureRegionDrawable(menuBackground));
     }
 }

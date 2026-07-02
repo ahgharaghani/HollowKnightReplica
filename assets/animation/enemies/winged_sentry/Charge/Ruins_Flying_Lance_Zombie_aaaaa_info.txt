@@ -1,0 +1,10 @@
+version: 2
+type: animation
+name: Charge
+consistent_sprite_size: true
+enable_borders: false
+use_sprite_name: true
+sprites: 3
+0	Charge_charge_attack0004_000.png
+1	Charge_charge_attack0005_001.png
+2	Charge_charge_attack0006_002.png

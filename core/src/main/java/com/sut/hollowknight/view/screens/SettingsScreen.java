@@ -14,19 +14,16 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
-import com.sut.hollowknight.model.GameSettings;
-import com.sut.hollowknight.model.enums.MenuTheme;
+import com.sut.hollowknight.controller.SettingsController;
 import com.sut.hollowknight.view.MenuUi;
 import com.sut.hollowknight.view.ui.AnimatedPointerButton;
-import org.w3c.dom.Text;
 
 public class SettingsScreen extends AbstractMenuScreen {
 
+    private final SettingsController controller;
     private Skin skin;
     private BitmapFont trajanFont;
     private BitmapFont perpetuaFont;
-
-    private final GameSettings settings = GameSettings.getInstance();
 
     private Label brightnessValueLabel;
     private Label musicValueLabel;
@@ -35,6 +32,7 @@ public class SettingsScreen extends AbstractMenuScreen {
 
     public SettingsScreen(Game game) {
         super(game);
+        this.controller = new SettingsController(game);
 
         this.skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         this.trajanFont = MenuUi.buildTrajanFont(44);
@@ -51,12 +49,10 @@ public class SettingsScreen extends AbstractMenuScreen {
         root.top().padTop(50).padLeft(80).padRight(80);
         uiStage.addActor(root);
 
-        // ----- Title -----
         Label.LabelStyle titleStyle = new Label.LabelStyle(trajanFont, Color.WHITE);
         Label title = new Label("Settings", titleStyle);
         root.add(title).colspan(2).padBottom(30).row();
 
-        // ----- Body table: two columns (label | control) -----
         Table body = new Table();
         body.top();
         body.defaults().pad(10);
@@ -67,13 +63,12 @@ public class SettingsScreen extends AbstractMenuScreen {
         // --- Music volume ---
         Label musicLabel = new Label("Music Volume", rowLabelStyle);
         Slider musicSlider = new Slider(0f, 1f, 0.01f, false, skin);
-        musicSlider.setValue(settings.getMusicVolume());
-        musicValueLabel = new Label(volumeText(settings.getMusicVolume()), rowLabelStyle);
+        musicSlider.setValue(controller.getMusicVolume());
+        musicValueLabel = new Label(volumeText(controller.getMusicVolume()), rowLabelStyle);
         musicSlider.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+            @Override public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 float v = musicSlider.getValue();
-                settings.setMusicVolume(v);
+                controller.setMusicVolume(v);
                 musicValueLabel.setText(volumeText(v));
             }
         });
@@ -81,44 +76,40 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(musicSlider).width(360);
         body.add(musicValueLabel).width(80).row();
 
-        // --- Music mute checkbox ---
+        // --- Music mute ---
         Label musicMuteLabel = new Label("Mute Music", rowLabelStyle);
         CheckBox musicMuteBox = new CheckBox("", skin);
-        musicMuteBox.setChecked(settings.isMusicMuted());
+        musicMuteBox.setChecked(controller.isMusicMuted());
         musicMuteBox.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
-                settings.setMusicMuted(musicMuteBox.isChecked());
+            @Override public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                controller.setMusicMuted(musicMuteBox.isChecked());
             }
         });
         body.add(musicMuteLabel).left().width(280);
         body.add(musicMuteBox).colspan(2).left().row();
 
-        // --- SFX mute checkbox ---
+        // --- SFX mute ---
         Label sfxMuteLabel = new Label("Mute SFX (default reduction)", rowLabelStyle);
         CheckBox sfxMuteBox = new CheckBox("", skin);
-        sfxMuteBox.setChecked(settings.isSfxMuted());
+        sfxMuteBox.setChecked(controller.isSfxMuted());
         sfxMuteBox.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
-                settings.setSfxMuted(sfxMuteBox.isChecked());
+            @Override public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+                controller.setSfxMuted(sfxMuteBox.isChecked());
             }
         });
         body.add(sfxMuteLabel).left().width(280);
         body.add(sfxMuteBox).colspan(2).left().row();
 
-        // --- Brightness slider ---
+        // --- Brightness ---
         Label brightnessLabel = new Label("Brightness", rowLabelStyle);
         Slider brightnessSlider = new Slider(0.2f, 1.8f, 0.01f, false, skin);
-        brightnessSlider.setValue(settings.getBrightness());
+        brightnessSlider.setValue(controller.getBrightness());
         brightnessValueLabel = new Label(
-            String.format("%d%%", (int)(settings.getBrightness() * 100)),
-            rowLabelStyle);
+            String.format("%d%%", (int)(controller.getBrightness() * 100)), rowLabelStyle);
         brightnessSlider.addListener(new ChangeListener() {
-            @Override
-            public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
+            @Override public void changed(ChangeEvent event, com.badlogic.gdx.scenes.scene2d.Actor actor) {
                 float v = brightnessSlider.getValue();
-                settings.setBrightness(v);
+                controller.setBrightness(v);
                 brightnessValueLabel.setText(String.format("%d%%", (int)(v * 100)));
             }
         });
@@ -126,65 +117,53 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(brightnessSlider).width(360);
         body.add(brightnessValueLabel).width(80).row();
 
-        // --- Keyboard controls reset ---
+        // --- Keyboard controls ---
         Label controlsLabel = new Label("Keyboard Controls", rowLabelStyle);
-        TextButton btnReset = new AnimatedPointerButton("Reset to Default", skin, "bodyBtn");
-        btnReset.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                settings.setDefaultKeyBindings();
+        TextButton btnKeyBindings = new AnimatedPointerButton("Key Bindings", skin, "bodyBtn");
+        btnKeyBindings.addListener(new ClickListener() {
+            @Override public void clicked(InputEvent event, float x, float y) {
+                controller.openKeyBindings();
             }
         });
         body.add(controlsLabel).left().width(280);
-        body.add(btnReset).colspan(2).left().row();
+        body.add(btnKeyBindings).colspan(2).left().row();
 
-        // --- Language toggle ---
+        // --- Language ---
         Label langLabel = new Label("Language", rowLabelStyle);
-        languageValueLabel = new Label(settings.getLanguage().name(), rowLabelStyle);
+        languageValueLabel = new Label(controller.getLanguageName(), rowLabelStyle);
         TextButton btnLang = new AnimatedPointerButton("Change Language", skin, "bodyBtn");
         btnLang.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                GameSettings.Language next =
-                    settings.getLanguage() == GameSettings.Language.ENGLISH
-                        ? GameSettings.Language.PERSIAN
-                        : GameSettings.Language.ENGLISH;
-                settings.setLanguage(next);
-                languageValueLabel.setText(next.name());
+            @Override public void clicked(InputEvent event, float x, float y) {
+                String newName = controller.toggleLanguage();
+                languageValueLabel.setText(newName);
             }
         });
         body.add(langLabel).left().width(280);
         body.add(btnLang).width(220);
         body.add(languageValueLabel).width(120).row();
 
+        // --- Theme ---
         Label themeLabel = new Label("Theme", rowLabelStyle);
-        themeValueLabel = new Label(settings.getCurrentMenuTheme().name(), rowLabelStyle);
+        themeValueLabel = new Label(controller.getThemeName(), rowLabelStyle);
         TextButton btnTheme = new AnimatedPointerButton("Change Theme", skin, "bodyBtn");
         btnTheme.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                MenuTheme next = MenuTheme.values()[
-                    (settings.getCurrentMenuTheme().ordinal() + 1) % MenuTheme.values().length
-                    ];
-                settings.setCurrentMenuTheme(next);
-                themeValueLabel.setText(next.name());
-
+            @Override public void clicked(InputEvent event, float x, float y) {
+                String newName = controller.cycleTheme();
+                themeValueLabel.setText(newName);
                 refreshBackgroundImage();
             }
         });
-
         body.add(themeLabel).left().width(280);
         body.add(btnTheme).width(220);
         body.add(themeValueLabel).width(120).row();
 
         root.add(body).growX().row();
 
-        // ----- Footer: Back button -----
+        // --- Back ---
         TextButton btnBack = new AnimatedPointerButton("Back to Main Menu", skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new MainMenuScreen(game));
+            @Override public void clicked(InputEvent event, float x, float y) {
+                controller.backToMainMenu();
             }
         });
 
@@ -200,14 +179,12 @@ public class SettingsScreen extends AbstractMenuScreen {
         return String.format("%d%%", (int)(v * 100));
     }
 
-    @Override
-    public void updateLogic(float delta) { }
+    @Override public void updateLogic(float delta) { }
 
     @Override
     public void renderGraphics() {
         Gdx.gl.glClearColor(MenuUi.BG_DARK.r, MenuUi.BG_DARK.g, MenuUi.BG_DARK.b, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         uiStage.act(Gdx.graphics.getDeltaTime());
         uiStage.draw();
     }

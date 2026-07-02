@@ -9,9 +9,9 @@ import com.badlogic.gdx.math.Interpolation;
 import com.sut.hollowknight.view.assets.Assets;
 
 public class LogoScreen extends AbstractScreen {
-    private static final float TOTAL_TIME   = 3f; // Total time on screen
-    private static final float FADE_IN_TIME = 1f; // Fade-in duration (first 1s)
-    private static final float FADE_OUT_TIME = 1f; // Fade-out duration (last 1s)
+    private static final float TOTAL_TIME   = 3f;
+    private static final float FADE_IN_TIME = 1f;
+    private static final float FADE_OUT_TIME = 1f;
 
     private final SpriteBatch batch;
     private final Texture logoTexture;
@@ -19,9 +19,7 @@ public class LogoScreen extends AbstractScreen {
 
     public LogoScreen(Game game) {
         super(game);
-
         batch = new SpriteBatch();
-        // Load the logo. If using AssetManager, retrieve it from Assets.manager.get(...)
         logoTexture = Assets.manager.get("sut_logo.png", Texture.class);
         elapsedTime = 0f;
     }
@@ -36,15 +34,10 @@ public class LogoScreen extends AbstractScreen {
 
     @Override
     public void renderGraphics() {
-        float alpha = 1f; // Default to fully visible
-
-        // 1. Fade In (0s to FADE_IN_TIME)
+        float alpha = 1f;
         if (elapsedTime < FADE_IN_TIME) {
-            float progress = elapsedTime / FADE_IN_TIME;
-            alpha = Interpolation.fade.apply(0f, 1f, progress);
-        }
-        // 2. Fade Out (TOTAL_TIME - FADE_OUT_TIME to TOTAL_TIME)
-        else if (elapsedTime > TOTAL_TIME - FADE_OUT_TIME) {
+            alpha = Interpolation.fade.apply(0f, 1f, elapsedTime / FADE_IN_TIME);
+        } else if (elapsedTime > TOTAL_TIME - FADE_OUT_TIME) {
             float progress = (elapsedTime - (TOTAL_TIME - FADE_OUT_TIME)) / FADE_OUT_TIME;
             alpha = Interpolation.fade.apply(1f, 0f, progress);
         }
@@ -52,19 +45,15 @@ public class LogoScreen extends AbstractScreen {
         Gdx.gl.glClearColor(0, 0, 0, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Compute centered logo position
         float maxW = uiViewport.getWorldWidth() * 0.6f;
         float maxH = uiViewport.getWorldHeight() * 0.6f;
         float scale = Math.min(
-            Math.min(maxW / logoTexture.getWidth(), maxH / logoTexture.getHeight()),
-            1f
-        );
+            Math.min(maxW / logoTexture.getWidth(), maxH / logoTexture.getHeight()), 1f);
         float logoW = logoTexture.getWidth() * scale;
         float logoH = logoTexture.getHeight() * scale;
         float x = (uiViewport.getWorldWidth() - logoW) / 2f;
         float y = (uiViewport.getWorldHeight() - logoH) / 2f;
 
-        // Draw logo with the computed alpha
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
         batch.setColor(1f, 1f, 1f, alpha);

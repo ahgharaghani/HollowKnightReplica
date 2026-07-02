@@ -1,13 +1,5 @@
 package com.sut.hollowknight.model;
 
-/**
- * Represents a single Hollow Knight achievement.
- *
- * <p>Achievements start locked and become unlocked when the relevant in-game
- * event fires. The {@code codeName} is what the player sees while the
- * achievement is still locked (similar to the original game's "?" / hash
- * placeholder entries).</p>
- */
 public class Achievement {
 
     private final String id;
@@ -42,12 +34,10 @@ public class Achievement {
         this.unlocked = true;
     }
 
-    /** Returns the text the UI should render for the achievement's title. */
     public String getDisplayTitle() {
         return unlocked ? displayName : codeName;
     }
 
-    /** Returns the text the UI should render for the achievement's body. */
     public String getDisplayDescription() {
         return unlocked ? description : hiddenDescription;
     }

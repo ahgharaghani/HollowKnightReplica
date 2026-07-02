@@ -1,0 +1,20 @@
+version: 2
+type: animation
+name: Throw Attack
+consistent_sprite_size: true
+enable_borders: false
+use_sprite_name: true
+sprites: 13
+0	Throw Attack_throw_attack0000_000.png
+1	Throw Attack_throw_attack0001_001.png
+2	Throw Attack_throw_attack0002_002.png
+3	Throw Attack_throw_attack0003_003.png
+4	Throw Attack_throw_attack0004_004.png
+5	Throw Attack_throw_attack0005_005.png
+6	Throw Attack_throw_attack0006_006.png
+7	Throw Attack_throw_attack0007_007.png
+8	Throw Attack_throw_attack0008_008.png
+9	Throw Attack_throw_attack0009_009.png
+10	Throw Attack_throw_attack0010_010.png
+11	Throw Attack_throw_attack0011_011.png
+12	Throw Attack_throw_attack0012_012.png

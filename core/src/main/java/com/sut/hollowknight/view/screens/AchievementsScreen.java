@@ -12,24 +12,25 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.sut.hollowknight.controller.AchievementsController;
 import com.sut.hollowknight.model.Achievement;
-import com.sut.hollowknight.model.AchievementsRegistry;
 import com.sut.hollowknight.view.MenuUi;
 
 import java.util.List;
 
 public class AchievementsScreen extends AbstractMenuScreen {
 
+    private final AchievementsController controller;
     private Skin skin;
     private BitmapFont trajanFont;
     private BitmapFont perpetuaFont;
 
-    private final AchievementsRegistry achievementsRegistry = AchievementsRegistry.getInstance();
-
     private Table cardsTable;
+    private Label counterLabel;
 
     public AchievementsScreen(Game game) {
         super(game);
+        this.controller = new AchievementsController(game);
 
         this.skin = new Skin(Gdx.files.internal("ui/uiskin.json"));
         this.trajanFont = MenuUi.buildTrajanFont(44);
@@ -46,20 +47,13 @@ public class AchievementsScreen extends AbstractMenuScreen {
         root.top().padTop(50);
         uiStage.addActor(root);
 
-        // ----- Title + counter -----
         Label.LabelStyle titleStyle = new Label.LabelStyle(trajanFont, Color.WHITE);
         Label title = new Label("Achievements", titleStyle);
-
-        int unlocked = achievementsRegistry.unlockedCount();
-        int total    = achievementsRegistry.totalCount();
-        Label counter = new Label(
-            String.format("%d / %d Unlocked", unlocked, total),
-            new Label.LabelStyle(perpetuaFont, MenuUi.ACCENT));
+        counterLabel = new Label(countText(), new Label.LabelStyle(perpetuaFont, MenuUi.ACCENT));
 
         root.add(title).padBottom(8).row();
-        root.add(counter).padBottom(20).row();
+        root.add(counterLabel).padBottom(20).row();
 
-        // ----- Scrollable card list -----
         cardsTable = new Table();
         cardsTable.top();
         rebuildCards();
@@ -69,23 +63,19 @@ public class AchievementsScreen extends AbstractMenuScreen {
         scrollPane.setScrollingDisabled(true, false);
         root.add(scrollPane).width(1000).height(620).padBottom(20).row();
 
-        // ----- Footer buttons -----
         TextButton btnUnlockDemo = new TextButton("Unlock Example (demo)", skin, "bodyBtn");
         btnUnlockDemo.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                // Demo hook: in a real build this would be driven by the
-                // Observer event bus when the relevant in-game event fires.
-                achievementsRegistry.unlock("false_knight");
+            @Override public void clicked(InputEvent event, float x, float y) {
+                controller.unlock("false_knight");
                 rebuildCards();
+                counterLabel.setText(countText());
             }
         });
 
         TextButton btnBack = new TextButton("Back to Main Menu", skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
-            @Override
-            public void clicked(InputEvent event, float x, float y) {
-                game.setScreen(new MainMenuScreen(game));
+            @Override public void clicked(InputEvent event, float x, float y) {
+                controller.backToMainMenu();
             }
         });
 
@@ -95,17 +85,18 @@ public class AchievementsScreen extends AbstractMenuScreen {
         root.add(footer).padTop(10);
     }
 
-    /** Rebuild every card from the current registry state. */
+    private String countText() {
+        return String.format("%d / %d Unlocked",
+            controller.getUnlockedCount(), controller.getTotalCount());
+    }
+
     private void rebuildCards() {
         cardsTable.clear();
-        List<Achievement> all = achievementsRegistry.all();
-
-        for (Achievement a : all) {
+        for (Achievement a : controller.getAllAchievements()) {
             cardsTable.add(buildCard(a)).width(960).height(120).pad(8).row();
         }
     }
 
-    /** Build one achievement card. */
     private Table buildCard(Achievement a) {
         Table card = new Table();
         card.top().left();
@@ -114,32 +105,27 @@ public class AchievementsScreen extends AbstractMenuScreen {
         Color titleColor = a.isUnlocked() ? MenuUi.TEXT_LIGHT : MenuUi.TEXT_DIM;
         Color descColor  = a.isUnlocked() ? MenuUi.ACCENT     : new Color(0.35f, 0.35f, 0.38f, 1f);
 
-        Label.LabelStyle titleStyle = new Label.LabelStyle(trajanFont, titleColor);
-        Label.LabelStyle descStyle  = new Label.LabelStyle(perpetuaFont, descColor);
-        Label.LabelStyle statusStyle = new Label.LabelStyle(
-            perpetuaFont, a.isUnlocked() ? new Color(0.55f, 0.78f, 0.55f, 1f)
-                                          : new Color(0.55f, 0.55f, 0.60f, 1f));
+        Label.LabelStyle ts = new Label.LabelStyle(trajanFont, titleColor);
+        Label.LabelStyle ds = new Label.LabelStyle(perpetuaFont, descColor);
+        Label.LabelStyle ss = new Label.LabelStyle(perpetuaFont,
+            a.isUnlocked() ? new Color(0.55f, 0.78f, 0.55f, 1f)
+                           : new Color(0.55f, 0.55f, 0.60f, 1f));
 
-        Label titleLabel  = new Label(a.getDisplayTitle(), titleStyle);
+        Label titleLabel = new Label(a.getDisplayTitle(), ts);
         titleLabel.setFontScale(0.65f);
-
-        Label descLabel   = new Label(a.getDisplayDescription(), descStyle);
+        Label descLabel = new Label(a.getDisplayDescription(), ds);
         descLabel.setFontScale(0.95f);
         descLabel.setWrap(true);
-
         Label statusLabel = new Label(
-            a.isUnlocked() ? "[ UNLOCKED ]" : "[ LOCKED ]",
-            statusStyle);
+            a.isUnlocked() ? "[ UNLOCKED ]" : "[ LOCKED ]", ss);
         statusLabel.setFontScale(0.9f);
 
-        // Status badge in the top-right.
         Table headerRow = new Table();
         headerRow.add(titleLabel).expandX().left();
         headerRow.add(statusLabel).right();
         card.add(headerRow).growX().padTop(10).padLeft(20).padRight(20).row();
         card.add(descLabel).growX().padLeft(20).padRight(20).padBottom(12).row();
 
-        // Background: dark gray for locked, slightly lighter / warmer for unlocked.
         Color bg = a.isUnlocked()
             ? new Color(0.16f, 0.17f, 0.21f, 0.95f)
             : new Color(0.09f, 0.09f, 0.11f, 0.95f);
@@ -148,14 +134,12 @@ public class AchievementsScreen extends AbstractMenuScreen {
         return card;
     }
 
-    @Override
-    public void updateLogic(float delta) { }
+    @Override public void updateLogic(float delta) { }
 
     @Override
     public void renderGraphics() {
         Gdx.gl.glClearColor(MenuUi.BG_DARK.r, MenuUi.BG_DARK.g, MenuUi.BG_DARK.b, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
         uiStage.act(Gdx.graphics.getDeltaTime());
         uiStage.draw();
     }

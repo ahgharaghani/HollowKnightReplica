@@ -1,0 +1,11 @@
+version: 2
+type: animation
+name: Javelin Stick
+consistent_sprite_size: true
+enable_borders: false
+use_sprite_name: true
+sprites: 4
+0	Javelin Stick_lance_impact0001_000.png
+1	Javelin Stick_lance_impact0002_001.png
+2	Javelin Stick_lance_impact0003_002.png
+3	Javelin Stick_lance_impact0004_003.png
