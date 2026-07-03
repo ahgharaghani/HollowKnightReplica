@@ -15,13 +15,20 @@ import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Matrix4;
+import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
+import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
+import com.sut.hollowknight.model.enemy.Javelin;
+import com.sut.hollowknight.model.enemy.WingedSentry;
 import com.sut.hollowknight.view.animator.KnightAnimator;
 import com.sut.hollowknight.view.assets.Assets;
+import com.sut.hollowknight.view.assets.WingedSentryAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.effects.RainEffect;
+import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
+import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
 
 public class GameScreen extends AbstractScreen {
 
@@ -44,6 +51,14 @@ public class GameScreen extends AbstractScreen {
     private Texture whiteTexture;
     private float timeElapsed = 0f;
 
+    private WingedSentryAssets wingedSentryAssets;
+    private WingedSentry sentry;
+    private WingedSentryController sentryController;
+    private WingedSentryRenderer sentryRenderer;
+    private JavelinRenderer javelinRenderer;
+
+    private CombatSystem combat;
+
     public GameScreen(Game game) {
         super(game);
 
@@ -64,6 +79,24 @@ public class GameScreen extends AbstractScreen {
         initShader();
         initRainEffect();
         glassRainEffect = new GlassRainEffect(tiledMap, mapHeightPx);
+
+        initWingedSentry(collider, knight, spawn);
+        combat = new CombatSystem(knight, sentryController);
+    }
+
+    private void initWingedSentry(TileMapCollider collider, Knight knight, float[] knightSpawn) {
+        wingedSentryAssets = new WingedSentryAssets(Assets.manager);
+
+        // Spawn sentry a bit to the right of the knight for testing
+        float sentrySpawnX = knightSpawn[0] + 400f;
+        float sentrySpawnY = knightSpawn[1] + 100f;
+        sentry = new WingedSentry(sentrySpawnX, sentrySpawnY);
+
+        sentryController = new WingedSentryController(sentry, collider);
+        sentryController.setKnight(knight); // Allow controller to read knight position/HP
+
+        sentryRenderer = new WingedSentryRenderer(wingedSentryAssets);
+        javelinRenderer = new JavelinRenderer(wingedSentryAssets);
     }
 
     private void loadMap() {
@@ -86,11 +119,8 @@ public class GameScreen extends AbstractScreen {
                     Float ox = obj.getProperties().get("x", Float.class);
                     Float oy = obj.getProperties().get("y", Float.class);
                     if (ox != null && oy != null) {
-                        float spawnX = ox;
-                        float spawnY = oy;
-                        Gdx.app.log("GameScreen",
-                            "Spawn at (" + ox + ", " + spawnY + ")");
-                        return new float[]{ spawnX, spawnY };
+                        Gdx.app.log("GameScreen", "Spawn at (" + ox + ", " + oy + ")");
+                        return new float[]{ ox, oy };
                     }
                 }
             }
@@ -109,7 +139,6 @@ public class GameScreen extends AbstractScreen {
             Gdx.app.error("GameScreen", "Background shader compilation failed:\n" + backgroundShader.getLog());
         }
 
-        // Create a 1x1 white texture to act as our fullscreen quad canvas
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(Color.WHITE);
         pixmap.fill();
@@ -131,6 +160,10 @@ public class GameScreen extends AbstractScreen {
         controller.update(delta);
         rainEffect.update(delta);
         glassRainEffect.update(delta);
+
+        sentryController.update(delta);
+
+        combat.resolve(delta);
     }
 
     @Override
@@ -164,9 +197,10 @@ public class GameScreen extends AbstractScreen {
         mapRenderer.render(BG_LAYERS);
         mapRenderer.render(GAMEPLAY_LAYER);
 
-        // Draw Knight
+        // Draw Knight, Sentry, and Javelin
         batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
+
         Knight knight = controller.getKnight();
         TextureRegion frame = knightAnimator.getCurrentFrame(knight);
         float frameW = frame.getRegionWidth();
@@ -183,6 +217,14 @@ public class GameScreen extends AbstractScreen {
                 knight.getY(),
                 +frameW, frameH);
         }
+
+        sentryRenderer.draw(batch, sentry);
+
+        Javelin javelin = sentryController.getJavelin();
+        if (javelin != null) {
+            javelinRenderer.draw(batch, javelin);
+        }
+
         batch.end();
 
         // Foreground layers

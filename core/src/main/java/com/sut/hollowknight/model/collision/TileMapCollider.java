@@ -96,4 +96,18 @@ public class TileMapCollider {
         }
         return null;
     }
+
+    public boolean overlapsAnyRect(AABB body) {
+        for (CollisionRect rect : collisionRects) {
+            if (AABB.overlaps(body, rect)) return true;
+        }
+        return false;
+    }
+
+    public CollisionRect findOverlappingRect(AABB body) {
+        for (CollisionRect rect : collisionRects) {
+            if (AABB.overlaps(body, rect)) return rect;
+        }
+        return null;
+    }
 }

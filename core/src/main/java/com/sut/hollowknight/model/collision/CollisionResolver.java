@@ -2,12 +2,7 @@ package com.sut.hollowknight.model.collision;
 
 import com.sut.hollowknight.model.Knight;
 
-/**
- * Resolves collisions between the Knight and the tile map's
- * rectangle-based collision layer. Returns whether the knight
- * is standing on a surface after vertical resolution.
- */
-public final class CollisionResolver {
+public class CollisionResolver {
 
     private final TileMapCollider collider;
 
@@ -15,20 +10,22 @@ public final class CollisionResolver {
         this.collider = collider;
     }
 
-    /** Push knight out of collision rectangles on the X axis. */
+    public static void pushOutHorizontally(PhysicsBody body, CollisionRect wall) {
+        if (body.getVelocityX() > 0) {
+            body.setCenterX(wall.getLeft() - body.getHalfWidth());
+        } else {
+            body.setCenterX(wall.getRight() + body.getHalfWidth());
+        }
+    }
+    
     public void resolveHorizontal(Knight knight) {
         float vx = knight.getVelocityX();
         if (vx == 0) return;
 
         for (CollisionRect rect : collider.getCollisionRects()) {
-            if (!rect.overlaps(knight.getLeft(), knight.getBottom(),
-                knight.getRight(), knight.getTop())) continue;
+            if (!AABB.overlaps(knight, rect)) continue;
 
-            if (vx > 0) {
-                knight.setX(rect.getLeft() - Knight.KNIGHT_WIDTH / 2f);
-            } else {
-                knight.setX(rect.getRight() + Knight.KNIGHT_WIDTH / 2f);
-            }
+            pushOutHorizontally(knight, rect);
             knight.setVelocityX(0);
         }
     }
@@ -46,8 +43,7 @@ public final class CollisionResolver {
         float prevTop    = prevY + Knight.KNIGHT_HEIGHT;
 
         for (CollisionRect rect : collider.getCollisionRects()) {
-            if (!rect.overlaps(knight.getLeft(), knight.getBottom(),
-                knight.getRight(), knight.getTop())) continue;
+            if (!AABB.overlaps(knight, rect)) continue;
 
             if (vy <= 0 && prevBottom >= rect.getTop() - 1f) {
                 knight.setY(rect.getTop());

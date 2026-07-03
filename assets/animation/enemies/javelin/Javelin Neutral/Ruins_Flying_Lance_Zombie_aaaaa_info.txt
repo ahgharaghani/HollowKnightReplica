@@ -1,8 +1,0 @@
-version: 2
-type: animation
-name: Javelin Neutral
-consistent_sprite_size: true
-enable_borders: false
-use_sprite_name: true
-sprites: 1
-0	Javelin Neutral_lance_impact0004_000.png

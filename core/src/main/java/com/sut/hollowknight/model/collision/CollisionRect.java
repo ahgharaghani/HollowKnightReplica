@@ -1,11 +1,6 @@
 package com.sut.hollowknight.model.collision;
 
-/**
- * Immutable axis-aligned bounding box used for collision detection.
- * Stored in world coordinates (y-up). Converted from Tiled's y-down
- * coordinate system when loaded from the map.
- */
-public class CollisionRect {
+public class CollisionRect implements AABB {
 
     private final float x;      // left edge
     private final float y;      // bottom edge (y-up)
@@ -24,29 +19,24 @@ public class CollisionRect {
     public float getWidth()  { return width; }
     public float getHeight() { return height; }
 
+    @Override
     public float getLeft()   { return x; }
+
+    @Override
     public float getRight()  { return x + width; }
+
+    @Override
     public float getBottom() { return y; }
+
+    @Override
     public float getTop()    { return y + height; }
 
-    /**
-     * Check if this rectangle overlaps another.
-     */
     public boolean overlaps(CollisionRect other) {
-        return this.getLeft()   < other.getRight()
-            && this.getRight()  > other.getLeft()
-            && this.getBottom() < other.getTop()
-            && this.getTop()    > other.getBottom();
+        return AABB.overlaps(this, other);
     }
 
-    /**
-     * Check if this rectangle overlaps an AABB defined by its edges.
-     */
     public boolean overlaps(float left, float bottom, float right, float top) {
-        return this.getLeft()   < right
-            && this.getRight()  > left
-            && this.getBottom() < top
-            && this.getTop()    > bottom;
+        return AABB.overlaps(this, left, bottom, right, top);
     }
 
     @Override

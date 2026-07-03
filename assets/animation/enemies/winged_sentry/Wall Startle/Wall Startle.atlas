@@ -1,0 +1,10 @@
+Wall Startle.png
+size:1024,512
+filter:Linear,Linear
+repeat:none
+Wall Startle_wall_to_idle0001
+index:0
+bounds:513,2,509,398
+Wall Startle_wall_to_idle0002
+index:1
+bounds:2,2,509,398

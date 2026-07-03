@@ -1,0 +1,13 @@
+Charge.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Charge_charge_attack0004
+index:0
+bounds:1024,2,509,398
+Charge_charge_attack0005
+index:1
+bounds:513,2,509,398
+Charge_charge_attack0006
+index:2
+bounds:2,2,509,398

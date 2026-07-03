@@ -1,0 +1,16 @@
+Death Land.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Death Land_death0002
+index:0
+bounds:1535,2,509,398
+Death Land_death0003
+index:1
+bounds:1024,2,509,398
+Death Land_death0004
+index:2
+bounds:513,2,509,398
+Death Land_death0005
+index:3
+bounds:2,2,509,398

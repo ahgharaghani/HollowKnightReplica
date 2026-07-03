@@ -1,0 +1,16 @@
+Javelin Stick.png
+size:2048,64
+filter:Linear,Linear
+repeat:none
+Javelin Stick_lance_impact0001
+index:0
+bounds:587,2,583,27
+Javelin Stick_lance_impact0002
+index:1
+bounds:587,31,583,27
+Javelin Stick_lance_impact0003
+index:2
+bounds:2,2,583,27
+Javelin Stick_lance_impact0004
+index:3
+bounds:2,31,583,27

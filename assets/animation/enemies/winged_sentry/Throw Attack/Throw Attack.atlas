@@ -1,0 +1,43 @@
+Throw Attack.png
+size:2048,2048
+filter:Linear,Linear
+repeat:none
+Throw Attack_throw_attack0000
+index:0
+bounds:513,402,509,398
+Throw Attack_throw_attack0001
+index:1
+bounds:2,2,509,398
+Throw Attack_throw_attack0002
+index:2
+bounds:1535,1602,509,398
+Throw Attack_throw_attack0003
+index:3
+bounds:1024,1202,509,398
+Throw Attack_throw_attack0004
+index:4
+bounds:513,802,509,398
+Throw Attack_throw_attack0005
+index:5
+bounds:2,402,509,398
+Throw Attack_throw_attack0006
+index:6
+bounds:1024,802,509,398
+Throw Attack_throw_attack0007
+index:7
+bounds:1024,1602,509,398
+Throw Attack_throw_attack0008
+index:8
+bounds:513,1202,509,398
+Throw Attack_throw_attack0009
+index:9
+bounds:2,802,509,398
+Throw Attack_throw_attack0010
+index:10
+bounds:513,1602,509,398
+Throw Attack_throw_attack0011
+index:11
+bounds:2,1202,509,398
+Throw Attack_throw_attack0012
+index:12
+bounds:2,1602,509,398

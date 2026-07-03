@@ -1,12 +1,8 @@
 package com.sut.hollowknight.model;
 
-/**
- * Pure data model for the Knight character.
- * Contains only state — position, velocity, health, soul, and animation state.
- * No update logic, no collision resolution, no rendering concerns.
- * The controller mutates this; the view reads from it.
- */
-public class Knight {
+import com.sut.hollowknight.model.collision.PhysicsBody;
+
+public class Knight implements PhysicsBody {
 
     // ---- Position & physics ----
     private float x;
@@ -47,18 +43,32 @@ public class Knight {
         this.grounded = false;
     }
 
-    // ---- Collision box (feet-to-head, center-based) ----
+    // Collision box
 
+    @Override
     public float getLeft()   { return x - KNIGHT_WIDTH / 2f; }
+    @Override
     public float getRight()  { return x + KNIGHT_WIDTH / 2f; }
+    @Override
     public float getBottom() { return y; }
+    @Override
     public float getTop()    { return y + KNIGHT_HEIGHT; }
+
+    //PhysicsBody
+
+    @Override
+    public float getHalfWidth() { return KNIGHT_WIDTH / 2f; }
+
+    @Override
+    public void setCenterX(float cx) { this.x = cx; }
+
+    @Override
+    public float getVelocityX()      { return velocityX; }
 
     // ---- Getters ----
 
     public float getX()              { return x; }
     public float getY()              { return y; }
-    public float getVelocityX()      { return velocityX; }
     public float getVelocityY()      { return velocityY; }
     public boolean isFacingRight()   { return facingRight; }
     public State getState()          { return state; }

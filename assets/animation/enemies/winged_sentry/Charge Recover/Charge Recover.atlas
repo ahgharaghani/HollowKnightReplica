@@ -1,0 +1,13 @@
+Charge Recover.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Charge Recover_charge_attack0007
+index:0
+bounds:1024,2,509,398
+Charge Recover_charge_attack0008
+index:1
+bounds:513,2,509,398
+Charge Recover_charge_attack0009
+index:2
+bounds:2,2,509,398

@@ -1,8 +1,0 @@
-version: 2
-type: animation
-name: Wall
-consistent_sprite_size: true
-enable_borders: false
-use_sprite_name: true
-sprites: 1
-0	Wall_wall_to_idle0000_000.png

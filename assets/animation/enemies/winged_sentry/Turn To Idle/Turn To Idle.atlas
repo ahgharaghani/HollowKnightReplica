@@ -1,0 +1,31 @@
+Turn To Idle.png
+size:1024,2048
+filter:Linear,Linear
+repeat:none
+Turn To Idle_idle0000
+index:2
+bounds:513,402,509,398
+Turn To Idle_idle0001
+index:3
+bounds:2,402,509,398
+Turn To Idle_idle0002
+index:4
+bounds:513,802,509,398
+Turn To Idle_idle0003
+index:5
+bounds:2,802,509,398
+Turn To Idle_idle0004
+index:6
+bounds:513,1202,509,398
+Turn To Idle_idle0005
+index:7
+bounds:2,2,509,398
+Turn To Idle_idle0006
+index:8
+bounds:2,1202,509,398
+Turn To Idle_turn0000
+index:0
+bounds:513,1602,509,398
+Turn To Idle_turn0001
+index:1
+bounds:2,1602,509,398
