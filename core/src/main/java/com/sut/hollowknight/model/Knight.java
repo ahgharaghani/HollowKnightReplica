@@ -18,6 +18,7 @@ public class Knight implements PhysicsBody {
     public static final float MOVE_SPEED   = 250f;
     public static final float JUMP_IMPULSE = 620f;
     public static final float FRICTION     = 600f;
+    public static final float JUMP_CUT_MULTIPLIER = 0.45f;
     public static final float KNIGHT_WIDTH  = 20f;   // PHYSICS box vs terrain (not the sprite)
     public static final float KNIGHT_HEIGHT = 50f;
 
@@ -112,6 +113,12 @@ public class Knight implements PhysicsBody {
 
     public void setVelocityX(float vx) { this.velocityX = vx; }
     public void setVelocityY(float vy) { this.velocityY = vy; }
+
+    public void cutJumpVelocity() {
+        if (velocityY > 0f) {
+            velocityY *= JUMP_CUT_MULTIPLIER;
+        }
+    }
 
     public void setFacingRight(boolean facingRight) {
         this.facingRight = facingRight;

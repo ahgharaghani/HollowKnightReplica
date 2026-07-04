@@ -1,5 +1,3 @@
-// File: HollowKnight/core/src/main/java/com/sut/hollowknight/controller/GameController.java
-
 package com.sut.hollowknight.controller;
 
 import com.badlogic.gdx.Game;
@@ -22,6 +20,8 @@ public class GameController {
     private float landTimer = 0f;
     private static final float LAND_DURATION = (float) 3 / 12;
 
+    private boolean wasJumpHeld = false;
+
     public GameController(Game game, Knight knight, TileMapCollider collider,
                           OrthographicCamera camera, float mapWidthPx, float mapHeightPx) {
         this.knight    = knight;
@@ -43,30 +43,38 @@ public class GameController {
     }
 
     private void handleInput() {
+        boolean jumpHeld = input.isJumpPressed();
+
         // During knockback the player has no control — let the throwback carry.
-        if (knight.isInKnockback()) return;
+        if (!knight.isInKnockback()) {
+            boolean left  = input.isMoveLeftPressed();
+            boolean right = input.isMoveRightPressed();
 
-        boolean left  = input.isMoveLeftPressed();
-        boolean right = input.isMoveRightPressed();
+            if (left && !right) {
+                knight.setVelocityX(-Knight.MOVE_SPEED);
+                knight.setFacingRight(false);
+            } else if (right && !left) {
+                knight.setVelocityX(Knight.MOVE_SPEED);
+                knight.setFacingRight(true);
+            } else {
+                knight.setVelocityX(0);
+            }
 
-        if (left && !right) {
-            knight.setVelocityX(-Knight.MOVE_SPEED);
-            knight.setFacingRight(false);
-        } else if (right && !left) {
-            knight.setVelocityX(Knight.MOVE_SPEED);
-            knight.setFacingRight(true);
-        } else {
-            knight.setVelocityX(0);
+            // Only allow jumping if not currently in the landing animation
+            if (input.isJumpJustPressed() && knight.isGrounded()) {
+                landTimer = 0;
+                knight.setVelocityY(Knight.JUMP_IMPULSE);
+                knight.setGrounded(false);
+                knight.setState(Knight.State.JUMP);
+                wasGrounded = false;
+            }
+
+            if (wasJumpHeld && !jumpHeld && knight.getVelocityY() > 0f) {
+                knight.cutJumpVelocity();
+            }
         }
 
-        // Only allow jumping if not currently in the landing animation
-        if (input.isJumpJustPressed() && knight.isGrounded()) {
-            landTimer = 0;
-            knight.setVelocityY(Knight.JUMP_IMPULSE);
-            knight.setGrounded(false);
-            knight.setState(Knight.State.JUMP);
-            wasGrounded = false;
-        }
+        wasJumpHeld = jumpHeld;
     }
 
     private void applyPhysics(float delta) {

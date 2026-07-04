@@ -14,6 +14,7 @@ public final class PlayerInput {
     public boolean isMoveLeftPressed()  { return Gdx.input.isKeyPressed(settings.getMoveLeftKey()); }
     public boolean isMoveRightPressed() { return Gdx.input.isKeyPressed(settings.getMoveRightKey()); }
     public boolean isJumpJustPressed()  { return Gdx.input.isKeyJustPressed(settings.getJumpKey()); }
+    public boolean isJumpPressed()      { return Gdx.input.isKeyPressed(settings.getJumpKey()); }
 
     public boolean isMoving() {
         return isMoveLeftPressed() ^ isMoveRightPressed();
