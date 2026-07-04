@@ -18,6 +18,12 @@ public class Lwjgl3Launcher {
         config.setResizable(false);
         config.useVsync(true);
 
+        // Keep simulating when focus is lost or the window is minimized.
+        // Otherwise a notification / alt-tab / popup stealing focus halts the
+        // whole render+update loop, so the game "freezes" until refocused.
+        config.setPauseWhenLostFocus(false);
+        config.setPauseWhenMinimized(false);
+
         return new Lwjgl3Application(new HollowKnight(), config);
     }
 
