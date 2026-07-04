@@ -66,8 +66,18 @@ public abstract class AbstractScreen implements Screen {
         convertedPixMap.dispose();
     }
 
+    /**
+     * Max simulation step. When the window is unfocused/minimized LWJGL3 stops
+     * rendering, so the next render(delta) reports the whole real-time gap in one
+     * shot. Feeding that raw into physics teleports bodies past thin platforms
+     * (tunneling) — the knight ends up below the map. Clamp so one stalled frame
+     * costs at most one normal step of movement instead of seconds' worth.
+     */
+    private static final float MAX_DELTA = 1f / 30f;
+
     @Override
     public void render(float delta) {
+        if (delta > MAX_DELTA) delta = MAX_DELTA;
         updateLogic(delta);
 
         float brightness = GameSettings.getInstance().getBrightness();

@@ -9,7 +9,6 @@ import com.sut.hollowknight.view.assets.WingedSentryAssets;
 public class JavelinRenderer {
 
     private final WingedSentryAssets assets;
-
     private static final float DRAW_WIDTH  = 583f;
     private static final float DRAW_HEIGHT = 27f;
 
@@ -26,7 +25,6 @@ public class JavelinRenderer {
         float drawX = javelin.getX() - DRAW_WIDTH / 2f;
         float drawY = javelin.getY() + (Javelin.HEIGHT - DRAW_HEIGHT) / 2f;
 
-        // Art points RIGHT natively — mirror it when the javelin flies left.
         if (javelin.isFacingRight()) {
             batch.draw(frame, drawX, drawY, DRAW_WIDTH, DRAW_HEIGHT);
         } else {
@@ -34,13 +32,12 @@ public class JavelinRenderer {
         }
     }
 
-    private TextureRegion getCurrentFrame(Javelin javelin) {
+    public TextureRegion getCurrentFrame(Javelin javelin) {
         float t = javelin.getStateTime();
         Animation<TextureRegion> anim;
 
         switch (javelin.getState()) {
             case FLYING:
-                // In-flight: loop the neutral javelin animation
                 anim = assets.getJavelinNeutralAnim();
                 break;
             case IMPACT:
@@ -48,7 +45,6 @@ public class JavelinRenderer {
                 break;
             case STICK:
             case NEUTRAL:
-                // Stuck in a wall: loop the stick frames
                 anim = assets.getJavelinStickAnim();
                 break;
             case SNAP:

@@ -1,6 +1,5 @@
 package com.sut.hollowknight.controller.enemy;
 
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionResolver;
@@ -8,7 +7,6 @@ import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
-import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
 
 public class WingedSentryController {
 
@@ -17,8 +15,6 @@ public class WingedSentryController {
     private Knight knight;
 
     private JavelinController javelinController;
-
-    private WingedSentryRenderer sentryRenderer;
 
     // Attack decision thresholds
     private static final float CHARGE_MIN_DISTANCE = 60f;
@@ -33,19 +29,13 @@ public class WingedSentryController {
     // ratchet skyward every time i-frames expired. Keep a body gap.
     private static final float CHASE_STANDOFF = 46f;
 
-    public WingedSentryController(WingedSentry sentry, TileMapCollider collider,
-                                  WingedSentryRenderer sentryRenderer) {
+    public WingedSentryController(WingedSentry sentry, TileMapCollider collider) {
         this.sentry = sentry;
         this.collider = collider;
-        this.sentryRenderer = sentryRenderer;
     }
 
     public void setKnight(Knight knight) {
         this.knight = knight;
-        // Forward to an already-spawned javelin controller (if any).
-        if (javelinController != null) {
-            javelinController.setKnight(knight);
-        }
     }
 
     public void update(float delta) {
@@ -65,29 +55,14 @@ public class WingedSentryController {
         sentry.tickAttackCooldown(delta);
 
         switch (sentry.getState()) {
-            case IDLE:
-                updateIdle(delta);
-                break;
-            case TURN_TO_IDLE:
-                updateTurnToIdle(delta);
-                break;
-            case CHARGE_ANTIC:
-                updateChargeAntic(delta);
-                break;
-            case CHARGE:
-                updateCharge(delta);
-                break;
-            case CHARGE_RECOVER:
-                updateChargeRecover(delta);
-                break;
-            case CHASE:
-                updateChase(delta);
-                break;
-            case THROW_ATTACK:
-                updateThrowAttack(delta);
-                break;
-            default:
-                break;
+            case IDLE: updateIdle(delta); break;
+            case TURN_TO_IDLE: updateTurnToIdle(delta); break;
+            case CHARGE_ANTIC: updateChargeAntic(delta); break;
+            case CHARGE: updateCharge(delta); break;
+            case CHARGE_RECOVER: updateChargeRecover(delta); break;
+            case CHASE: updateChase(delta); break;
+            case THROW_ATTACK: updateThrowAttack(delta); break;
+            default: break;
         }
     }
 
@@ -245,17 +220,11 @@ public class WingedSentryController {
             }
 
             float dirX = sentry.isFacingRight() ? 1f : -1f;
-
-            // Spawn the javelin so its VISUAL center y lines up with the
-            // sentry's visual center y. Javelin now uses bottom-y
-            // convention (like everyone else), so we shift the spawn
-            // y down by Javelin.HEIGHT/2 to compensate.
             float spawnX = sentry.getX();
             float spawnY = sentry.getY() + WingedSentry.HEIGHT / 2f - Javelin.HEIGHT / 2f;
             Javelin javelin = new Javelin(spawnX, spawnY, dirX);
 
             javelinController = new JavelinController(javelin, collider);
-            javelinController.setKnight(knight);
         }
 
         if (sentry.getStateTime() >= throwDuration) {
@@ -335,22 +304,5 @@ public class WingedSentryController {
     }
 
     public WingedSentry getSentry() { return sentry; }
-
-    public TextureRegion getCurrentFrame() {
-        return sentryRenderer.getCurrentFrame(sentry);
-    }
-
-    // Javelin delegation
-
-    public Javelin getJavelin() {
-        return javelinController == null ? null : javelinController.getJavelin();
-    }
-
-    public boolean isJavelinDamageDealt() {
-        return javelinController != null && javelinController.isDamageDealt();
-    }
-
-    public void clearJavelinDamageDealt() {
-        if (javelinController != null) javelinController.clearDamageDealt();
-    }
+    public Javelin getJavelin() { return javelinController == null ? null : javelinController.getJavelin(); }
 }

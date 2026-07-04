@@ -1,11 +1,15 @@
 package com.sut.hollowknight.controller;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
+import com.sut.hollowknight.model.collision.PixelCollisionUtil;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
-import com.sut.hollowknight.model.collision.PixelCollisionUtil;
+import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
+import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
+
 import java.util.List;
 
 public class CombatSystem {
@@ -32,14 +36,16 @@ public class CombatSystem {
         this.sentryControllers = sentryControllers;
     }
 
-    public void resolve(float delta, TextureRegion knightFrame) {
+    public void resolve(float delta, TextureRegion knightFrame,
+                        WingedSentryRenderer sentryRenderer, JavelinRenderer javelinRenderer) {
         for (WingedSentryController sc : sentryControllers) {
-            resolveContactDamage(sc, knightFrame);
-            resolveJavelinDamage(sc, knightFrame);
+            resolveContactDamage(sc, knightFrame, sentryRenderer);
+            resolveJavelinDamage(sc, knightFrame, javelinRenderer);
         }
     }
 
-    private void resolveContactDamage(WingedSentryController sentryController, TextureRegion knightFrame) {
+    private void resolveContactDamage(WingedSentryController sentryController, TextureRegion knightFrame,
+                                      WingedSentryRenderer sentryRenderer) {
         if (knight.isInvincible()) return;
 
         WingedSentry sentry = sentryController.getSentry();
@@ -63,7 +69,7 @@ public class CombatSystem {
         // Use Pixel-Perfect Collision!
         boolean hit = PixelCollisionUtil.overlaps(
             knightFrame, kDrawX, kDrawY, kDrawW, kDrawH, kFlip,
-            sentryController.getCurrentFrame(), sDrawX, sDrawY, sDrawW, sDrawH, sFlip
+            sentryRenderer.getCurrentFrame(sentry), sDrawX, sDrawY, sDrawW, sDrawH, sFlip
         );
 
         if (hit) {
@@ -73,15 +79,43 @@ public class CombatSystem {
         }
     }
 
-    private void resolveJavelinDamage(WingedSentryController sentryController, TextureRegion knightFrame) {
-        if (!sentryController.isJavelinDamageDealt()) return;
+    private void resolveJavelinDamage(WingedSentryController sentryController, TextureRegion knightFrame,
+                                      JavelinRenderer javelinRenderer) {
+        if (knight.isInvincible()) return;
 
         Javelin javelin = sentryController.getJavelin();
-        int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
+        if (javelin == null || javelin.getState() != Javelin.State.FLYING) return;
 
-        knight.takeDamage(Javelin.DAMAGE);
-        knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
+        float jDrawW = 583f;
+        float jDrawH = 27f;
+        float jDrawX = javelin.getX() - jDrawW / 2f;
+        float jDrawY = javelin.getY() + (Javelin.HEIGHT - jDrawH) / 2f;
+        boolean jFlip = !javelin.isFacingRight();
 
-        sentryController.clearJavelinDamageDealt();
+        float kDrawW = knightFrame.getRegionWidth();
+        float kDrawH = knightFrame.getRegionHeight();
+        float kDrawX = knight.getX() - kDrawW / 2f;
+        float kDrawY = knight.getY();
+        boolean kFlip = knight.isFacingRight();
+
+        // 1. Fast AABB check first
+        Rectangle jRect = new Rectangle(jDrawX, jDrawY, jDrawW, jDrawH);
+        Rectangle kRect = new Rectangle(kDrawX, kDrawY, kDrawW, kDrawH);
+        if (!jRect.overlaps(kRect)) return;
+
+        TextureRegion javelinFrame = javelinRenderer.getCurrentFrame(javelin);
+
+        // 2. Pixel perfect check
+        boolean hit = PixelCollisionUtil.overlaps(
+            javelinFrame, jDrawX, jDrawY, jDrawW, jDrawH, jFlip,
+            knightFrame, kDrawX, kDrawY, kDrawW, kDrawH, kFlip
+        );
+
+        if (hit) {
+            int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
+            knight.takeDamage(Javelin.DAMAGE);
+            knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
+            javelin.setState(Javelin.State.SNAP); // Trigger snap animation on hit
+        }
     }
 }

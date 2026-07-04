@@ -1,7 +1,5 @@
 package com.sut.hollowknight.view.renderer.enemy;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -36,7 +34,7 @@ public class WingedSentryRenderer {
         }
     }
 
-    private TextureRegion getCurrentFrame(WingedSentry sentry) {
+    public TextureRegion getCurrentFrame(WingedSentry sentry) {
         float t = sentry.getStateTime();
         Animation<TextureRegion> anim;
 
