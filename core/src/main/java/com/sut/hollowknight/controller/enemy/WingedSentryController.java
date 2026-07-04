@@ -43,9 +43,6 @@ public class WingedSentryController {
     }
 
     public void update(float delta) {
-        // Delegate javelin FSM to JavelinController — no more inlined
-        // updateJavelin* block here. This also fixes the previous
-        // javelinDamageDealt reset-ordering issue.
         if (javelinController != null) {
             javelinController.update(delta);
             if (javelinController.getJavelin().isDone()) {
@@ -126,11 +123,9 @@ public class WingedSentryController {
         // Track player during anticipation so charge aims correctly
         if (knight != null) {
             sentry.setFacingRight(knight.getX() > sentry.getX());
-            // Keep updating target Y to track player movement
             sentry.setLockedChargeY(knight.getY() + Knight.KNIGHT_HEIGHT / 2f - WingedSentry.HEIGHT / 2f);
         }
 
-        // FIX: Smoothly lerp Y toward target instead of snapping in CHARGE
         float targetY = sentry.getLockedChargeY();
         float currentY = sentry.getY();
         float diff = targetY - currentY;
@@ -142,7 +137,7 @@ public class WingedSentryController {
         }
 
         if (sentry.getStateTime() >= WingedSentry.CHARGE_ANTIC_DURATION) {
-            sentry.setY(sentry.getLockedChargeY()); // Ensure exact position
+            sentry.setY(sentry.getLockedChargeY());
             beginCharge();
         }
     }
@@ -156,14 +151,10 @@ public class WingedSentryController {
 
     private void updateCharge(float delta) {
         sentry.setX(sentry.getX() + sentry.getVelocityX() * delta);
-        // Y is now already at the correct position from anticipation lerp
         sentry.setY(sentry.getLockedChargeY());
 
         CollisionRect wall = collider.findOverlappingRect(sentry);
         if (wall != null) {
-            // Shared wall push-out — same helper the Knight and the
-            // javelin use. The sentry-specific post-action (zero vx,
-            // transition to CHARGE_RECOVER, reset cooldown) stays here.
             CollisionResolver.pushOutHorizontally(sentry, wall);
             sentry.setVelocityX(0);
             sentry.setState(WingedSentry.State.CHARGE_RECOVER);
@@ -199,9 +190,14 @@ public class WingedSentryController {
 
         sentry.setFacingRight(dx > 0);
 
-        // Escape detection
+        // Escape detection: Break aggro if too far OR if line of sight is broken
         float escapeRange = WingedSentry.DETECTION_RANGE * ESCAPE_RANGE_MULTIPLIER;
-        if (dist > escapeRange) {
+        boolean hasLoS = collider.hasLineOfSight(
+            sentry.getX(), sentry.getY() + WingedSentry.HEIGHT / 2f,
+            knight.getX(), knight.getY() + Knight.KNIGHT_HEIGHT / 2f
+        );
+
+        if (dist > escapeRange || !hasLoS) {
             sentry.setDetectedPlayer(false);
             sentry.setState(WingedSentry.State.TURN_TO_IDLE);
             return;
@@ -308,7 +304,15 @@ public class WingedSentryController {
         float dy = (knight.getY() + Knight.KNIGHT_HEIGHT / 2f) - (sentry.getY() + WingedSentry.HEIGHT / 2f);
         float distSq = dx * dx + dy * dy;
         float rangeSq = WingedSentry.DETECTION_RANGE * WingedSentry.DETECTION_RANGE;
-        return distSq <= rangeSq;
+
+        if (distSq <= rangeSq) {
+            // Check Line of Sight before detecting
+            return collider.hasLineOfSight(
+                sentry.getX(), sentry.getY() + WingedSentry.HEIGHT / 2f,
+                knight.getX(), knight.getY() + Knight.KNIGHT_HEIGHT / 2f
+            );
+        }
+        return false;
     }
 
     public boolean overlapsKnight() {

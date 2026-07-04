@@ -1,5 +1,6 @@
 package com.sut.hollowknight.model.collision;
 
+import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.objects.RectangleMapObject;
@@ -42,14 +43,10 @@ public class TileMapCollider {
             for (MapObject obj : objLayer.getObjects()) {
                 if (obj instanceof RectangleMapObject) {
                     RectangleMapObject rectObj = (RectangleMapObject) obj;
-
-                    // LibGDX's TmxMapLoader ALREADY converts object Y to y-up.
-                    // We just take the coordinates directly.
                     float worldX = rectObj.getRectangle().x;
                     float worldY = rectObj.getRectangle().y;
                     float w = rectObj.getRectangle().width;
                     float h = rectObj.getRectangle().height;
-
                     collisionRects.add(new CollisionRect(worldX, worldY, w, h));
                 }
             }
@@ -109,5 +106,47 @@ public class TileMapCollider {
             if (AABB.overlaps(body, rect)) return rect;
         }
         return null;
+    }
+
+    public boolean hasLineOfSight(float x1, float y1, float x2, float y2) {
+        // 1. Check against Object Layer Collision Rectangles
+        for (CollisionRect rect : collisionRects) {
+            // If the line segment intersects any of the 4 edges of the rectangle, it's blocked
+            if (Intersector.intersectSegments(
+                x1, y1, x2, y2, rect.getLeft(), rect.getBottom(), rect.getRight(), rect.getBottom(), null))
+                return false;
+            if (Intersector.intersectSegments(
+                x1, y1, x2, y2, rect.getLeft(), rect.getTop(), rect.getRight(), rect.getTop(), null))
+                return false;
+            if (Intersector.intersectSegments(
+                x1, y1, x2, y2, rect.getLeft(), rect.getBottom(), rect.getLeft(), rect.getTop(), null))
+                return false;
+            if (Intersector.intersectSegments(
+                x1, y1, x2, y2, rect.getRight(), rect.getBottom(), rect.getRight(), rect.getTop(), null))
+                return false;
+        }
+
+        // 2. Check against the solid tile grid using a simple fixed-step raycast
+        float dx = x2 - x1;
+        float dy = y2 - y1;
+        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+        // Step by a quarter-tile to ensure we don't skip over thin walls
+        float stepSize = Math.min(tileWidth, tileHeight) / 4.0f;
+        int steps = (int) Math.ceil(dist / stepSize);
+
+        for (int i = 1; i < steps; i++) { // start at 1 to ignore the exact starting point
+            float t = i / (float) steps;
+            float checkX = x1 + dx * t;
+            float checkY = y1 + dy * t;
+
+            int tileX = worldXToTile(checkX);
+            int tileY = worldYToTile(checkY);
+
+            if (isSolid(tileX, tileY)) {
+                return false; // Blocked by a solid tile
+            }
+        }
+
+        return true; // No obstacles hit!
     }
 }
