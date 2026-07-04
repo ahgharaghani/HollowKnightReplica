@@ -117,7 +117,7 @@ public class GameScreen extends AbstractScreen {
             if (x != null && y != null) {
                 Gdx.app.log("GameScreen", "Spawning sentry at (" + x + ", " + y + ")");
                 WingedSentry sentry = new WingedSentry(x, y);
-                WingedSentryController sentryController = new WingedSentryController(sentry, collider);
+                WingedSentryController sentryController = new WingedSentryController(sentry, collider, sentryRenderer);
                 sentryController.setKnight(knight); // Allow controller to read knight position/HP
                 sentryControllers.add(sentryController);
             }
@@ -190,7 +190,8 @@ public class GameScreen extends AbstractScreen {
             sc.update(delta);
         }
 
-        combat.resolve(delta);
+        TextureRegion knightFrame = knightAnimator.getCurrentFrame(controller.getKnight());
+        combat.resolve(delta, knightFrame);
     }
 
     @Override

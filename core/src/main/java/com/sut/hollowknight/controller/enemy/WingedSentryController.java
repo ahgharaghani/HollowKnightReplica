@@ -1,5 +1,6 @@
 package com.sut.hollowknight.controller.enemy;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionResolver;
@@ -7,6 +8,7 @@ import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
+import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
 
 public class WingedSentryController {
 
@@ -15,6 +17,8 @@ public class WingedSentryController {
     private Knight knight;
 
     private JavelinController javelinController;
+
+    private WingedSentryRenderer sentryRenderer;
 
     // Attack decision thresholds
     private static final float CHARGE_MIN_DISTANCE = 60f;
@@ -29,9 +33,11 @@ public class WingedSentryController {
     // ratchet skyward every time i-frames expired. Keep a body gap.
     private static final float CHASE_STANDOFF = 46f;
 
-    public WingedSentryController(WingedSentry sentry, TileMapCollider collider) {
+    public WingedSentryController(WingedSentry sentry, TileMapCollider collider,
+                                  WingedSentryRenderer sentryRenderer) {
         this.sentry = sentry;
         this.collider = collider;
+        this.sentryRenderer = sentryRenderer;
     }
 
     public void setKnight(Knight knight) {
@@ -329,6 +335,10 @@ public class WingedSentryController {
     }
 
     public WingedSentry getSentry() { return sentry; }
+
+    public TextureRegion getCurrentFrame() {
+        return sentryRenderer.getCurrentFrame(sentry);
+    }
 
     // Javelin delegation
 

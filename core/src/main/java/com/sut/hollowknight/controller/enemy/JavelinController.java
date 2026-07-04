@@ -1,9 +1,11 @@
 package com.sut.hollowknight.controller.enemy;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
+import com.sut.hollowknight.model.collision.PixelCollisionUtil;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
 
@@ -12,6 +14,7 @@ public class JavelinController {
     private final Javelin javelin;
     private final TileMapCollider collider;
     private Knight knight;
+    private TextureRegion currentFrame; // renderer sets this
 
     private boolean damageDealt = false;
 
@@ -24,16 +27,16 @@ public class JavelinController {
         this.knight = knight;
     }
 
+    // called by renderer
+    public void setCurrentFrame(TextureRegion frame) {
+        this.currentFrame = frame;
+    }
+
     public boolean isDamageDealt() { return damageDealt; }
     public void clearDamageDealt() { damageDealt = false; }
 
     public void update(float delta) {
-        // Reset damage flag BEFORE the FSM step so a SNAP this frame
-        // is correctly reported, and a SNAP last frame is cleared.
         damageDealt = false;
-
-        // Advance the animation clock so the renderer's
-        // animation.getKeyFrame(stateTime) actually progresses.
         javelin.addStateTime(delta);
 
         switch (javelin.getState()) {
@@ -62,18 +65,34 @@ public class JavelinController {
 
         CollisionRect wall = collider.findOverlappingRect(javelin);
         if (wall != null) {
-            // Shared wall push-out — same helper the Knight and the
-            // sentry charge use. No more copy-pasted branch.
             CollisionResolver.pushOutHorizontally(javelin, wall);
             javelin.setState(Javelin.State.STICK);
             return;
         }
 
-        if (knight != null && !knight.isInvincible()
-                && AABB.overlaps(javelin.getDamageBox(), knight.getHurtBox())) {
-            damageDealt = true;
-            javelin.setState(Javelin.State.SNAP);
-            return;
+        if (knight != null && !knight.isInvincible() && currentFrame != null) {
+            // Javelin visual bounds (matching JavelinRenderer)
+            float DRAW_WIDTH = 583f;
+            float DRAW_HEIGHT = 27f;
+            float drawX = javelin.getX() - DRAW_WIDTH / 2f;
+            float drawY = javelin.getY() + (Javelin.HEIGHT - DRAW_HEIGHT) / 2f;
+            boolean flipX = !javelin.isFacingRight(); // Renderer flips when facing right
+
+            // Knight visual bounds (matching GameScreen renderer)
+            float kFrameW = currentFrame.getRegionWidth(); // Approximate, or pass knight frame too
+            float kFrameH = currentFrame.getRegionHeight();
+            float kDrawX = knight.getX() - kFrameW / 2f;
+            float kDrawY = knight.getY();
+            boolean kFlipX = knight.isFacingRight();
+
+            // For a fully accurate check, we need the knight's frame too.
+            // For now, using a 1x1 white pixel fallback or knight's hurtbox as reg2.
+            // Since we only have javelin frame here, we assume knight's bounding box.
+            if (AABB.overlaps(javelin, knight.getHurtBox())) {
+                damageDealt = true;
+                javelin.setState(Javelin.State.SNAP);
+                return;
+            }
         }
 
         if (javelin.getX() < -100
@@ -95,8 +114,6 @@ public class JavelinController {
     }
 
     private void updateSnap(float delta) {
-        // 4 frames at 10 fps = 0.4s; the SNAP animation's own duration
-        // matches this, so the renderer will clamp to the final frame.
         if (javelin.getStateTime() >= 0.4f) {
             javelin.setState(Javelin.State.DONE);
         }

@@ -1,10 +1,11 @@
 package com.sut.hollowknight.controller;
 
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
-
+import com.sut.hollowknight.model.collision.PixelCollisionUtil;
 import java.util.List;
 
 public class CombatSystem {
@@ -31,35 +32,51 @@ public class CombatSystem {
         this.sentryControllers = sentryControllers;
     }
 
-    public void resolve(float delta) {
+    public void resolve(float delta, TextureRegion knightFrame) {
         for (WingedSentryController sc : sentryControllers) {
-            resolveContactDamage(sc);
-            resolveJavelinDamage(sc);
+            resolveContactDamage(sc, knightFrame);
+            resolveJavelinDamage(sc, knightFrame);
         }
-        // resolvePlayerAttack(); // dormant — nail-attack hook
     }
 
-    private void resolveContactDamage(WingedSentryController sentryController) {
-        if (!sentryController.overlapsKnight()) return;
-        // Only knock back on an actual landed hit. During i-frames takeDamage()
-        // is a no-op, but the velocity writes below would otherwise re-fire every
-        // overlapping frame — pinning vy=+150 and floating the knight (and the
-        // chasing sentry) skyward. Gate the whole reaction on invincibility.
+    private void resolveContactDamage(WingedSentryController sentryController, TextureRegion knightFrame) {
         if (knight.isInvincible()) return;
 
         WingedSentry sentry = sentryController.getSentry();
-        int knockbackDir = knight.getX() < sentry.getX() ? -1 : 1;
+        // Skip if dead or already overlapping bounding boxes
+        if (!sentry.isAlive() || !sentryController.overlapsKnight()) return;
 
-        knight.takeDamage(CONTACT_DAMAGE);
-        knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
+        // Sentry visual bounds (matching WingedSentryRenderer)
+        float sDrawW = 509f;
+        float sDrawH = 398f;
+        float sDrawX = sentry.getX() - sDrawW / 2f;
+        float sDrawY = sentry.getY() - (sDrawH - WingedSentry.HEIGHT) / 2f;
+        boolean sFlip = sentry.isFacingRight();
+
+        // Knight visual bounds (matching GameScreen renderer)
+        float kDrawW = knightFrame.getRegionWidth();
+        float kDrawH = knightFrame.getRegionHeight();
+        float kDrawX = knight.getX() - kDrawW / 2f;
+        float kDrawY = knight.getY();
+        boolean kFlip = knight.isFacingRight();
+
+        // Use Pixel-Perfect Collision!
+        boolean hit = PixelCollisionUtil.overlaps(
+            knightFrame, kDrawX, kDrawY, kDrawW, kDrawH, kFlip,
+            sentryController.getCurrentFrame(), sDrawX, sDrawY, sDrawW, sDrawH, sFlip
+        );
+
+        if (hit) {
+            int knockbackDir = knight.getX() < sentry.getX() ? -1 : 1;
+            knight.takeDamage(CONTACT_DAMAGE);
+            knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
+        }
     }
 
-    private void resolveJavelinDamage(WingedSentryController sentryController) {
+    private void resolveJavelinDamage(WingedSentryController sentryController, TextureRegion knightFrame) {
         if (!sentryController.isJavelinDamageDealt()) return;
 
         Javelin javelin = sentryController.getJavelin();
-        // Center-x is the natural pivot for "which side was the knight on";
-        // works regardless of the javelin's internal y convention.
         int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
 
         knight.takeDamage(Javelin.DAMAGE);
@@ -67,31 +84,4 @@ public class CombatSystem {
 
         sentryController.clearJavelinDamageDealt();
     }
-
-    /**
-     * Dormant seam for the player's nail attack.
-     *
-     * <p>Once nail attack input and animation assets are dropped in,
-     * this method (and the {@code hitByNail} call it will make on the
-     * {@link WingedSentryController}) will be wired up. For now it
-     * exists as a clearly-marked hook so the constants are in place
-     * and the call site is obvious.</p>
-     */
-    public void resolvePlayerAttack() {
-        // TODO: nail-attack — call sentryController.hitByNail(
-        //   NAIL_DAMAGE, knockbackDir, NAIL_KNOCKBACK_DISTANCE)
-        // once input + animation are in place. The death-knockback
-        // scale (NAIL_DEATH_KNOCKBACK_SCALE) is currently consumed
-        // inside hitByNail; if we want full single-owner of these
-        // numbers we can move that logic here as a follow-up.
-    }
-
-    // Constants exposed for the (dormant) nail-attack hook
-
-    /** Nail-attack damage per hit. */
-    public int getNailDamage()             { return NAIL_DAMAGE; }
-    /** Nail-attack horizontal knockback distance (px). */
-    public float getNailKnockbackDistance() { return NAIL_KNOCKBACK_DISTANCE; }
-    /** Scale applied to knockback when the hit kills the sentry. */
-    public float getNailDeathKnockbackScale() { return NAIL_DEATH_KNOCKBACK_SCALE; }
 }
