@@ -26,10 +26,11 @@ public class JavelinRenderer {
         float drawX = javelin.getX() - DRAW_WIDTH / 2f;
         float drawY = javelin.getY() + (Javelin.HEIGHT - DRAW_HEIGHT) / 2f;
 
+        // Art points RIGHT natively — mirror it when the javelin flies left.
         if (javelin.isFacingRight()) {
-            batch.draw(frame, drawX + DRAW_WIDTH, drawY, -DRAW_WIDTH, DRAW_HEIGHT);
-        } else {
             batch.draw(frame, drawX, drawY, DRAW_WIDTH, DRAW_HEIGHT);
+        } else {
+            batch.draw(frame, drawX + DRAW_WIDTH, drawY, -DRAW_WIDTH, DRAW_HEIGHT);
         }
     }
 

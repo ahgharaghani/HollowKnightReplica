@@ -24,6 +24,11 @@ public class WingedSentryController {
     // Y-axis lerp speed during charge anticipation
     private static final float CHARGE_Y_LERP_SPEED = 8f;
 
+    // Passive-chase standoff: stop when bodies touch instead of burrowing to
+    // the knight's center. Center-stacking + upward contact-knockback made both
+    // ratchet skyward every time i-frames expired. Keep a body gap.
+    private static final float CHASE_STANDOFF = 46f;
+
     public WingedSentryController(WingedSentry sentry, TileMapCollider collider) {
         this.sentry = sentry;
         this.collider = collider;
@@ -215,8 +220,9 @@ public class WingedSentryController {
             }
         }
 
-        // Movement toward player
-        if (dist > 5f) {
+        // Movement toward player — halt at standoff so the sentry never
+        // stacks on the knight's center and elevator-launches the pair.
+        if (dist > CHASE_STANDOFF) {
             float moveX = (dx / dist) * WingedSentry.CHASE_SPEED * delta;
             float moveY = (dy / dist) * WingedSentry.CHASE_SPEED * delta;
             sentry.setX(sentry.getX() + moveX);
@@ -310,7 +316,7 @@ public class WingedSentryController {
         WingedSentry.State s = sentry.getState();
         if (s == WingedSentry.State.DEATH_AIR || s == WingedSentry.State.DEATH_LAND) return false;
 
-        return AABB.overlaps(sentry, knight);
+        return AABB.overlaps(sentry, knight.getHurtBox());
     }
 
     public void respawn() {

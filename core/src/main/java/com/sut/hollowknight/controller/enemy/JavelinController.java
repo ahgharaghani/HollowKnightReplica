@@ -69,7 +69,8 @@ public class JavelinController {
             return;
         }
 
-        if (knight != null && !knight.isInvincible() && AABB.overlaps(javelin, knight)) {
+        if (knight != null && !knight.isInvincible()
+                && AABB.overlaps(javelin.getDamageBox(), knight.getHurtBox())) {
             damageDealt = true;
             javelin.setState(Javelin.State.SNAP);
             return;

@@ -1,5 +1,6 @@
 package com.sut.hollowknight.model.enemy;
 
+import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.PhysicsBody;
 
 public class Javelin implements PhysicsBody {
@@ -13,9 +14,17 @@ public class Javelin implements PhysicsBody {
     private float velocityY;
     public static final float SPEED = 450f;
 
-    // Size
+    // Size — PHYSICS box (wall stick / push-out). Center-anchored on x.
     public static final float WIDTH  = 60f;
     public static final float HEIGHT = 12f;
+
+    // Damage box — the part of the VISIBLE spear that actually hits.
+    // Anchored at the spear TIP (forward by facing dir), not the shaft center,
+    // so the point registers the moment it visually reaches the target.
+    // Tune to the sprite via the F3 overlay.
+    public static final float DMG_LENGTH   = 200f;  // along the shaft, back from the tip
+    public static final float DMG_THICK    = 22f;   // matches visible spear thickness
+    public static final float DMG_TIP_REACH = 260f; // tip distance forward of center x
 
     // State
     public enum State {
@@ -55,6 +64,19 @@ public class Javelin implements PhysicsBody {
     public float getBottom() { return y; }
     @Override
     public float getTop()    { return y + HEIGHT; }
+
+    /**
+     * Damage rectangle at the spear tip, aligned on the spear's visual center-y.
+     * Extends {@code DMG_LENGTH} back from the tip so the point and a stretch of
+     * shaft both hit — but not the far tail. Facing flips which side the tip is on.
+     */
+    public CollisionRect getDamageBox() {
+        float dir  = facingRight ? 1f : -1f;
+        float tipX = x + dir * DMG_TIP_REACH;
+        float left = dir > 0 ? tipX - DMG_LENGTH : tipX;
+        float cy   = y + HEIGHT / 2f;               // visual center of the spear
+        return new CollisionRect(left, cy - DMG_THICK / 2f, DMG_LENGTH, DMG_THICK);
+    }
 
     // ---- PhysicsBody ----
 

@@ -121,6 +121,10 @@ public class KnightAnimator {
             case LAND:
                 anim = landAnim != null ? landAnim : idleAnim;
                 break;
+            case HURT:
+                // TODO: drop in hurtAnim once the knockback art exists.
+                anim = idleAnim;
+                break;
             case IDLE:
             default:
                 anim = idleAnim;

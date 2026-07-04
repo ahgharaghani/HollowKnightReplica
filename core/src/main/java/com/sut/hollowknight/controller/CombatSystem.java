@@ -9,12 +9,12 @@ public class CombatSystem {
 
     // Contact damage (sentry body touching the knight)
     private static final int   CONTACT_DAMAGE        = 1;
-    private static final float CONTACT_KNOCKBACK_X   = 300f;
-    private static final float CONTACT_KNOCKBACK_Y   = 150f;
+    private static final float CONTACT_KNOCKBACK_X   = 420f;
+    private static final float CONTACT_KNOCKBACK_Y   = 260f;
 
     // Javelin damage
-    private static final float JAVELIN_KNOCKBACK_X   = 250f;
-    private static final float JAVELIN_KNOCKBACK_Y   = 150f;
+    private static final float JAVELIN_KNOCKBACK_X   = 380f;
+    private static final float JAVELIN_KNOCKBACK_Y   = 260f;
 
     // Nail attack
     private static final int   NAIL_DAMAGE              = 1;
@@ -37,13 +37,17 @@ public class CombatSystem {
 
     private void resolveContactDamage() {
         if (!sentryController.overlapsKnight()) return;
+        // Only knock back on an actual landed hit. During i-frames takeDamage()
+        // is a no-op, but the velocity writes below would otherwise re-fire every
+        // overlapping frame — pinning vy=+150 and floating the knight (and the
+        // chasing sentry) skyward. Gate the whole reaction on invincibility.
+        if (knight.isInvincible()) return;
 
         WingedSentry sentry = sentryController.getSentry();
         int knockbackDir = knight.getX() < sentry.getX() ? -1 : 1;
 
         knight.takeDamage(CONTACT_DAMAGE);
-        knight.setVelocityX(knockbackDir * CONTACT_KNOCKBACK_X);
-        knight.setVelocityY(CONTACT_KNOCKBACK_Y);
+        knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
     }
 
     private void resolveJavelinDamage() {
@@ -55,8 +59,7 @@ public class CombatSystem {
         int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
 
         knight.takeDamage(Javelin.DAMAGE);
-        knight.setVelocityX(knockbackDir * JAVELIN_KNOCKBACK_X);
-        knight.setVelocityY(JAVELIN_KNOCKBACK_Y);
+        knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
 
         sentryController.clearJavelinDamageDealt();
     }

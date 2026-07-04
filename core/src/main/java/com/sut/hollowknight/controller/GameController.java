@@ -43,6 +43,9 @@ public class GameController {
     }
 
     private void handleInput() {
+        // During knockback the player has no control — let the throwback carry.
+        if (knight.isInKnockback()) return;
+
         boolean left  = input.isMoveLeftPressed();
         boolean right = input.isMoveRightPressed();
 
@@ -77,7 +80,7 @@ public class GameController {
 
         knight.setVelocityY(knight.getVelocityY() - Knight.GRAVITY * delta);
 
-        if (knight.getVelocityY() <= 0 && !knight.isGrounded()) {
+        if (!knight.isInKnockback() && knight.getVelocityY() <= 0 && !knight.isGrounded()) {
             knight.setState(Knight.State.FALL);
         }
 
@@ -87,7 +90,7 @@ public class GameController {
         boolean grounded = collision.resolveVertical(knight, prevY);
 
         // Detect the exact moment the knight hits the ground
-        if (!wasGrounded && grounded) {
+        if (!knight.isInKnockback() && !wasGrounded && grounded) {
             knight.setState(Knight.State.LAND);
             landTimer = LAND_DURATION;
         }
@@ -95,10 +98,14 @@ public class GameController {
         knight.setGrounded(grounded);
         wasGrounded = grounded;
 
+        knight.tickKnockback(delta);
         knight.tickInvincibility(delta);
     }
 
     private void updateAnimationState(float delta) {
+        // HURT owns the animation until the knockback lockout ends.
+        if (knight.isInKnockback()) return;
+
         if (landTimer > 0) {
             landTimer -= delta;
             // Allow early exit from land animation if the player starts moving

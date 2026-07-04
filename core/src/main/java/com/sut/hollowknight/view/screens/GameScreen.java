@@ -2,6 +2,7 @@ package com.sut.hollowknight.view.screens;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -9,6 +10,9 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
+import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.sut.hollowknight.model.collision.AABB;
+import com.sut.hollowknight.model.collision.CollisionRect;
 import com.badlogic.gdx.maps.MapLayer;
 import com.badlogic.gdx.maps.MapObject;
 import com.badlogic.gdx.maps.MapProperties;
@@ -43,6 +47,8 @@ public class GameScreen extends AbstractScreen {
     private float mapWidthPx;
     private float mapHeightPx;
 
+    private static final float INVINCIBLE_FLASH_HZ = 20f;   // blink toggles per second
+
     private static final int[] BG_LAYERS = { 0, 1, 2, 3, 4 };
     private static final int[] GAMEPLAY_LAYER = { 5 };
     private static final int[] FG_LAYERS = { 7, 8 };
@@ -59,10 +65,16 @@ public class GameScreen extends AbstractScreen {
 
     private CombatSystem combat;
 
+    // Debug hitbox overlay — toggle with F3. Tune box constants to the art.
+    private ShapeRenderer debugShapes;
+    private boolean debugBoxes = false;
+    private boolean f3WasDown = false;
+
     public GameScreen(Game game) {
         super(game);
 
         batch = new SpriteBatch();
+        debugShapes = new ShapeRenderer();
         loadMap();
 
         TileMapCollider collider = new TileMapCollider(
@@ -206,6 +218,11 @@ public class GameScreen extends AbstractScreen {
         float frameW = frame.getRegionWidth();
         float frameH = frame.getRegionHeight();
 
+        // Flash while invincible: blink the sprite alpha ~10x/sec.
+        boolean flashOff = knight.isInvincible()
+            && ((int) (knight.getInvincibleTimer() * INVINCIBLE_FLASH_HZ) & 1) == 0;
+        if (flashOff) batch.setColor(1f, 1f, 1f, 0.3f);
+
         if (knight.isFacingRight()) {
             batch.draw(frame,
                 knight.getX() + frameW / 2f,
@@ -217,6 +234,8 @@ public class GameScreen extends AbstractScreen {
                 knight.getY(),
                 +frameW, frameH);
         }
+
+        if (flashOff) batch.setColor(Color.WHITE);
 
         sentryRenderer.draw(batch, sentry);
 
@@ -236,6 +255,49 @@ public class GameScreen extends AbstractScreen {
         batch.begin();
         rainEffect.render(batch, worldCamera);
         batch.end();
+
+        renderDebugBoxes();
+    }
+
+    /** F3 toggles an overlay of every collision/hurt/damage box, in world space. */
+    private void renderDebugBoxes() {
+        boolean f3 = Gdx.input.isKeyPressed(Input.Keys.F3);
+        if (f3 && !f3WasDown) debugBoxes = !debugBoxes;
+        f3WasDown = f3;
+        if (!debugBoxes) return;
+
+        Knight knight = controller.getKnight();
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        debugShapes.setProjectionMatrix(worldCamera.combined);
+        debugShapes.begin(ShapeRenderer.ShapeType.Line);
+
+        // Physics boxes (green) vs combat boxes (red/yellow)
+        debugShapes.setColor(Color.LIME);
+        drawBox(knight);                                   // knight physics box
+        drawBox(sentry);                                   // sentry body box
+
+        debugShapes.setColor(Color.RED);
+        drawRect(knight.getHurtBox());                     // knight hurtbox
+
+        Javelin javelin = sentryController.getJavelin();
+        if (javelin != null) {
+            debugShapes.setColor(Color.CYAN);
+            drawBox(javelin);                              // javelin physics box
+            debugShapes.setColor(Color.YELLOW);
+            drawRect(javelin.getDamageBox());              // javelin damage box
+        }
+
+        debugShapes.end();
+    }
+
+    private void drawBox(AABB b) {
+        debugShapes.rect(b.getLeft(), b.getBottom(),
+            b.getRight() - b.getLeft(), b.getTop() - b.getBottom());
+    }
+
+    private void drawRect(CollisionRect r) {
+        debugShapes.rect(r.getX(), r.getY(), r.getWidth(), r.getHeight());
     }
 
     @Override
@@ -245,5 +307,6 @@ public class GameScreen extends AbstractScreen {
         backgroundShader.dispose();
         whiteTexture.dispose();
         rainEffect.dispose();
+        debugShapes.dispose();
     }
 }
