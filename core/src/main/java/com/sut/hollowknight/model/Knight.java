@@ -137,7 +137,7 @@ public class Knight implements PhysicsBody {
         invincible = true;
         invincibleTimer = INVINCIBLE_DURATION;
     }
-    
+
     public void applyKnockback(float vx, float vy) {
         this.velocityX = vx;
         this.velocityY = vy;

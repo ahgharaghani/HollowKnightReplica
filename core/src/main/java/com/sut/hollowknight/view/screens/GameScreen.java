@@ -34,6 +34,9 @@ import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
 import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class GameScreen extends AbstractScreen {
 
     private GameController controller;
@@ -58,8 +61,7 @@ public class GameScreen extends AbstractScreen {
     private float timeElapsed = 0f;
 
     private WingedSentryAssets wingedSentryAssets;
-    private WingedSentry sentry;
-    private WingedSentryController sentryController;
+    private List<WingedSentryController> sentryControllers;
     private WingedSentryRenderer sentryRenderer;
     private JavelinRenderer javelinRenderer;
 
@@ -92,23 +94,34 @@ public class GameScreen extends AbstractScreen {
         initRainEffect();
         glassRainEffect = new GlassRainEffect(tiledMap, mapHeightPx);
 
-        initWingedSentry(collider, knight, spawn);
-        combat = new CombatSystem(knight, sentryController);
+        initWingedSentries(collider, knight);
+        combat = new CombatSystem(knight, sentryControllers);
     }
 
-    private void initWingedSentry(TileMapCollider collider, Knight knight, float[] knightSpawn) {
+    private void initWingedSentries(TileMapCollider collider, Knight knight) {
         wingedSentryAssets = new WingedSentryAssets(Assets.manager);
-
-        // Spawn sentry a bit to the right of the knight for testing
-        float sentrySpawnX = knightSpawn[0] + 400f;
-        float sentrySpawnY = knightSpawn[1] + 100f;
-        sentry = new WingedSentry(sentrySpawnX, sentrySpawnY);
-
-        sentryController = new WingedSentryController(sentry, collider);
-        sentryController.setKnight(knight); // Allow controller to read knight position/HP
-
         sentryRenderer = new WingedSentryRenderer(wingedSentryAssets);
         javelinRenderer = new JavelinRenderer(wingedSentryAssets);
+
+        sentryControllers = new ArrayList<>();
+
+        MapLayer spawnLayer = tiledMap.getLayers().get("SentrySpawns");
+        if (spawnLayer == null) {
+            Gdx.app.log("GameScreen", "SentrySpawns layer not found! No sentries spawned.");
+            return;
+        }
+
+        for (MapObject obj : spawnLayer.getObjects()) {
+            Float x = obj.getProperties().get("x", Float.class);
+            Float y = obj.getProperties().get("y", Float.class);
+            if (x != null && y != null) {
+                Gdx.app.log("GameScreen", "Spawning sentry at (" + x + ", " + y + ")");
+                WingedSentry sentry = new WingedSentry(x, y);
+                WingedSentryController sentryController = new WingedSentryController(sentry, collider);
+                sentryController.setKnight(knight); // Allow controller to read knight position/HP
+                sentryControllers.add(sentryController);
+            }
+        }
     }
 
     private void loadMap() {
@@ -173,7 +186,9 @@ public class GameScreen extends AbstractScreen {
         rainEffect.update(delta);
         glassRainEffect.update(delta);
 
-        sentryController.update(delta);
+        for (WingedSentryController sc : sentryControllers) {
+            sc.update(delta);
+        }
 
         combat.resolve(delta);
     }
@@ -209,7 +224,7 @@ public class GameScreen extends AbstractScreen {
         mapRenderer.render(BG_LAYERS);
         mapRenderer.render(GAMEPLAY_LAYER);
 
-        // Draw Knight, Sentry, and Javelin
+        // Draw Knight, Sentries, and Javelins
         batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
 
@@ -237,11 +252,13 @@ public class GameScreen extends AbstractScreen {
 
         if (flashOff) batch.setColor(Color.WHITE);
 
-        sentryRenderer.draw(batch, sentry);
+        for (WingedSentryController sc : sentryControllers) {
+            sentryRenderer.draw(batch, sc.getSentry());
 
-        Javelin javelin = sentryController.getJavelin();
-        if (javelin != null) {
-            javelinRenderer.draw(batch, javelin);
+            Javelin javelin = sc.getJavelin();
+            if (javelin != null) {
+                javelinRenderer.draw(batch, javelin);
+            }
         }
 
         batch.end();
@@ -275,17 +292,21 @@ public class GameScreen extends AbstractScreen {
         // Physics boxes (green) vs combat boxes (red/yellow)
         debugShapes.setColor(Color.LIME);
         drawBox(knight);                                   // knight physics box
-        drawBox(sentry);                                   // sentry body box
+        for (WingedSentryController sc : sentryControllers) {
+            drawBox(sc.getSentry());                       // sentry body box
+        }
 
         debugShapes.setColor(Color.RED);
         drawRect(knight.getHurtBox());                     // knight hurtbox
 
-        Javelin javelin = sentryController.getJavelin();
-        if (javelin != null) {
-            debugShapes.setColor(Color.CYAN);
-            drawBox(javelin);                              // javelin physics box
-            debugShapes.setColor(Color.YELLOW);
-            drawRect(javelin.getDamageBox());              // javelin damage box
+        for (WingedSentryController sc : sentryControllers) {
+            Javelin javelin = sc.getJavelin();
+            if (javelin != null) {
+                debugShapes.setColor(Color.CYAN);
+                drawBox(javelin);                              // javelin physics box
+                debugShapes.setColor(Color.YELLOW);
+                drawRect(javelin.getDamageBox());              // javelin damage box
+            }
         }
 
         debugShapes.end();

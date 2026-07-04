@@ -5,6 +5,8 @@ import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
 
+import java.util.List;
+
 public class CombatSystem {
 
     // Contact damage (sentry body touching the knight)
@@ -22,20 +24,22 @@ public class CombatSystem {
     private static final float NAIL_DEATH_KNOCKBACK_SCALE = 0.3f;
 
     private final Knight knight;
-    private final WingedSentryController sentryController;
+    private final List<WingedSentryController> sentryControllers;
 
-    public CombatSystem(Knight knight, WingedSentryController sentryController) {
+    public CombatSystem(Knight knight, List<WingedSentryController> sentryControllers) {
         this.knight = knight;
-        this.sentryController = sentryController;
+        this.sentryControllers = sentryControllers;
     }
 
     public void resolve(float delta) {
-        resolveContactDamage();
-        resolveJavelinDamage();
+        for (WingedSentryController sc : sentryControllers) {
+            resolveContactDamage(sc);
+            resolveJavelinDamage(sc);
+        }
         // resolvePlayerAttack(); // dormant — nail-attack hook
     }
 
-    private void resolveContactDamage() {
+    private void resolveContactDamage(WingedSentryController sentryController) {
         if (!sentryController.overlapsKnight()) return;
         // Only knock back on an actual landed hit. During i-frames takeDamage()
         // is a no-op, but the velocity writes below would otherwise re-fire every
@@ -50,7 +54,7 @@ public class CombatSystem {
         knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
     }
 
-    private void resolveJavelinDamage() {
+    private void resolveJavelinDamage(WingedSentryController sentryController) {
         if (!sentryController.isJavelinDamageDealt()) return;
 
         Javelin javelin = sentryController.getJavelin();
