@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 
+import java.util.Comparator;
+
 public class HudAssets {
 
     private static final String BASE = "ui/hud/";
@@ -78,6 +80,7 @@ public class HudAssets {
         if (frames.size == 0) {
             throw new IllegalStateException("Atlas '" + path + "' has no regions");
         }
+        frames.sort(Comparator.comparingInt(r -> r.index));
         for (Texture t : atlas.getTextures()) {
             t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         }

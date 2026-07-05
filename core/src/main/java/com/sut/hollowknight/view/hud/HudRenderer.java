@@ -1,7 +1,7 @@
 package com.sut.hollowknight.view.hud;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
@@ -36,7 +36,6 @@ public class HudRenderer {
     private static final float NODES_CENTER_Y_OFFSET = 28f;  // glyph center above orb center
 
     // ---- Soul behaviour ----
-    private static final int SOUL_GLOW_THRESHOLD = 33;
     private static final int SOUL_MAX = 99;
     private static final float SOUL_FILL_RATE  = 90f;   // displayed soul/s while gaining
     private static final float SOUL_DRAIN_RATE = 200f;  // displayed soul/s while spending
@@ -51,7 +50,6 @@ public class HudRenderer {
 
     private float displayedSoul = 0f;
     private float orbTime = 0f;
-    private float glowTime = 0f;
 
     public HudRenderer(HudAssets assets) {
         this.assets = assets;
@@ -89,30 +87,31 @@ public class HudRenderer {
         // 1. The frame IS the empty vessel (dark circle + crescent).
         batch.draw(assets.getHudFrame(), frameX, frameY, FRAME_W, FRAME_H);
 
-        // 2. Rising liquid, masked to the vessel's round window.
+        // 2. The full soul orb, revealed from the bottom up by the liquid tile.
         float fill = MathUtils.clamp(displayedSoul / SOUL_MAX, 0f, 1f);
         if (fill > 0.005f && soulMaskShader != null) {
-            TextureRegion liquid = currentLiquidFrame(knight);
+            TextureRegion orb  = assets.getSoulGlow();
+            TextureRegion mask = currentLiquidFrame(knight);
+
             batch.setShader(soulMaskShader);
-            soulMaskShader.setUniformf("u_uvRect",
-                liquid.getU(), liquid.getV(), liquid.getU2(), liquid.getV2());
+
+            // Bind the mask tile to texture unit 1; leave unit 0 active so the
+            // SpriteBatch draw below binds the orb to unit 0 as usual.
+            mask.getTexture().bind(1);
+            Gdx.gl.glActiveTexture(GL20.GL_TEXTURE0);
+
+            soulMaskShader.setUniformi("u_mask", 1);
+            soulMaskShader.setUniformf("u_orbRect",
+                orb.getU(), orb.getV(), orb.getU2(), orb.getV2());
+            soulMaskShader.setUniformf("u_maskRect",
+                mask.getU(), mask.getV(), mask.getU2(), mask.getV2());
             soulMaskShader.setUniformf("u_fill", fill);
-            batch.draw(liquid, orbX, orbY, ORB_W, ORB_H);
+
+            batch.draw(orb, orbX, orbY, ORB_W, ORB_H);
             batch.setShader(null);
         }
 
-        // 3. Glow face overlay when a heal / spell is affordable.
-        if (knight.getSoulAmount() >= SOUL_GLOW_THRESHOLD) {
-            glowTime += delta;
-            float pulse = 0.65f + 0.25f * MathUtils.sin(glowTime * 4f);
-            batch.setColor(1f, 1f, 1f, pulse);
-            batch.draw(assets.getSoulGlow(), orbX, orbY, ORB_W, ORB_H);
-            batch.setColor(Color.WHITE);
-        } else {
-            glowTime = 0f;
-        }
-
-        // 4. Health nodes (masks).
+        // 3. Health nodes (masks).
         float glyphCenterY = orbCenterY + NODES_CENTER_Y_OFFSET;
         float nodeY = glyphCenterY - NODE_GLYPH_CENTER_Y;
         for (int i = 0; i < nodeStates.length; i++) {

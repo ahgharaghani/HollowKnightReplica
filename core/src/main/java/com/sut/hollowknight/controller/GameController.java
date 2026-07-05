@@ -300,7 +300,7 @@ public class GameController {
         knight.setY(prevY + knight.getVelocityY() * delta);
 
         boolean grounded = collision.resolveVertical(knight, prevY);
-        
+
         if (knight.isFocusing()) {
             grounded = true;
         }
