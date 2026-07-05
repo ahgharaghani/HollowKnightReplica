@@ -1,0 +1,7 @@
+HUD Frame.png
+size:512,256
+filter:Linear,Linear
+repeat:none
+HUD Frame Idle
+index:0
+bounds:2,2,257,164

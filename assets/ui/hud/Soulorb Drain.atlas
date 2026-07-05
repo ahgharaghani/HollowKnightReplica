@@ -1,0 +1,22 @@
+Soulorb Drain.png
+size:512,256
+filter:Linear,Linear
+repeat:none
+Drain
+index:2
+bounds:2,129,130,125
+Drain
+index:4
+bounds:2,2,130,125
+Drain
+index:1
+bounds:134,129,130,125
+Drain
+index:3
+bounds:134,2,130,125
+Drain
+index:0
+bounds:266,129,130,125
+Drain
+index:5
+bounds:266,2,130,125

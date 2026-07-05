@@ -1,0 +1,22 @@
+Health Node Break.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+Health Break
+index:4
+bounds:2,2,126,167
+Health Break
+index:1
+bounds:130,2,126,167
+Health Break
+index:3
+bounds:258,2,126,167
+Health Break
+index:0
+bounds:386,2,126,167
+Health Break
+index:5
+bounds:514,2,126,167
+Health Break
+index:2
+bounds:642,2,126,167

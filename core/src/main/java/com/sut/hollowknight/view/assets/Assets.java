@@ -57,6 +57,7 @@ public class Assets {
 
         WingedSentryAssets.loadAll(manager);
         TiktikAssets.loadAll(manager);
+        HudAssets.loadAll(manager);
 
         manager.load("ui/keybindings/button_skin_0004_square_key.png", Texture.class);
         manager.load("ui/keybindings/button_skin_0003_wide_square_key.png", Texture.class);

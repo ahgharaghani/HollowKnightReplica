@@ -1,0 +1,22 @@
+Health Node Refill.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+Health Refill
+index:3
+bounds:2,2,126,167
+Health Refill
+index:0
+bounds:130,2,126,167
+Health Refill
+index:5
+bounds:258,2,126,167
+Health Refill
+index:2
+bounds:386,2,126,167
+Health Refill
+index:4
+bounds:514,2,126,167
+Health Refill
+index:1
+bounds:642,2,126,167

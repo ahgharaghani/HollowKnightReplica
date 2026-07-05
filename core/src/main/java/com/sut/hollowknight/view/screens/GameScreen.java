@@ -32,9 +32,11 @@ import com.sut.hollowknight.model.enemy.Tiktik;
 import com.sut.hollowknight.model.enemy.WingedSentry;
 import com.sut.hollowknight.view.animator.KnightAnimator;
 import com.sut.hollowknight.view.assets.Assets;
+import com.sut.hollowknight.view.assets.HudAssets;
 import com.sut.hollowknight.view.assets.TiktikAssets;
 import com.sut.hollowknight.view.assets.WingedSentryAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
+import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
 import com.sut.hollowknight.view.renderer.enemy.TiktikRenderer;
@@ -66,7 +68,7 @@ public class GameScreen extends AbstractScreen {
     private static final float DOWN_SLASH_EFFECT_OFFSET_Y = -150f; // below the feet
     private static final float DASH_EFFECT_OFFSET_X       = -175f;
     private static final float DASH_EFFECT_OFFSET_Y       = -75f;
-    
+
     private static final String[] BG_LAYER_NAMES = {
         "FarFarFarBackgound", "FarFarBackground", "FarBackground",
         "CracksOnTheWall", "MidBackground"
@@ -95,6 +97,8 @@ public class GameScreen extends AbstractScreen {
     private TiktikRenderer tiktikRenderer;
 
     private List<EnemyController> enemyControllers;
+
+    private HudRenderer hudRenderer;
 
     private CombatSystem combat;
 
@@ -132,6 +136,8 @@ public class GameScreen extends AbstractScreen {
         enemyControllers.addAll(sentryControllers);
         enemyControllers.addAll(tiktikControllers);
         combat = new CombatSystem(knight, enemyControllers);
+
+        hudRenderer = new HudRenderer(new HudAssets(Assets.manager));
     }
 
     private void initWingedSentries(TileMapCollider collider, Knight knight) {
@@ -392,6 +398,13 @@ public class GameScreen extends AbstractScreen {
         batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
         rainEffect.render(batch, worldCamera);
+        batch.end();
+
+        // HUD (health masks + soul orb) in screen space
+        uiCamera.update();
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+        hudRenderer.draw(batch, controller.getKnight(), Gdx.graphics.getDeltaTime());
         batch.end();
 
         renderDebugBoxes();

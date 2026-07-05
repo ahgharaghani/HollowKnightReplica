@@ -1,0 +1,22 @@
+Soulorb Idle.png
+size:512,256
+filter:Linear,Linear
+repeat:none
+Idle
+index:3
+bounds:2,129,130,125
+Idle
+index:0
+bounds:2,2,130,125
+Idle
+index:5
+bounds:134,129,130,125
+Idle
+index:2
+bounds:134,2,130,125
+Idle
+index:4
+bounds:266,129,130,125
+Idle
+index:1
+bounds:266,2,130,125
