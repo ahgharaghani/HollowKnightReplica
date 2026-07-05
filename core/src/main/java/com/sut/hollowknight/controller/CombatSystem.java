@@ -1,17 +1,17 @@
 package com.sut.hollowknight.controller;
 
+import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.enemy.Javelin;
-import com.sut.hollowknight.model.enemy.WingedSentry;
 
 import java.util.List;
 
 public class CombatSystem {
 
-    // Contact damage (sentry body touching the knight)
+    // Contact damage (enemy body touching the knight)
     private static final int   CONTACT_DAMAGE      = 1;
     private static final float CONTACT_KNOCKBACK_X = 420f;
     private static final float CONTACT_KNOCKBACK_Y = 260f;
@@ -26,61 +26,59 @@ public class CombatSystem {
     private static final float NAIL_KNOCKBACK_SCALE = 1f;
 
     private final Knight knight;
-    private final List<WingedSentryController> sentryControllers;
+    private final List<EnemyController> enemies;
 
-    public CombatSystem(Knight knight, List<WingedSentryController> sentryControllers) {
+    public CombatSystem(Knight knight, List<EnemyController> enemies) {
         this.knight = knight;
-        this.sentryControllers = sentryControllers;
+        this.enemies = enemies;
     }
 
     public void resolve(float delta) {
-        // Index-based loop: no Iterator allocation per frame.
-        for (int i = 0; i < sentryControllers.size(); i++) {
-            WingedSentryController sc = sentryControllers.get(i);
-            resolveNailHit(sc);
-            resolveContactDamage(sc);
-            resolveJavelinDamage(sc);
+        for (int i = 0; i < enemies.size(); i++) {
+            EnemyController enemy = enemies.get(i);
+            resolveNailHit(enemy);
+            resolveContactDamage(enemy);
+            if (enemy instanceof WingedSentryController) {
+                resolveJavelinDamage((WingedSentryController) enemy);
+            }
         }
     }
 
-    private void resolveNailHit(WingedSentryController sc) {
+    /** Knight's active slash vs the enemy body. One hit per swing per enemy. */
+    private void resolveNailHit(EnemyController enemy) {
         if (!knight.isAttacking()) return;
-
-        WingedSentry sentry = sc.getSentry();
-        if (!sentry.isAlive()) return;
-        if (sc.getLastNailHitId() == knight.getAttackId()) return; // already hit by this swing
+        if (!enemy.isAlive()) return;
+        if (enemy.getLastNailHitId() == knight.getAttackId()) return;
 
         CollisionRect slash = knight.getActiveSlashBox();
-        if (slash == null || !AABB.overlaps(sentry, slash)) return;
+        if (slash == null || !AABB.overlaps(enemy.getBodyBox(), slash)) return;
 
-        sc.setLastNailHitId(knight.getAttackId());
+        enemy.setLastNailHitId(knight.getAttackId());
 
+        // The attack direction drives the recoil
         float dirX = 0f;
         float dirY = 0f;
         switch (knight.getState()) {
             case UP_SLASH:   dirY = 1f;  break;
             case DOWN_SLASH: dirY = -1f; break;
-            default:         dirX = sentry.getX() >= knight.getX() ? 1f : -1f; break;
+            default:
+                dirX = enemy.getBodyBox().getCenterX() >= knight.getX() ? 1f : -1f;
+                break;
         }
-        sc.hitByNail(NAIL_DAMAGE, dirX, dirY, NAIL_KNOCKBACK_SCALE);
+        enemy.hitByNail(NAIL_DAMAGE, dirX, dirY, NAIL_KNOCKBACK_SCALE);
 
-        // Successful nail hits charge the Soul vessel (spec: +11, capped at 99).
         knight.addSoul(Knight.SOUL_PER_NAIL_HIT);
 
-        // Pogo: a connecting down-slash relaunches the knight upward and
-        // refreshes dash + double jump so platforming chains stay alive.
         if (knight.getState() == Knight.State.DOWN_SLASH) {
             knight.pogoBounce();
         }
     }
 
-    private void resolveContactDamage(WingedSentryController sc) {
+    private void resolveContactDamage(EnemyController enemy) {
         if (knight.isInvincible()) return;
+        if (!enemy.isAlive() || !enemy.overlapsKnight()) return;
 
-        WingedSentry sentry = sc.getSentry();
-        if (!sentry.isAlive() || !sc.overlapsKnight()) return;
-
-        int knockbackDir = knight.getX() < sentry.getX() ? -1 : 1;
+        int knockbackDir = knight.getX() < enemy.getBodyBox().getCenterX() ? -1 : 1;
         knight.takeDamage(CONTACT_DAMAGE);
         knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
     }
@@ -98,6 +96,6 @@ public class CombatSystem {
         int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
         knight.takeDamage(Javelin.DAMAGE);
         knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
-        javelin.setState(Javelin.State.SNAP); // Trigger snap animation on hit
+        javelin.setState(Javelin.State.SNAP);
     }
 }

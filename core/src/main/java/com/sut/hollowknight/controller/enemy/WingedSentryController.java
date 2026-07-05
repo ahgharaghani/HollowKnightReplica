@@ -434,6 +434,12 @@ public class WingedSentryController implements EnemyController {
     }
 
     @Override
+    public boolean isAlive() { return sentry.isAlive(); }
+
+    @Override
+    public AABB getBodyBox() { return sentry; }
+
+    @Override
     public int getLastNailHitId() { return lastNailHitId; }
 
     @Override

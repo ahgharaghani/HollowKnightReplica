@@ -22,17 +22,22 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.IntArray;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
+import com.sut.hollowknight.controller.enemy.EnemyController;
+import com.sut.hollowknight.controller.enemy.TiktikController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
+import com.sut.hollowknight.model.enemy.Tiktik;
 import com.sut.hollowknight.model.enemy.WingedSentry;
 import com.sut.hollowknight.view.animator.KnightAnimator;
 import com.sut.hollowknight.view.assets.Assets;
+import com.sut.hollowknight.view.assets.TiktikAssets;
 import com.sut.hollowknight.view.assets.WingedSentryAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
+import com.sut.hollowknight.view.renderer.enemy.TiktikRenderer;
 import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
 
 import java.util.ArrayList;
@@ -85,6 +90,12 @@ public class GameScreen extends AbstractScreen {
     private WingedSentryRenderer sentryRenderer;
     private JavelinRenderer javelinRenderer;
 
+    private TiktikAssets tiktikAssets;
+    private List<TiktikController> tiktikControllers;
+    private TiktikRenderer tiktikRenderer;
+
+    private List<EnemyController> enemyControllers;
+
     private CombatSystem combat;
 
     // Debug hitbox overlay — toggle with F3. Tune box constants to the art.
@@ -115,7 +126,12 @@ public class GameScreen extends AbstractScreen {
         glassRainEffect = new GlassRainEffect(tiledMap, mapHeightPx);
 
         initWingedSentries(collider, knight);
-        combat = new CombatSystem(knight, sentryControllers);
+        initTiktiks(collider, knight);
+
+        enemyControllers = new ArrayList<>();
+        enemyControllers.addAll(sentryControllers);
+        enemyControllers.addAll(tiktikControllers);
+        combat = new CombatSystem(knight, enemyControllers);
     }
 
     private void initWingedSentries(TileMapCollider collider, Knight knight) {
@@ -140,6 +156,31 @@ public class GameScreen extends AbstractScreen {
                 WingedSentryController sentryController = new WingedSentryController(sentry, collider);
                 sentryController.setKnight(knight); // Allow controller to read knight position/HP
                 sentryControllers.add(sentryController);
+            }
+        }
+    }
+
+    private void initTiktiks(TileMapCollider collider, Knight knight) {
+        tiktikAssets = new TiktikAssets(Assets.manager);
+        tiktikRenderer = new TiktikRenderer(tiktikAssets);
+
+        tiktikControllers = new ArrayList<>();
+
+        MapLayer spawnLayer = tiledMap.getLayers().get("TiktikSpawns");
+        if (spawnLayer == null) {
+            Gdx.app.log("GameScreen", "TiktikSpawns layer not found! No tiktiks spawned.");
+            return;
+        }
+
+        for (MapObject obj : spawnLayer.getObjects()) {
+            Float x = obj.getProperties().get("x", Float.class);
+            Float y = obj.getProperties().get("y", Float.class);
+            if (x != null && y != null) {
+                Gdx.app.log("GameScreen", "Spawning tiktik at (" + x + ", " + y + ")");
+                Tiktik tiktik = new Tiktik(x, y);
+                TiktikController tiktikController = new TiktikController(tiktik, collider);
+                tiktikController.setKnight(knight);
+                tiktikControllers.add(tiktikController);
             }
         }
     }
@@ -224,8 +265,8 @@ public class GameScreen extends AbstractScreen {
         glassRainEffect.update(delta);
 
         // Index-based loop: no Iterator allocation per frame.
-        for (int i = 0; i < sentryControllers.size(); i++) {
-            sentryControllers.get(i).update(delta);
+        for (int i = 0; i < enemyControllers.size(); i++) {
+            enemyControllers.get(i).update(delta);
         }
 
         combat.resolve(delta);
@@ -335,6 +376,10 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
+        for (int i = 0; i < tiktikControllers.size(); i++) {
+            tiktikRenderer.draw(batch, tiktikControllers.get(i).getTiktik());
+        }
+
         batch.end();
 
         // Foreground layers
@@ -368,6 +413,9 @@ public class GameScreen extends AbstractScreen {
         drawBox(knight);                                   // knight physics box
         for (WingedSentryController sc : sentryControllers) {
             drawBox(sc.getSentry());                       // sentry body box
+        }
+        for (int i = 0; i < tiktikControllers.size(); i++) {
+            drawBox(tiktikControllers.get(i).getTiktik()); // tiktik body box
         }
 
         debugShapes.setColor(Color.RED);
@@ -410,5 +458,6 @@ public class GameScreen extends AbstractScreen {
         rainEffect.dispose();
         debugShapes.dispose();
         sentryRenderer.dispose();
+        tiktikRenderer.dispose();
     }
 }
