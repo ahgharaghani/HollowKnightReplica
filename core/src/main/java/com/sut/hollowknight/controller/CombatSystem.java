@@ -21,8 +21,9 @@ public class CombatSystem {
     private static final float JAVELIN_KNOCKBACK_Y = 260f;
 
     // Nail attack
-    private static final int   NAIL_DAMAGE          = 1;
-    private static final float NAIL_KNOCKBACK_FORCE = 150f;
+    private static final int   NAIL_DAMAGE = 1;
+    /** 1 = standard recoil strength (a Heavy Blow charm would pass ~1.75). */
+    private static final float NAIL_KNOCKBACK_SCALE = 1f;
 
     private final Knight knight;
     private final List<WingedSentryController> sentryControllers;
@@ -54,8 +55,14 @@ public class CombatSystem {
 
         sc.setLastNailHitId(knight.getAttackId());
 
-        int knockbackDir = sentry.getX() >= knight.getX() ? 1 : -1;
-        sc.hitByNail(NAIL_DAMAGE, knockbackDir, NAIL_KNOCKBACK_FORCE);
+        float dirX = 0f;
+        float dirY = 0f;
+        switch (knight.getState()) {
+            case UP_SLASH:   dirY = 1f;  break;
+            case DOWN_SLASH: dirY = -1f; break;
+            default:         dirX = sentry.getX() >= knight.getX() ? 1f : -1f; break;
+        }
+        sc.hitByNail(NAIL_DAMAGE, dirX, dirY, NAIL_KNOCKBACK_SCALE);
 
         // Successful nail hits charge the Soul vessel (spec: +11, capped at 99).
         knight.addSoul(Knight.SOUL_PER_NAIL_HIT);

@@ -409,5 +409,6 @@ public class GameScreen extends AbstractScreen {
         whiteTexture.dispose();
         rainEffect.dispose();
         debugShapes.dispose();
+        sentryRenderer.dispose();
     }
 }

@@ -2,7 +2,6 @@ package com.sut.hollowknight.controller.enemy;
 
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
-import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
@@ -33,6 +32,8 @@ public class WingedSentryController implements EnemyController {
 
     // Death: fall under gravity until the corpse lands on solid ground.
     private static final float DEATH_GRAVITY = 900f;
+    /** Corpse launch speed for the killing blow. */
+    private static final float DEATH_LAUNCH_SPEED = 260f;
     /** Death Land plays 4 frames at 8 fps. */
     private static final float DEATH_LAND_DURATION = 0.5f;
     /** Respawn once the knight is at least this far from the spawn point. */
@@ -56,6 +57,9 @@ public class WingedSentryController implements EnemyController {
             }
         }
 
+        // Hit flash fades even during death (the killing blow flashes too).
+        sentry.tickHitFlash(delta);
+
         if (!sentry.isAlive()) {
             updateDeath(delta);
             return;
@@ -74,6 +78,9 @@ public class WingedSentryController implements EnemyController {
             case THROW_ATTACK: updateThrowAttack(delta); break;
             default: break;
         }
+
+        // Nail-hit recoil overlays the state machine's own movement.
+        applyRecoil(delta);
     }
 
     //  Sentry State Handlers
@@ -92,8 +99,9 @@ public class WingedSentryController implements EnemyController {
 
         CollisionRect wall = collider.findOverlappingRect(sentry);
         if (wall != null) {
-            CollisionResolver.pushOutHorizontally(sentry, wall);
-            sentry.setFacingRight(dir < 0); // bounce off the wall
+            int side = pushOut(wall);
+            if (side == PUSH_LEFT)  sentry.setFacingRight(false); // wall on the right
+            if (side == PUSH_RIGHT) sentry.setFacingRight(true);  // wall on the left
         } else if (sentry.getX() >= sentry.getSpawnX() + PATROL_RANGE) {
             sentry.setFacingRight(false);
         } else if (sentry.getX() <= sentry.getSpawnX() - PATROL_RANGE) {
@@ -165,7 +173,10 @@ public class WingedSentryController implements EnemyController {
 
         CollisionRect wall = collider.findOverlappingRect(sentry);
         if (wall != null) {
-            CollisionResolver.pushOutHorizontally(sentry, wall);
+            // Least-penetration push-out. The old horizontal-only resolve
+            // teleported the sentry to the far edge of wide floor rects
+            // whenever a diagonal charge clipped the ground.
+            pushOut(wall);
             endCharge();
             return;
         }
@@ -280,11 +291,17 @@ public class WingedSentryController implements EnemyController {
             sentry.setY(sentry.getY() + sentry.getVelocityY() * delta);
 
             CollisionRect ground = collider.findOverlappingRect(sentry);
-            if (ground != null && sentry.getVelocityY() <= 0f) {
-                sentry.setY(ground.getTop());
-                sentry.setVelocityX(0);
-                sentry.setVelocityY(0);
-                sentry.setState(WingedSentry.State.DEATH_LAND);
+            if (ground != null) {
+                // Resolve along the least-penetration axis; settle into the
+                // corpse pose only when the body actually rests on top.
+                int side = pushOut(ground);
+                if (side == PUSH_UP && sentry.getVelocityY() <= 0f) {
+                    sentry.setVelocityX(0);
+                    sentry.setVelocityY(0);
+                    sentry.setState(WingedSentry.State.DEATH_LAND);
+                } else if (side == PUSH_LEFT || side == PUSH_RIGHT) {
+                    sentry.setVelocityX(0); // hit a wall: drop straight down
+                }
             } else if (sentry.getY() < -400f) {
                 // Safety net: fell out of the world — allow a later respawn.
                 sentry.setDeadHandled(true);
@@ -307,22 +324,75 @@ public class WingedSentryController implements EnemyController {
         }
     }
 
+    // Push-out resolution sides
+    private static final int PUSH_LEFT = 0, PUSH_RIGHT = 1, PUSH_UP = 2, PUSH_DOWN = 3;
+
+    private int pushOut(CollisionRect wall) {
+        float pushLeft  = sentry.getRight() - wall.getLeft();  // move -x by this much
+        float pushRight = wall.getRight() - sentry.getLeft();  // move +x
+        float pushUp    = wall.getTop() - sentry.getBottom();  // move +y
+        float pushDown  = sentry.getTop() - wall.getBottom();  // move -y
+
+        float min = Math.min(Math.min(pushLeft, pushRight), Math.min(pushUp, pushDown));
+        if (min == pushLeft) {
+            sentry.setX(sentry.getX() - pushLeft);
+            return PUSH_LEFT;
+        } else if (min == pushRight) {
+            sentry.setX(sentry.getX() + pushRight);
+            return PUSH_RIGHT;
+        } else if (min == pushUp) {
+            sentry.setY(sentry.getY() + pushUp);
+            return PUSH_UP;
+        } else {
+            sentry.setY(sentry.getY() - pushDown);
+            return PUSH_DOWN;
+        }
+    }
+
+    private void applyRecoil(float delta) {
+        if (!sentry.isRecoiling()) return;
+
+        // Linear falloff: strongest on the first frame, zero at the end.
+        float falloff = sentry.getRecoilTimer() / WingedSentry.RECOIL_DURATION;
+        float prevX = sentry.getX();
+        float prevY = sentry.getY();
+
+        float mapH = collider.getMapHeightPx();
+        sentry.setX(prevX + sentry.getRecoilVelX() * falloff * delta);
+        sentry.setY(Math.max(0, Math.min(prevY + sentry.getRecoilVelY() * falloff * delta,
+            mapH - WingedSentry.HEIGHT)));
+
+        if (collider.findOverlappingRect(sentry) != null) {
+            sentry.setPosition(prevX, prevY);
+            sentry.cancelRecoil();
+            return;
+        }
+
+        sentry.tickRecoil(delta);
+    }
+
     //  Public API
 
     @Override
-    public void hitByNail(int damageAmount, int knockbackDir, float knockbackForce) {
+    public void hitByNail(int damageAmount, float dirX, float dirY, float knockbackScale) {
         if (!sentry.isAlive()) return;
 
         sentry.takeDamage(damageAmount);
+        sentry.startHitFlash();
 
         if (!sentry.isAlive()) {
+            // Death launch: the corpse flies with the killing blow's direction.
             sentry.setState(WingedSentry.State.DEATH_AIR);
-            sentry.setVelocityX(knockbackDir * knockbackForce * 0.3f);
-            sentry.setVelocityY(50f);
+            sentry.setVelocityX(dirX * DEATH_LAUNCH_SPEED * knockbackScale);
+            sentry.setVelocityY(50f + Math.max(0f, dirY) * DEATH_LAUNCH_SPEED * knockbackScale);
         } else {
+            // Velocity-based recoil in the attack direction — no teleporting.
+            sentry.applyRecoil(dirX, dirY, knockbackScale);
+
+            // A committed charge is armored: the shove still lands, but the
+            // attack itself isn't interrupted.
             WingedSentry.State current = sentry.getState();
             if (current != WingedSentry.State.CHARGE && current != WingedSentry.State.CHARGE_ANTIC) {
-                sentry.setX(sentry.getX() + knockbackDir * 15f);
                 sentry.setState(WingedSentry.State.CHASE);
             }
         }
