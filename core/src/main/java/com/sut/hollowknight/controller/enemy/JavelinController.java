@@ -1,6 +1,5 @@
 package com.sut.hollowknight.controller.enemy;
 
-import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
@@ -9,6 +8,9 @@ public class JavelinController {
 
     private final Javelin javelin;
     private final TileMapCollider collider;
+
+    /** How deep the tip visually embeds into the wall face when sticking. */
+    private static final float TIP_EMBED = 14f;
 
     public JavelinController(Javelin javelin, TileMapCollider collider) {
         this.javelin = javelin;
@@ -42,9 +44,13 @@ public class JavelinController {
     private void updateFlying(float delta) {
         javelin.setX(javelin.getX() + javelin.getVelocityX() * delta);
 
-        CollisionRect wall = collider.findOverlappingRect(javelin);
+        float dir = javelin.isFacingRight() ? 1f : -1f;
+        float tipX = javelin.getX() + dir * Javelin.DMG_TIP_REACH;
+        CollisionRect wall = collider.findOverlappingRect(
+            tipX - 4f, javelin.getBottom(), tipX + 4f, javelin.getTop());
         if (wall != null) {
-            CollisionResolver.pushOutHorizontally(javelin, wall);
+            float face = dir > 0 ? wall.getLeft() : wall.getRight();
+            javelin.setX(face - dir * (Javelin.DMG_TIP_REACH - TIP_EMBED));
             javelin.setState(Javelin.State.STICK);
             return;
         }

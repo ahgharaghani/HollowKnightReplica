@@ -9,9 +9,9 @@ public class WingedSentry implements PhysicsBody {
     private float velocityY;
     private boolean facingRight = true;
 
-    // Size (collision box)
-    public static final float WIDTH  = 70f;
-    public static final float HEIGHT = 55f;
+    // Size (collision box) — tuned to the creature's torso
+    public static final float WIDTH  = 180f;
+    public static final float HEIGHT = 140f;
 
     public enum State {
         IDLE, // idle animation
@@ -33,9 +33,9 @@ public class WingedSentry implements PhysicsBody {
     public static final int MAX_HP = 3;
 
     // AI parameters
-    /** Detection range (pixels) — how far the sentry can "see" the player. */
-    public static final float DETECTION_RANGE = 350f;
-    public static final float CHASE_SPEED = 120f;
+    /** Detection range — roughly 2/3 of the 1920 px viewport width. */
+    public static final float DETECTION_RANGE = 1280f;
+    public static final float CHASE_SPEED = 160f;
     /** Speed during the horizontal charge attack. */
     public static final float CHARGE_SPEED = 600f;
     /** Duration of the charge anticipation (wind-up) animation in seconds. */
@@ -44,10 +44,12 @@ public class WingedSentry implements PhysicsBody {
     public static final float CHARGE_RECOVER_DURATION = 0.5f;
     /** Maximum distance the charge travels before auto-recovering. */
     public static final float MAX_CHARGE_DISTANCE = 800f;
-    /** Y position locked at first sight — used during the charge. */
-    private float lockedChargeY;
-    /** X position when the charge started — to measure charge distance. */
+    /** Normalised charge direction — can be diagonal, like the original game. */
+    private float chargeDirX;
+    private float chargeDirY;
+    /** Position when the charge started — to measure charge distance. */
     private float chargeStartX;
+    private float chargeStartY;
     /** Whether the sentry has seen the player at least once (chase is permanent). */
     private boolean hasDetectedPlayer = false;
     /** Cooldown timer before the next charge/throw attack can begin. */
@@ -106,8 +108,10 @@ public class WingedSentry implements PhysicsBody {
     public int getMaxHp()            { return MAX_HP; }
     public boolean isAlive()         { return alive; }
     public boolean isDeadHandled()   { return deadHandled; }
-    public float getLockedChargeY()  { return lockedChargeY; }
+    public float getChargeDirX()     { return chargeDirX; }
+    public float getChargeDirY()     { return chargeDirY; }
     public float getChargeStartX()   { return chargeStartX; }
+    public float getChargeStartY()   { return chargeStartY; }
     public boolean hasDetectedPlayer() { return hasDetectedPlayer; }
     public float getAttackCooldown() { return attackCooldown; }
     public float getSpawnX()         { return spawnX; }
@@ -139,8 +143,13 @@ public class WingedSentry implements PhysicsBody {
         this.stateTime += delta;
     }
 
-    public void setLockedChargeY(float y) { this.lockedChargeY = y; }
+    public void setChargeDir(float dirX, float dirY) {
+        this.chargeDirX = dirX;
+        this.chargeDirY = dirY;
+    }
+
     public void setChargeStartX(float x)  { this.chargeStartX = x; }
+    public void setChargeStartY(float y)  { this.chargeStartY = y; }
     public void setDetectedPlayer(boolean detected) { this.hasDetectedPlayer = detected; }
 
     public void tickAttackCooldown(float delta) {

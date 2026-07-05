@@ -90,10 +90,14 @@ public class GameController {
 
         // --- Dashing: ignore normal horizontal input; the dash owns velocity ---
         if (knight.isDashing() || knight.isDashingDown()) {
-            // Allow jump out of a horizontal dash to cancel it.
-            if (input.isJumpJustPressed() && knight.isDashing() && !knight.isGrounded()) {
-                knight.cancelDash();
-                performJump();
+            if (input.isJumpJustPressed() && knight.isDashing()) {
+                if (knight.isGrounded() || coyoteTimer > 0f) {
+                    knight.cancelDash();
+                    performJump();
+                } else if (knight.canDoubleJump()) {
+                    knight.cancelDash();
+                    knight.performDoubleJump();
+                }
             }
             // Allow attack during dash (dash-slash feel).
             if (input.isAttackJustPressed()) {

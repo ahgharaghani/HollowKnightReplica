@@ -23,18 +23,20 @@ public class Knight implements PhysicsBody {
     public static final float KNIGHT_HEIGHT = 50f;
 
     // ---- Combat hurtbox ----
-    // Separate from the physics box
-    public static final float HURT_WIDTH   = 34f;
-    public static final float HURT_HEIGHT  = 92f;
-    public static final float HURT_Y_OFFSET = 0f;    // lift box off the feet if needed
+    public static final float HURT_WIDTH   = 44f;
+    public static final float HURT_HEIGHT  = 110f;
+    public static final float HURT_Y_OFFSET = 4f;    // opaque pixels start slightly above the feet
 
-    // ---- Nail slash hitboxes (tune with the F3 debug overlay) ----
-    public static final float SLASH_REACH_X = 85f;   // forward reach of a side slash
-    public static final float SLASH_HEIGHT  = 70f;   // vertical size of a side slash
-    public static final float SLASH_UP_W    = 80f;
-    public static final float SLASH_UP_H    = 85f;
-    public static final float SLASH_DOWN_W  = 80f;
-    public static final float SLASH_DOWN_H  = 85f;
+    // ---- Nail slash hitboxes ----
+    public static final float SLASH_REACH_X = 125f;  // forward reach of a side slash
+    public static final float SLASH_BACK_X  = 20f;   // slight reach behind the knight
+    public static final float SLASH_HEIGHT  = 90f;   // vertical size of a side slash
+    public static final float SLASH_Y       = 25f;   // side arc bottom, above the feet
+    public static final float SLASH_UP_W    = 120f;
+    public static final float SLASH_UP_Y    = 80f;   // up arc starts at the upper body
+    public static final float SLASH_UP_H    = 150f;
+    public static final float SLASH_DOWN_W  = 120f;
+    public static final float SLASH_DOWN_H  = 140f;
 
     // ---- Soul & pogo ----
     // vessel caps at 99
@@ -105,7 +107,7 @@ public class Knight implements PhysicsBody {
     // ---- Dash state ----
     public static final float DASH_SPEED        = 720f;
     public static final float DASH_DURATION     = 0.18f;
-    public static final float DASH_COOLDOWN     = 0.45f;
+    public static final float DASH_COOLDOWN     = 0.80f;
     public static final float DASH_DOWN_SPEED   = 1100f;
     public static final float DASH_DOWN_DURATION = 0.35f;
     public static final float DASH_DOWN_LAND_DURATION = 0.30f;
@@ -178,12 +180,11 @@ public class Knight implements PhysicsBody {
             case SLASH:
             case SLASH_ALT:
             case WALL_SLASH: {
-                float left = facingRight ? x : x - SLASH_REACH_X;
-                float centerY = y + KNIGHT_HEIGHT / 2f;
-                return slashBox.set(left, centerY - SLASH_HEIGHT / 2f, SLASH_REACH_X, SLASH_HEIGHT);
+                float left = facingRight ? x - SLASH_BACK_X : x - SLASH_REACH_X;
+                return slashBox.set(left, y + SLASH_Y, SLASH_REACH_X + SLASH_BACK_X, SLASH_HEIGHT);
             }
             case UP_SLASH:
-                return slashBox.set(x - SLASH_UP_W / 2f, y + KNIGHT_HEIGHT, SLASH_UP_W, SLASH_UP_H);
+                return slashBox.set(x - SLASH_UP_W / 2f, y + SLASH_UP_Y, SLASH_UP_W, SLASH_UP_H);
             case DOWN_SLASH:
                 return slashBox.set(x - SLASH_DOWN_W / 2f, y - SLASH_DOWN_H, SLASH_DOWN_W, SLASH_DOWN_H);
             default:

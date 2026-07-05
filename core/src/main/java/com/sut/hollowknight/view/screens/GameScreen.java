@@ -53,6 +53,15 @@ public class GameScreen extends AbstractScreen {
 
     private static final float INVINCIBLE_FLASH_HZ = 20f;   // toggle rate → ~10 visible blinks/sec
 
+    // Effect overlay anchors. Up/down slash and dash effects live on canvases
+    // that differ from the body canvas (169x192, 182x209, 401x217 vs 349x186),
+    // so they need explicit offsets measured from the art's opaque pixels.
+    private static final float UP_SLASH_EFFECT_OFFSET_X   = 10f;   // forward, along facing
+    private static final float UP_SLASH_EFFECT_OFFSET_Y   = 60f;   // above the feet
+    private static final float DOWN_SLASH_EFFECT_OFFSET_Y = -150f; // below the feet
+
+    // Render groups resolved by layer NAME at load time. Raw indices silently
+    // shift whenever the map is edited in Tiled; names don't.
     private static final String[] BG_LAYER_NAMES = {
         "FarFarFarBackgound", "FarFarBackground", "FarBackground",
         "CracksOnTheWall", "MidBackground"
@@ -64,6 +73,7 @@ public class GameScreen extends AbstractScreen {
     private int[] gameplayLayers;
     private int[] fgLayers;
 
+    // Cached screen-space projection — rebuilt in place, never reallocated.
     private final Matrix4 screenMatrix = new Matrix4();
 
     private ShaderProgram backgroundShader;
@@ -280,27 +290,43 @@ public class GameScreen extends AbstractScreen {
 
         if (flashOff) batch.setColor(Color.WHITE);
 
-        // Effect overlays (slash arc, dash dust, etc.)
+        // Effect overlays (slash arcs, dash dust).
         TextureRegion effect = knightAnimator.getCurrentEffectFrame(knight);
         if (effect != null) {
             float eW = effect.getRegionWidth();
             float eH = effect.getRegionHeight();
-            // Center the effect on the knight's sprite, matching the body flip.
-            if (knight.isFacingRight()) {
-                batch.draw(effect,
-                    knight.getX() + eW / 2f,
-                    knight.getY(),
-                    -eW, eH);
+
+            float offsetX = 0f;          // along the facing direction
+            float offsetY = 0f;
+            boolean invertFlip = false;  // dash trail art faces the other way
+
+            switch (knight.getState()) {
+                case UP_SLASH:
+                    offsetX = UP_SLASH_EFFECT_OFFSET_X;
+                    offsetY = UP_SLASH_EFFECT_OFFSET_Y;
+                    break;
+                case DOWN_SLASH:
+                    offsetY = DOWN_SLASH_EFFECT_OFFSET_Y;
+                    break;
+                case DASH:
+                    invertFlip = true; // fix: trail rendered mirrored on x
+                    break;
+                default:
+                    break;
+            }
+
+            float dir = knight.isFacingRight() ? 1f : -1f;
+            float centerX = knight.getX() + dir * offsetX;
+            float drawY = knight.getY() + offsetY;
+            boolean flip = knight.isFacingRight() ^ invertFlip;
+            if (flip) {
+                batch.draw(effect, centerX + eW / 2f, drawY, -eW, eH);
             } else {
-                batch.draw(effect,
-                    knight.getX() - eW / 2f,
-                    knight.getY(),
-                    +eW, eH);
+                batch.draw(effect, centerX - eW / 2f, drawY, +eW, eH);
             }
         }
 
-        for (int i = 0; i < sentryControllers.size(); i++) {
-            WingedSentryController sc = sentryControllers.get(i);
+        for (WingedSentryController sc : sentryControllers) {
             sentryRenderer.draw(batch, sc.getSentry());
 
             Javelin javelin = sc.getJavelin();

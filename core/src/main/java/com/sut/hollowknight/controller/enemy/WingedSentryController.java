@@ -18,18 +18,25 @@ public class WingedSentryController implements EnemyController {
 
     private int lastNailHitId = -1;
 
-    // Attack decision thresholds
-    private static final float CHARGE_MIN_DISTANCE = 60f;
-    private static final float CHARGE_MAX_DISTANCE = 200f;
+    // Attack decision thresholds (world px, scaled to the new detection range)
+    private static final float CHARGE_MIN_DISTANCE = 150f;
+    private static final float CHARGE_MAX_DISTANCE = 480f;
     private static final float ESCAPE_RANGE_MULTIPLIER = 1.5f;
 
-    // Y-axis lerp speed during charge anticipation
-    private static final float CHARGE_Y_LERP_SPEED = 8f;
+    // Idle patrol: drift back and forth in a small straight line around spawn.
+    private static final float PATROL_RANGE = 120f;
+    private static final float PATROL_SPEED = 45f;
 
-    // Passive-chase standoff: stop when bodies touch instead of burrowing to
-    // the knight's center. Center-stacking + upward contact-knockback made both
-    // ratchet skyward every time i-frames expired. Keep a body gap.
-    private static final float CHASE_STANDOFF = 46f;
+    // Passive-chase standoff: stop when bodies roughly touch instead of
+    // burrowing to the knight's center (sized for the tuned body boxes).
+    private static final float CHASE_STANDOFF = 120f;
+
+    // Death: fall under gravity until the corpse lands on solid ground.
+    private static final float DEATH_GRAVITY = 900f;
+    /** Death Land plays 4 frames at 8 fps. */
+    private static final float DEATH_LAND_DURATION = 0.5f;
+    /** Respawn once the knight is at least this far from the spawn point. */
+    private static final float RESPAWN_DISTANCE = 2000f;
 
     public WingedSentryController(WingedSentry sentry, TileMapCollider collider) {
         this.sentry = sentry;
@@ -75,6 +82,22 @@ public class WingedSentryController implements EnemyController {
         if (isPlayerDetected()) {
             sentry.setDetectedPlayer(true);
             beginChargeAntic();
+            return;
+        }
+
+        // Patrol: fly a small straight line back and forth around the spawn.
+        float dir = sentry.isFacingRight() ? 1f : -1f;
+        sentry.setVelocityX(dir * PATROL_SPEED);
+        sentry.setX(sentry.getX() + sentry.getVelocityX() * delta);
+
+        CollisionRect wall = collider.findOverlappingRect(sentry);
+        if (wall != null) {
+            CollisionResolver.pushOutHorizontally(sentry, wall);
+            sentry.setFacingRight(dir < 0); // bounce off the wall
+        } else if (sentry.getX() >= sentry.getSpawnX() + PATROL_RANGE) {
+            sentry.setFacingRight(false);
+        } else if (sentry.getX() <= sentry.getSpawnX() - PATROL_RANGE) {
+            sentry.setFacingRight(true);
         }
     }
 
@@ -93,13 +116,8 @@ public class WingedSentryController implements EnemyController {
         sentry.setState(WingedSentry.State.CHARGE_ANTIC);
         sentry.setVelocityX(0);
         sentry.setVelocityY(0);
-        sentry.setChargeStartX(sentry.getX());
-
         if (knight != null) {
-            sentry.setLockedChargeY(knight.getY() + Knight.KNIGHT_HEIGHT / 2f - WingedSentry.HEIGHT / 2f);
             sentry.setFacingRight(knight.getX() > sentry.getX());
-        } else {
-            sentry.setLockedChargeY(sentry.getY());
         }
     }
 
@@ -107,51 +125,64 @@ public class WingedSentryController implements EnemyController {
         // Track player during anticipation so charge aims correctly
         if (knight != null) {
             sentry.setFacingRight(knight.getX() > sentry.getX());
-            sentry.setLockedChargeY(knight.getY() + Knight.KNIGHT_HEIGHT / 2f - WingedSentry.HEIGHT / 2f);
-        }
-
-        float targetY = sentry.getLockedChargeY();
-        float currentY = sentry.getY();
-        float diff = targetY - currentY;
-
-        if (Math.abs(diff) > 0.5f) {
-            sentry.setY(currentY + diff * Math.min(1f, CHARGE_Y_LERP_SPEED * delta));
-        } else {
-            sentry.setY(targetY);
         }
 
         if (sentry.getStateTime() >= WingedSentry.CHARGE_ANTIC_DURATION) {
-            sentry.setY(sentry.getLockedChargeY());
             beginCharge();
         }
     }
 
     private void beginCharge() {
-        sentry.setState(WingedSentry.State.CHARGE);
-        float dir = sentry.isFacingRight() ? 1f : -1f;
-        sentry.setVelocityX(WingedSentry.CHARGE_SPEED * dir);
+        // Aim at the knight's center at launch time — diagonal charges allowed,
+        // like the original game. Direction is locked for the whole charge.
+        float dirX = sentry.isFacingRight() ? 1f : -1f;
+        float dirY = 0f;
+        if (knight != null) {
+            float dx = knight.getX() - sentry.getX();
+            float dy = (knight.getY() + Knight.KNIGHT_HEIGHT / 2f)
+                     - (sentry.getY() + WingedSentry.HEIGHT / 2f);
+            float len = (float) Math.sqrt(dx * dx + dy * dy);
+            if (len > 1f) {
+                dirX = dx / len;
+                dirY = dy / len;
+            }
+        }
+        sentry.setFacingRight(dirX > 0);
+        sentry.setChargeDir(dirX, dirY);
         sentry.setChargeStartX(sentry.getX());
+        sentry.setChargeStartY(sentry.getY());
+        sentry.setVelocityX(WingedSentry.CHARGE_SPEED * dirX);
+        sentry.setVelocityY(WingedSentry.CHARGE_SPEED * dirY);
+        sentry.setState(WingedSentry.State.CHARGE);
     }
 
     private void updateCharge(float delta) {
         sentry.setX(sentry.getX() + sentry.getVelocityX() * delta);
-        sentry.setY(sentry.getLockedChargeY());
+        float mapH = collider.getMapHeightPx();
+        float newY = Math.max(0, Math.min(sentry.getY() + sentry.getVelocityY() * delta,
+            mapH - WingedSentry.HEIGHT));
+        sentry.setY(newY);
 
         CollisionRect wall = collider.findOverlappingRect(sentry);
         if (wall != null) {
             CollisionResolver.pushOutHorizontally(sentry, wall);
-            sentry.setVelocityX(0);
-            sentry.setState(WingedSentry.State.CHARGE_RECOVER);
-            sentry.resetAttackCooldown();
+            endCharge();
             return;
         }
 
-        float distTraveled = Math.abs(sentry.getX() - sentry.getChargeStartX());
-        if (distTraveled >= WingedSentry.MAX_CHARGE_DISTANCE) {
-            sentry.setVelocityX(0);
-            sentry.setState(WingedSentry.State.CHARGE_RECOVER);
-            sentry.resetAttackCooldown();
+        float dx = sentry.getX() - sentry.getChargeStartX();
+        float dy = sentry.getY() - sentry.getChargeStartY();
+        if (dx * dx + dy * dy
+            >= WingedSentry.MAX_CHARGE_DISTANCE * WingedSentry.MAX_CHARGE_DISTANCE) {
+            endCharge();
         }
+    }
+
+    private void endCharge() {
+        sentry.setVelocityX(0);
+        sentry.setVelocityY(0);
+        sentry.setState(WingedSentry.State.CHARGE_RECOVER);
+        sentry.resetAttackCooldown();
     }
 
     private void updateChargeRecover(float delta) {
@@ -170,7 +201,7 @@ public class WingedSentryController implements EnemyController {
         float knightCenterY = knight.getY() + Knight.KNIGHT_HEIGHT / 2f;
         float dx = knightCenterX - sentry.getX();
         float dy = knightCenterY - (sentry.getY() + WingedSentry.HEIGHT / 2f);
-
+        // Compare squared distances; sqrt only when a direction is needed.
         float distSq = dx * dx + dy * dy;
 
         sentry.setFacingRight(dx > 0);
@@ -240,21 +271,38 @@ public class WingedSentryController implements EnemyController {
     }
 
     private void updateDeath(float delta) {
+        sentry.addStateTime(delta);
+
         if (sentry.getState() == WingedSentry.State.DEATH_AIR) {
-            sentry.setVelocityY(sentry.getVelocityY() - 400f * delta);
+            // Fall under gravity until the corpse lands on solid ground.
+            sentry.setVelocityY(sentry.getVelocityY() - DEATH_GRAVITY * delta);
             sentry.setX(sentry.getX() + sentry.getVelocityX() * delta);
             sentry.setY(sentry.getY() + sentry.getVelocityY() * delta);
 
-            float deathAirDuration = 2f / 10f;
-            if (sentry.getStateTime() >= deathAirDuration) {
-                sentry.setState(WingedSentry.State.DEATH_LAND);
+            CollisionRect ground = collider.findOverlappingRect(sentry);
+            if (ground != null && sentry.getVelocityY() <= 0f) {
+                sentry.setY(ground.getTop());
                 sentry.setVelocityX(0);
                 sentry.setVelocityY(0);
+                sentry.setState(WingedSentry.State.DEATH_LAND);
+            } else if (sentry.getY() < -400f) {
+                // Safety net: fell out of the world — allow a later respawn.
+                sentry.setDeadHandled(true);
             }
         } else if (sentry.getState() == WingedSentry.State.DEATH_LAND) {
-            float deathLandDuration = 4f / 10f;
-            if (sentry.getStateTime() >= deathLandDuration) {
+            if (sentry.getStateTime() >= DEATH_LAND_DURATION) {
+                // Corpse has settled; it stays visible (renderer clamps on the
+                // last frame) and is non-interactive.
                 sentry.setDeadHandled(true);
+            }
+        }
+
+        // Respawn once the knight has moved far away from the spawn point.
+        if (sentry.isDeadHandled() && knight != null) {
+            float dx = knight.getX() - sentry.getSpawnX();
+            float dy = knight.getY() - sentry.getSpawnY();
+            if (dx * dx + dy * dy >= RESPAWN_DISTANCE * RESPAWN_DISTANCE) {
+                respawn();
             }
         }
     }
@@ -286,15 +334,17 @@ public class WingedSentryController implements EnemyController {
         float dy = (knight.getY() + Knight.KNIGHT_HEIGHT / 2f) - (sentry.getY() + WingedSentry.HEIGHT / 2f);
         float distSq = dx * dx + dy * dy;
         float rangeSq = WingedSentry.DETECTION_RANGE * WingedSentry.DETECTION_RANGE;
+        if (distSq > rangeSq) return false;
 
-        if (distSq <= rangeSq) {
-            // Check Line of Sight before detecting
-            return collider.hasLineOfSight(
-                sentry.getX(), sentry.getY() + WingedSentry.HEIGHT / 2f,
-                knight.getX(), knight.getY() + Knight.KNIGHT_HEIGHT / 2f
-            );
-        }
-        return false;
+        // Vision matches the facing direction — no eyes in the back.
+        boolean inFront = (dx >= 0f) == sentry.isFacingRight();
+        if (!inFront) return false;
+
+        // Check Line of Sight before detecting
+        return collider.hasLineOfSight(
+            sentry.getX(), sentry.getY() + WingedSentry.HEIGHT / 2f,
+            knight.getX(), knight.getY() + Knight.KNIGHT_HEIGHT / 2f
+        );
     }
 
     @Override

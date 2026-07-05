@@ -22,9 +22,9 @@ public class Javelin implements PhysicsBody {
     // Anchored at the spear TIP (forward by facing dir), not the shaft center,
     // so the point registers the moment it visually reaches the target.
     // Tune to the sprite via the F3 overlay.
-    public static final float DMG_LENGTH   = 200f;  // along the shaft, back from the tip
-    public static final float DMG_THICK    = 22f;   // matches visible spear thickness
-    public static final float DMG_TIP_REACH = 260f; // tip distance forward of center x
+    public static final float DMG_LENGTH   = 460f;  // nearly the whole visible shaft
+    public static final float DMG_THICK    = 20f;   // measured opaque spear thickness
+    public static final float DMG_TIP_REACH = 270f; // measured opaque tip forward of center x
 
     // State
     public enum State {

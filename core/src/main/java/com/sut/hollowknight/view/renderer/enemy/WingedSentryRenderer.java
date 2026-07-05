@@ -14,22 +14,25 @@ public class WingedSentryRenderer {
     private static final float DRAW_WIDTH  = 509f;
     private static final float DRAW_HEIGHT = 398f;
 
+    private static final float SPRITE_CENTER_X             = 222f; // px from canvas left (unflipped)
+    private static final float SPRITE_CENTER_Y_FROM_BOTTOM = 272f; // px from canvas bottom
+
     public WingedSentryRenderer(WingedSentryAssets assets) {
         this.assets = assets;
     }
 
     public void draw(SpriteBatch batch, WingedSentry sentry) {
-        if (sentry.isDeadHandled()) return; // fully-handled corpse: skip
-
         TextureRegion frame = getCurrentFrame(sentry);
         if (frame == null) return;
 
-        float drawX = sentry.getX() - DRAW_WIDTH / 2f;
-        float drawY = sentry.getY() - (DRAW_HEIGHT - WingedSentry.HEIGHT) / 2f;
+        // Align the creature's visual center with the body box center.
+        float drawY = sentry.getY() + WingedSentry.HEIGHT / 2f - SPRITE_CENTER_Y_FROM_BOTTOM;
 
         if (sentry.isFacingRight()) {
+            float drawX = sentry.getX() - (DRAW_WIDTH - SPRITE_CENTER_X);
             batch.draw(frame, drawX + DRAW_WIDTH, drawY, -DRAW_WIDTH, DRAW_HEIGHT);
         } else {
+            float drawX = sentry.getX() - SPRITE_CENTER_X;
             batch.draw(frame, drawX, drawY, DRAW_WIDTH, DRAW_HEIGHT);
         }
     }
