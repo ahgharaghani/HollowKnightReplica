@@ -1,0 +1,16 @@
+Dash To Idle.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+Dash To Idle
+index:2
+bounds:2,2,349,186
+Dash To Idle
+index:1
+bounds:353,2,349,186
+Dash To Idle
+index:3
+bounds:704,2,349,186
+Dash To Idle
+index:0
+bounds:1055,2,349,186

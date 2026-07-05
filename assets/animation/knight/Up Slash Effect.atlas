@@ -1,0 +1,22 @@
+Up Slash Effect.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+UpSlashEffect
+index:1
+bounds:2,2,169,192
+UpSlashEffect
+index:0
+bounds:2,2,169,192
+UpSlashEffect
+index:3
+bounds:173,2,169,192
+UpSlashEffect
+index:2
+bounds:173,2,169,192
+UpSlashEffect
+index:5
+bounds:344,2,169,192
+UpSlashEffect
+index:4
+bounds:344,2,169,192

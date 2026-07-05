@@ -1,0 +1,16 @@
+Walk.png
+size:512,128
+filter:Linear,Linear
+repeat:none
+Walk
+index:1
+bounds:2,2,115,105
+Walk
+index:3
+bounds:119,2,115,105
+Walk
+index:0
+bounds:236,2,115,105
+Walk
+index:2
+bounds:353,2,115,105

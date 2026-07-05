@@ -1,0 +1,25 @@
+Wall Slash.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+Wall Slash
+index:0
+bounds:2,2,349,186
+Wall Slash
+index:5
+bounds:353,2,349,186
+Wall Slash
+index:6
+bounds:353,2,349,186
+Wall Slash
+index:2
+bounds:704,2,349,186
+Wall Slash
+index:4
+bounds:1055,2,349,186
+Wall Slash
+index:3
+bounds:1055,2,349,186
+Wall Slash
+index:1
+bounds:1406,2,349,186

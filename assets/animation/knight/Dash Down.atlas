@@ -1,0 +1,19 @@
+Dash Down.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+Dash Down
+index:0
+bounds:2,2,349,186
+Dash Down
+index:2
+bounds:353,2,349,186
+Dash Down
+index:4
+bounds:704,2,349,186
+Dash Down
+index:1
+bounds:1055,2,349,186
+Dash Down
+index:3
+bounds:1406,2,349,186

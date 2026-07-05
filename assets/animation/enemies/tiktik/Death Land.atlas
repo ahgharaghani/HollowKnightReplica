@@ -1,0 +1,13 @@
+Death Land.png
+size:256,128
+filter:Linear,Linear
+repeat:none
+Death Land
+index:2
+bounds:2,2,115,105
+Death Land
+index:0
+bounds:2,2,115,105
+Death Land
+index:1
+bounds:119,2,115,105

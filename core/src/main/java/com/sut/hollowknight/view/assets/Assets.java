@@ -31,6 +31,27 @@ public class Assets {
         manager.load("animation/knight/Airborne.atlas", TextureAtlas.class);
         manager.load("animation/knight/Land.atlas", TextureAtlas.class);
 
+        // Knight animations — new (slash family, dash family, wall family, etc.)
+        manager.load("animation/knight/Wall Slide.atlas",       TextureAtlas.class);
+        manager.load("animation/knight/Wall Slash.atlas",       TextureAtlas.class);
+        manager.load("animation/knight/Wall Jump.atlas",        TextureAtlas.class);
+        manager.load("animation/knight/Slash.atlas",            TextureAtlas.class);
+        manager.load("animation/knight/Slash Effect.atlas",     TextureAtlas.class);
+        manager.load("animation/knight/Slash Alt.atlas",        TextureAtlas.class);
+        manager.load("animation/knight/Slash Effect Alt.atlas", TextureAtlas.class);
+        manager.load("animation/knight/Dash.atlas",             TextureAtlas.class);
+        manager.load("animation/knight/Dash Effect.atlas",      TextureAtlas.class);
+        manager.load("animation/knight/Dash Down.atlas",        TextureAtlas.class);
+        manager.load("animation/knight/Dash Down Land.atlas",   TextureAtlas.class);
+        manager.load("animation/knight/Death.atlas",            TextureAtlas.class);
+        manager.load("animation/knight/Double Jump.atlas",      TextureAtlas.class);
+        manager.load("animation/knight/Down Slash.atlas",       TextureAtlas.class);
+        manager.load("animation/knight/Down Slash Effect.atlas",TextureAtlas.class);
+        manager.load("animation/knight/Idle Low Health.atlas",  TextureAtlas.class);
+        manager.load("animation/knight/Recoil.atlas",           TextureAtlas.class);
+        manager.load("animation/knight/Up Slash.atlas",         TextureAtlas.class);
+        manager.load("animation/knight/Up Slash Effect.atlas",  TextureAtlas.class);
+
         manager.load("animation/effects/RainGlow1.atlas", TextureAtlas.class);
         manager.load("animation/effects/RainGlow2.atlas", TextureAtlas.class);
 

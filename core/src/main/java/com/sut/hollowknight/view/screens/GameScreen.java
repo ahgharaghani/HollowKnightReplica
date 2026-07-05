@@ -254,6 +254,25 @@ public class GameScreen extends AbstractScreen {
 
         if (flashOff) batch.setColor(Color.WHITE);
 
+        // Effect overlays (slash arc, dash dust, etc.)
+        TextureRegion effect = knightAnimator.getCurrentEffectFrame(knight);
+        if (effect != null) {
+            float eW = effect.getRegionWidth();
+            float eH = effect.getRegionHeight();
+            // Center the effect on the knight's sprite, matching the body flip.
+            if (knight.isFacingRight()) {
+                batch.draw(effect,
+                    knight.getX() + eW / 2f,
+                    knight.getY(),
+                    -eW, eH);
+            } else {
+                batch.draw(effect,
+                    knight.getX() - eW / 2f,
+                    knight.getY(),
+                    +eW, eH);
+            }
+        }
+
         for (WingedSentryController sc : sentryControllers) {
             sentryRenderer.draw(batch, sc.getSentry());
 

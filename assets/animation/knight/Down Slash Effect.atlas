@@ -1,0 +1,22 @@
+Down Slash Effect.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+DownSlashEffect
+index:2
+bounds:2,2,182,209
+DownSlashEffect
+index:3
+bounds:2,2,182,209
+DownSlashEffect
+index:4
+bounds:186,2,182,209
+DownSlashEffect
+index:5
+bounds:186,2,182,209
+DownSlashEffect
+index:1
+bounds:370,2,182,209
+DownSlashEffect
+index:0
+bounds:370,2,182,209

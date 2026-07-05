@@ -1,0 +1,22 @@
+Run To Idle.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Run To Idle_run_to_idle000
+index:0
+bounds:704,190,349,186
+Run To Idle_run_to_idle001
+index:1
+bounds:353,2,349,186
+Run To Idle_run_to_idle002
+index:2
+bounds:353,190,349,186
+Run To Idle_run_to_idle003
+index:3
+bounds:2,2,349,186
+Run To Idle_run_to_idle004
+index:4
+bounds:704,2,349,186
+Run To Idle_run_to_idle005
+index:5
+bounds:2,190,349,186

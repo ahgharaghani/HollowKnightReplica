@@ -1,0 +1,28 @@
+Dash Effect.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Dash Effect
+index:0
+bounds:2,221,401,217
+Dash Effect
+index:5
+bounds:2,2,401,217
+Dash Effect
+index:2
+bounds:405,221,401,217
+Dash Effect
+index:7
+bounds:405,2,401,217
+Dash Effect
+index:4
+bounds:808,221,401,217
+Dash Effect
+index:1
+bounds:808,2,401,217
+Dash Effect
+index:6
+bounds:1211,221,401,217
+Dash Effect
+index:3
+bounds:1211,2,401,217

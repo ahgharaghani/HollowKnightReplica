@@ -1,0 +1,22 @@
+Slash Effect.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+SlashEffect
+index:2
+bounds:2,2,349,186
+SlashEffect
+index:3
+bounds:2,2,349,186
+SlashEffect
+index:4
+bounds:353,2,349,186
+SlashEffect
+index:5
+bounds:353,2,349,186
+SlashEffect
+index:1
+bounds:704,2,349,186
+SlashEffect
+index:0
+bounds:704,2,349,186

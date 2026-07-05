@@ -1,0 +1,16 @@
+Dash Down Land.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+Dash Down Land
+index:3
+bounds:2,2,349,186
+Dash Down Land
+index:0
+bounds:353,2,349,186
+Dash Down Land
+index:2
+bounds:704,2,349,186
+Dash Down Land
+index:1
+bounds:1055,2,349,186
