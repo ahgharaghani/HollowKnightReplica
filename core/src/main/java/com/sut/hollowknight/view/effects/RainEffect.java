@@ -15,6 +15,7 @@ public class RainEffect implements Disposable {
     private ShaderProgram rainShader;
     private Texture whitePixel;
     private float time = 0f;
+    private final float[] resolution = new float[2]; // scratch uniform buffer
 
     private static final String VERT = Gdx.files.internal("shaders/default.vert").readString();
     private static final String FRAG = Gdx.files.internal("shaders/cityoftears/rain.frag").readString();
@@ -42,7 +43,9 @@ public class RainEffect implements Disposable {
 
         batch.setShader(rainShader);
         rainShader.setUniformf("u_time", time);
-        rainShader.setUniform2fv("u_resolution", new float[]{Gdx.graphics.getWidth(), Gdx.graphics.getHeight()}, 0, 2);
+        resolution[0] = Gdx.graphics.getWidth();
+        resolution[1] = Gdx.graphics.getHeight();
+        rainShader.setUniform2fv("u_resolution", resolution, 0, 2);
 
         batch.draw(whitePixel,
             camera.position.x - camera.viewportWidth / 2f,

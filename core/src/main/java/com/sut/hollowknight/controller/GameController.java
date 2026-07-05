@@ -1,6 +1,5 @@
 package com.sut.hollowknight.controller;
 
-import com.badlogic.gdx.Game;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
@@ -24,7 +23,18 @@ public class GameController {
 
     private boolean wasJumpHeld = false;
 
-    public GameController(Game game, Knight knight, TileMapCollider collider,
+    // ---- Game-feel timers ----
+    private static final float COYOTE_TIME = 0.10f;
+    private static final float JUMP_BUFFER_TIME = 0.12f;
+    private float coyoteTimer = 0f;
+    private float jumpBufferTimer = 0f;
+
+    // ---- Camera shake on damage ----
+    private static final float DAMAGE_SHAKE_AMPLITUDE = 6f;
+    private static final float DAMAGE_SHAKE_DURATION  = 0.25f;
+    private boolean wasInvincible = false;
+
+    public GameController(Knight knight, TileMapCollider collider,
                           OrthographicCamera camera, float mapWidthPx, float mapHeightPx) {
         this.knight    = knight;
         this.input     = new PlayerInput();
@@ -50,6 +60,14 @@ public class GameController {
         handleInput();
         applyPhysics(delta);
         updateAnimationState(delta);
+
+        // Shake on the exact frame the knight takes a hit (i-frame rising edge).
+        boolean invincibleNow = knight.isInvincible();
+        if (invincibleNow && !wasInvincible) {
+            cameraRig.shake(DAMAGE_SHAKE_AMPLITUDE, DAMAGE_SHAKE_DURATION);
+        }
+        wasInvincible = invincibleNow;
+
         cameraRig.follow(knight.getX(), knight.getY(), delta);
     }
 
@@ -98,19 +116,29 @@ public class GameController {
             knight.setVelocityX(0);
         }
 
-        // --- Jump (ground, double-jump, wall-jump) ---
+        // --- Jump (buffered ground jump, coyote time, double-jump, wall-jump) ---
         if (input.isJumpJustPressed()) {
-            if (knight.isGrounded()) {
+            jumpBufferTimer = JUMP_BUFFER_TIME;
+        }
+        if (jumpBufferTimer > 0f) {
+            if (knight.isGrounded() || coyoteTimer > 0f) {
+                // Buffered/coyote ground jump — forgiving on ledges and landings.
                 performJump();
-            } else if (knight.isWallSliding() || knight.getWallDirection() != 0) {
+            } else if (input.isJumpJustPressed()) {
+                // Air options fire on the actual press only, never from the buffer.
                 int wd = knight.getWallDirection();
-                if (wd != 0) {
-                    knight.beginWallJump(wd);
+                if (knight.isWallSliding() || wd != 0) {
+                    if (wd != 0) {
+                        knight.beginWallJump(wd);
+                        jumpBufferTimer = 0f;
+                    } else if (knight.canDoubleJump()) {
+                        knight.performDoubleJump();
+                        jumpBufferTimer = 0f;
+                    }
                 } else if (knight.canDoubleJump()) {
                     knight.performDoubleJump();
+                    jumpBufferTimer = 0f;
                 }
-            } else if (knight.canDoubleJump()) {
-                knight.performDoubleJump();
             }
         }
 
@@ -141,6 +169,8 @@ public class GameController {
 
     private void performJump() {
         landTimer = 0;
+        jumpBufferTimer = 0f;
+        coyoteTimer = 0f;
         knight.setVelocityY(Knight.JUMP_IMPULSE);
         knight.setGrounded(false);
         knight.setState(Knight.State.JUMP);
@@ -259,6 +289,19 @@ public class GameController {
 
         knight.setGrounded(grounded);
         wasGrounded = grounded;
+
+        // Coyote window: short grace period to jump after leaving a platform
+        if (grounded) {
+            coyoteTimer = COYOTE_TIME;
+        } else if (coyoteTimer > 0f) {
+            coyoteTimer -= delta;
+            if (coyoteTimer < 0f) coyoteTimer = 0f;
+        }
+        // Jump input buffer decays every frame.
+        if (jumpBufferTimer > 0f) {
+            jumpBufferTimer -= delta;
+            if (jumpBufferTimer < 0f) jumpBufferTimer = 0f;
+        }
     }
 
     private int detectWallDirection() {
@@ -356,4 +399,5 @@ public class GameController {
 
     public Knight getKnight()            { return knight; }
     public TileMapCollider getCollider() { return collision.getCollider(); }
+    public CameraRig getCameraRig()      { return cameraRig; }
 }

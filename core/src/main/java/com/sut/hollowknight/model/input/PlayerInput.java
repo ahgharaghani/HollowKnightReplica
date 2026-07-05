@@ -20,13 +20,13 @@ public final class PlayerInput {
     public boolean isJumpPressed()      { return Gdx.input.isKeyPressed(settings.getJumpKey()); }
 
     public boolean isAttackJustPressed() {
-        if (Gdx.input.isKeyJustPressed(settings.getAttackKey())) return true;
-        if (GameSettings.isMouse(settings.getAttackKey())) {
-            int btn = GameSettings.toMouseButton(settings.getAttackKey());
+        int key = settings.getAttackKey();
+        if (GameSettings.isMouse(key)) {
+            int btn = GameSettings.toMouseButton(key);
             return Gdx.input.justTouched() && Gdx.input.isButtonPressed(btn);
         }
-        // Default fallback: left mouse button.
-        return Gdx.input.justTouched() && Gdx.input.isButtonPressed(com.badlogic.gdx.Input.Buttons.LEFT);
+
+        return Gdx.input.isKeyJustPressed(key);
     }
 
     public boolean isDashJustPressed() {

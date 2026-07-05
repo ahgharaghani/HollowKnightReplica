@@ -28,6 +28,19 @@ public class Knight implements PhysicsBody {
     public static final float HURT_HEIGHT  = 92f;
     public static final float HURT_Y_OFFSET = 0f;    // lift box off the feet if needed
 
+    // ---- Nail slash hitboxes (tune with the F3 debug overlay) ----
+    public static final float SLASH_REACH_X = 85f;   // forward reach of a side slash
+    public static final float SLASH_HEIGHT  = 70f;   // vertical size of a side slash
+    public static final float SLASH_UP_W    = 80f;
+    public static final float SLASH_UP_H    = 85f;
+    public static final float SLASH_DOWN_W  = 80f;
+    public static final float SLASH_DOWN_H  = 85f;
+
+    // ---- Soul & pogo ----
+    // vessel caps at 99
+    public static final int SOUL_PER_NAIL_HIT = 11;
+    public static final float POGO_IMPULSE = 560f;
+
     // ---- Health & soul ----
     private int hpMasks;
     private int maxMasks;
@@ -87,6 +100,7 @@ public class Knight implements PhysicsBody {
     private int  attackComboCount;       // 0 = none, 1 = slash just used, alt next
     private float attackComboTimer;      // counts down ATTACK_COMBO_WINDOW
     private float attackTimer;           // counts down the active slash animation
+    private int attackId;
 
     // ---- Dash state ----
     public static final float DASH_SPEED        = 720f;
@@ -146,13 +160,35 @@ public class Knight implements PhysicsBody {
     @Override
     public float getTop()    { return y + KNIGHT_HEIGHT; }
 
-    /** Combat hurtbox (what javelins/enemies test against), NOT the physics box. */
+    private final CollisionRect hurtBox  = new CollisionRect(0, 0, HURT_WIDTH, HURT_HEIGHT);
+    private final CollisionRect slashBox = new CollisionRect(0, 0, 0, 0);
+
     public CollisionRect getHurtBox() {
-        return new CollisionRect(
+        return hurtBox.set(
             x - HURT_WIDTH / 2f,
             y + HURT_Y_OFFSET,
             HURT_WIDTH,
             HURT_HEIGHT);
+    }
+
+
+    public CollisionRect getActiveSlashBox() {
+        if (attackTimer <= 0f) return null;
+        switch (state) {
+            case SLASH:
+            case SLASH_ALT:
+            case WALL_SLASH: {
+                float left = facingRight ? x : x - SLASH_REACH_X;
+                float centerY = y + KNIGHT_HEIGHT / 2f;
+                return slashBox.set(left, centerY - SLASH_HEIGHT / 2f, SLASH_REACH_X, SLASH_HEIGHT);
+            }
+            case UP_SLASH:
+                return slashBox.set(x - SLASH_UP_W / 2f, y + KNIGHT_HEIGHT, SLASH_UP_W, SLASH_UP_H);
+            case DOWN_SLASH:
+                return slashBox.set(x - SLASH_DOWN_W / 2f, y - SLASH_DOWN_H, SLASH_DOWN_W, SLASH_DOWN_H);
+            default:
+                return null;
+        }
     }
 
     //PhysicsBody
@@ -194,6 +230,7 @@ public class Knight implements PhysicsBody {
     public boolean isAttacking()             { return attackTimer > 0f; }
     public float   getAttackTimer()          { return attackTimer; }
     public int     getAttackComboCount()     { return attackComboCount; }
+    public int     getAttackId()             { return attackId; }
     public boolean isWallSliding()           { return state == State.WALL_SLIDE; }
     public int     getWallDirection()        { return wallDirection; }
     public float   getWallJumpTimer()        { return wallJumpTimer; }
@@ -300,6 +337,7 @@ public class Knight implements PhysicsBody {
 
     public State beginSlash() {
         boolean alt = attackComboCount > 0 && attackComboTimer > 0f;
+        attackId++;
         attackTimer = (ATTACK_DURATION);
         attackComboCount = alt ? 0 : 1;
         attackComboTimer = ATTACK_COMBO_WINDOW;
@@ -307,6 +345,7 @@ public class Knight implements PhysicsBody {
     }
 
     public void beginDirectionalSlash(State which) {
+        attackId++;
         attackTimer = DIRECTIONAL_ATTACK_DURATION;
         attackComboCount = 0;
         attackComboTimer = 0f;
@@ -314,6 +353,7 @@ public class Knight implements PhysicsBody {
     }
 
     public void beginWallSlash() {
+        attackId++;
         attackTimer = WALL_SLASH_DURATION;
         attackComboCount = 0;
         attackComboTimer = 0f;
@@ -453,6 +493,20 @@ public class Knight implements PhysicsBody {
         velocityY = DOUBLE_JUMP_IMPULSE;
         doubleJumpAvailable = false;
         setState(State.DOUBLE_JUMP);
+    }
+
+    //  Pogo
+
+    public void pogoBounce() {
+        velocityY = POGO_IMPULSE;
+        doubleJumpAvailable = true;
+        dashCooldownTimer = 0f;
+        dashing = false;
+        dashingDown = false;
+        dashTimer = 0f;
+        dashDownTimer = 0f;
+        attackTimer = 0f; // end the slash so the state machine takes over
+        setState(State.JUMP);
     }
 
     //  Death

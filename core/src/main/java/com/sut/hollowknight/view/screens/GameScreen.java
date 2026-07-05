@@ -19,6 +19,7 @@ import com.badlogic.gdx.maps.MapProperties;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Matrix4;
+import com.badlogic.gdx.utils.IntArray;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
@@ -50,11 +51,20 @@ public class GameScreen extends AbstractScreen {
     private float mapWidthPx;
     private float mapHeightPx;
 
-    private static final float INVINCIBLE_FLASH_HZ = 20f;   // blink toggles per second
+    private static final float INVINCIBLE_FLASH_HZ = 20f;   // toggle rate → ~10 visible blinks/sec
 
-    private static final int[] BG_LAYERS = { 0, 1, 2, 3, 4 };
-    private static final int[] GAMEPLAY_LAYER = { 5 };
-    private static final int[] FG_LAYERS = { 7, 8 };
+    private static final String[] BG_LAYER_NAMES = {
+        "FarFarFarBackgound", "FarFarBackground", "FarBackground",
+        "CracksOnTheWall", "MidBackground"
+    };
+    private static final String[] GAMEPLAY_LAYER_NAMES = { "Gameplay" };
+    private static final String[] FG_LAYER_NAMES = { "Foreground", "ForeForeground" };
+
+    private int[] bgLayers;
+    private int[] gameplayLayers;
+    private int[] fgLayers;
+
+    private final Matrix4 screenMatrix = new Matrix4();
 
     private ShaderProgram backgroundShader;
     private Texture whiteTexture;
@@ -85,7 +95,7 @@ public class GameScreen extends AbstractScreen {
         float[] spawn = findStartingPoint();
         Knight knight = new Knight(spawn[0], spawn[1]);
 
-        controller = new GameController(game, knight, collider,
+        controller = new GameController(knight, collider,
             worldCamera, mapWidthPx, mapHeightPx);
 
         knightAnimator = new KnightAnimator();
@@ -135,6 +145,23 @@ public class GameScreen extends AbstractScreen {
         int tileH = props.get("tileheight", Integer.class);
         mapWidthPx  = mapW * tileW;
         mapHeightPx = mapH * tileH;
+
+        bgLayers       = resolveLayerIndices(BG_LAYER_NAMES);
+        gameplayLayers = resolveLayerIndices(GAMEPLAY_LAYER_NAMES);
+        fgLayers       = resolveLayerIndices(FG_LAYER_NAMES);
+    }
+
+    private int[] resolveLayerIndices(String[] names) {
+        IntArray indices = new IntArray(names.length);
+        for (String name : names) {
+            int index = tiledMap.getLayers().getIndex(name);
+            if (index >= 0) {
+                indices.add(index);
+            } else {
+                Gdx.app.error("GameScreen", "Map layer not found: " + name);
+            }
+        }
+        return indices.toArray();
     }
 
     private float[] findStartingPoint() {
@@ -186,13 +213,12 @@ public class GameScreen extends AbstractScreen {
         rainEffect.update(delta);
         glassRainEffect.update(delta);
 
-        for (WingedSentryController sc : sentryControllers) {
-            sc.update(delta);
+        // Index-based loop: no Iterator allocation per frame.
+        for (int i = 0; i < sentryControllers.size(); i++) {
+            sentryControllers.get(i).update(delta);
         }
 
-        TextureRegion knightFrame = knightAnimator.getCurrentFrame(controller.getKnight());
-
-        combat.resolve(delta, knightFrame, sentryRenderer, javelinRenderer);
+        combat.resolve(delta);
     }
 
     @Override
@@ -205,9 +231,9 @@ public class GameScreen extends AbstractScreen {
         worldCamera.update();
 
         // Background
-        Matrix4 screenMat = new Matrix4().setToOrtho2D(
+        screenMatrix.setToOrtho2D(
             0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setProjectionMatrix(screenMat);
+        batch.setProjectionMatrix(screenMatrix);
         batch.setShader(backgroundShader);
         batch.begin();
         backgroundShader.setUniformf("u_time", timeElapsed);
@@ -223,8 +249,8 @@ public class GameScreen extends AbstractScreen {
 
         // Tiled background and gameplay
         mapRenderer.setView(worldCamera);
-        mapRenderer.render(BG_LAYERS);
-        mapRenderer.render(GAMEPLAY_LAYER);
+        mapRenderer.render(bgLayers);
+        mapRenderer.render(gameplayLayers);
 
         // Draw Knight, Sentries, and Javelins
         batch.setProjectionMatrix(worldCamera.combined);
@@ -273,7 +299,8 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        for (WingedSentryController sc : sentryControllers) {
+        for (int i = 0; i < sentryControllers.size(); i++) {
+            WingedSentryController sc = sentryControllers.get(i);
             sentryRenderer.draw(batch, sc.getSentry());
 
             Javelin javelin = sc.getJavelin();
@@ -286,7 +313,7 @@ public class GameScreen extends AbstractScreen {
 
         // Foreground layers
         mapRenderer.setView(worldCamera);
-        mapRenderer.render(FG_LAYERS);
+        mapRenderer.render(fgLayers);
 
         // Rain Effect
         batch.setProjectionMatrix(worldCamera.combined);
@@ -319,6 +346,12 @@ public class GameScreen extends AbstractScreen {
 
         debugShapes.setColor(Color.RED);
         drawRect(knight.getHurtBox());                     // knight hurtbox
+
+        CollisionRect slash = knight.getActiveSlashBox();
+        if (slash != null) {
+            debugShapes.setColor(Color.ORANGE);
+            drawRect(slash);                               // active nail slash
+        }
 
         for (WingedSentryController sc : sentryControllers) {
             Javelin javelin = sc.getJavelin();

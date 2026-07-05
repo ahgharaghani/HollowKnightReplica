@@ -5,43 +5,58 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Intersector;
 import com.badlogic.gdx.math.Rectangle;
+
 import java.util.HashMap;
 
+// performance expensive
+@Deprecated
 public class PixelCollisionUtil {
 
     private static final HashMap<Texture, Pixmap> pixmaps = new HashMap<>();
 
+    // Scratch objects — this class must not allocate per query (GC pressure).
+    private static final Rectangle TMP_A = new Rectangle();
+    private static final Rectangle TMP_B = new Rectangle();
+    private static final Rectangle TMP_INTERSECTION = new Rectangle();
+
     private static Pixmap getPixmap(Texture texture) {
-        if (!pixmaps.containsKey(texture)) {
+        Pixmap cached = pixmaps.get(texture);
+        if (cached == null) {
             if (!texture.getTextureData().isPrepared()) {
                 texture.getTextureData().prepare();
             }
-            pixmaps.put(texture, texture.getTextureData().consumePixmap());
+            cached = texture.getTextureData().consumePixmap();
+            pixmaps.put(texture, cached);
         }
-        return pixmaps.get(texture);
+        return cached;
     }
 
+    public static void dispose() {
+        for (Pixmap pixmap : pixmaps.values()) {
+            pixmap.dispose();
+        }
+        pixmaps.clear();
+    }
 
     // Checks if two sprites (TextureRegions) overlap based on their actual opaque pixels.
     public static boolean overlaps(TextureRegion reg1, float x1, float y1, float w1, float h1, boolean flipX1,
                                    TextureRegion reg2, float x2, float y2, float w2, float h2, boolean flipX2) {
 
         // 1. Fast AABB bounding box check first
-        Rectangle rect1 = new Rectangle(x1, y1, w1, h1);
-        Rectangle rect2 = new Rectangle(x2, y2, w2, h2);
+        TMP_A.set(x1, y1, w1, h1);
+        TMP_B.set(x2, y2, w2, h2);
 
-        if (!rect1.overlaps(rect2)) return false;
+        if (!TMP_A.overlaps(TMP_B)) return false;
 
         // 2. Find the intersection rectangle in world space
-        Rectangle intersection = new Rectangle();
-        Intersector.intersectRectangles(rect1, rect2, intersection);
+        Intersector.intersectRectangles(TMP_A, TMP_B, TMP_INTERSECTION);
 
         Pixmap pix1 = getPixmap(reg1.getTexture());
         Pixmap pix2 = getPixmap(reg2.getTexture());
 
         // 3. Check pixels only within the intersection area
-        for (float py = intersection.y; py < intersection.y + intersection.height; py += 1f) {
-            for (float px = intersection.x; px < intersection.x + intersection.width; px += 1f) {
+        for (float py = TMP_INTERSECTION.y; py < TMP_INTERSECTION.y + TMP_INTERSECTION.height; py += 1f) {
+            for (float px = TMP_INTERSECTION.x; px < TMP_INTERSECTION.x + TMP_INTERSECTION.width; px += 1f) {
 
                 // Map world coordinates to texture coordinates for Sprite 1
                 float localX1 = (px - x1) / w1;

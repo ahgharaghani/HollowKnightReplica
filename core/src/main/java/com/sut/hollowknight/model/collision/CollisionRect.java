@@ -2,16 +2,24 @@ package com.sut.hollowknight.model.collision;
 
 public class CollisionRect implements AABB {
 
-    private final float x;      // left edge
-    private final float y;      // bottom edge (y-up)
-    private final float width;
-    private final float height;
+    private float x;      // left edge
+    private float y;      // bottom edge (y-up)
+    private float width;
+    private float height;
 
     public CollisionRect(float x, float y, float width, float height) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
+    }
+
+    public CollisionRect set(float x, float y, float width, float height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+        return this;
     }
 
     public float getX()      { return x; }

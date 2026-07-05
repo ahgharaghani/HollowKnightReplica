@@ -8,13 +8,15 @@ import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
 
-public class WingedSentryController {
+public class WingedSentryController implements EnemyController {
 
     private final WingedSentry sentry;
     private final TileMapCollider collider;
     private Knight knight;
 
     private JavelinController javelinController;
+
+    private int lastNailHitId = -1;
 
     // Attack decision thresholds
     private static final float CHARGE_MIN_DISTANCE = 60f;
@@ -38,6 +40,7 @@ public class WingedSentryController {
         this.knight = knight;
     }
 
+    @Override
     public void update(float delta) {
         if (javelinController != null) {
             javelinController.update(delta);
@@ -167,7 +170,8 @@ public class WingedSentryController {
         float knightCenterY = knight.getY() + Knight.KNIGHT_HEIGHT / 2f;
         float dx = knightCenterX - sentry.getX();
         float dy = knightCenterY - (sentry.getY() + WingedSentry.HEIGHT / 2f);
-        float dist = (float) Math.sqrt(dx * dx + dy * dy);
+
+        float distSq = dx * dx + dy * dy;
 
         sentry.setFacingRight(dx > 0);
 
@@ -178,7 +182,7 @@ public class WingedSentryController {
             knight.getX(), knight.getY() + Knight.KNIGHT_HEIGHT / 2f
         );
 
-        if (dist > escapeRange || !hasLoS) {
+        if (distSq > escapeRange * escapeRange || !hasLoS) {
             sentry.setDetectedPlayer(false);
             sentry.setState(WingedSentry.State.TURN_TO_IDLE);
             return;
@@ -186,10 +190,11 @@ public class WingedSentryController {
 
         // Attack decision
         if (sentry.getAttackCooldown() <= 0) {
-            if (dist >= CHARGE_MIN_DISTANCE && dist < CHARGE_MAX_DISTANCE) {
+            if (distSq >= CHARGE_MIN_DISTANCE * CHARGE_MIN_DISTANCE
+                && distSq < CHARGE_MAX_DISTANCE * CHARGE_MAX_DISTANCE) {
                 beginChargeAntic();
                 return;
-            } else if (dist >= CHARGE_MAX_DISTANCE) {
+            } else if (distSq >= CHARGE_MAX_DISTANCE * CHARGE_MAX_DISTANCE) {
                 sentry.setState(WingedSentry.State.THROW_ATTACK);
                 sentry.setVelocityX(0);
                 sentry.setVelocityY(0);
@@ -199,7 +204,8 @@ public class WingedSentryController {
 
         // Movement toward player — halt at standoff so the sentry never
         // stacks on the knight's center and elevator-launches the pair.
-        if (dist > CHASE_STANDOFF) {
+        if (distSq > CHASE_STANDOFF * CHASE_STANDOFF) {
+            float dist = (float) Math.sqrt(distSq); // needed only to normalise
             float moveX = (dx / dist) * WingedSentry.CHASE_SPEED * delta;
             float moveY = (dy / dist) * WingedSentry.CHASE_SPEED * delta;
             sentry.setX(sentry.getX() + moveX);
@@ -255,6 +261,7 @@ public class WingedSentryController {
 
     //  Public API
 
+    @Override
     public void hitByNail(int damageAmount, int knockbackDir, float knockbackForce) {
         if (!sentry.isAlive()) return;
 
@@ -290,6 +297,7 @@ public class WingedSentryController {
         return false;
     }
 
+    @Override
     public boolean overlapsKnight() {
         if (knight == null || !sentry.isAlive()) return false;
         WingedSentry.State s = sentry.getState();
@@ -298,10 +306,18 @@ public class WingedSentryController {
         return AABB.overlaps(sentry, knight.getHurtBox());
     }
 
+    @Override
     public void respawn() {
         sentry.respawn();
         javelinController = null;
+        lastNailHitId = -1;
     }
+
+    @Override
+    public int getLastNailHitId() { return lastNailHitId; }
+
+    @Override
+    public void setLastNailHitId(int attackId) { this.lastNailHitId = attackId; }
 
     public WingedSentry getSentry() { return sentry; }
     public Javelin getJavelin() { return javelinController == null ? null : javelinController.getJavelin(); }

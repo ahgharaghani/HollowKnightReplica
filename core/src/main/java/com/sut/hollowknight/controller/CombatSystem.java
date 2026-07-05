@@ -1,32 +1,28 @@
 package com.sut.hollowknight.controller;
 
-import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.math.Rectangle;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
-import com.sut.hollowknight.model.collision.PixelCollisionUtil;
+import com.sut.hollowknight.model.collision.AABB;
+import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.WingedSentry;
-import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
-import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
 
 import java.util.List;
 
 public class CombatSystem {
 
     // Contact damage (sentry body touching the knight)
-    private static final int   CONTACT_DAMAGE        = 1;
-    private static final float CONTACT_KNOCKBACK_X   = 420f;
-    private static final float CONTACT_KNOCKBACK_Y   = 260f;
+    private static final int   CONTACT_DAMAGE      = 1;
+    private static final float CONTACT_KNOCKBACK_X = 420f;
+    private static final float CONTACT_KNOCKBACK_Y = 260f;
 
     // Javelin damage
-    private static final float JAVELIN_KNOCKBACK_X   = 380f;
-    private static final float JAVELIN_KNOCKBACK_Y   = 260f;
+    private static final float JAVELIN_KNOCKBACK_X = 380f;
+    private static final float JAVELIN_KNOCKBACK_Y = 260f;
 
     // Nail attack
-    private static final int   NAIL_DAMAGE              = 1;
-    private static final float NAIL_KNOCKBACK_DISTANCE  = 15f;
-    private static final float NAIL_DEATH_KNOCKBACK_SCALE = 0.3f;
+    private static final int   NAIL_DAMAGE          = 1;
+    private static final float NAIL_KNOCKBACK_FORCE = 150f;
 
     private final Knight knight;
     private final List<WingedSentryController> sentryControllers;
@@ -36,86 +32,65 @@ public class CombatSystem {
         this.sentryControllers = sentryControllers;
     }
 
-    public void resolve(float delta, TextureRegion knightFrame,
-                        WingedSentryRenderer sentryRenderer, JavelinRenderer javelinRenderer) {
-        for (WingedSentryController sc : sentryControllers) {
-            resolveContactDamage(sc, knightFrame, sentryRenderer);
-            resolveJavelinDamage(sc, knightFrame, javelinRenderer);
+    public void resolve(float delta) {
+        // Index-based loop: no Iterator allocation per frame.
+        for (int i = 0; i < sentryControllers.size(); i++) {
+            WingedSentryController sc = sentryControllers.get(i);
+            resolveNailHit(sc);
+            resolveContactDamage(sc);
+            resolveJavelinDamage(sc);
         }
     }
 
-    private void resolveContactDamage(WingedSentryController sentryController, TextureRegion knightFrame,
-                                      WingedSentryRenderer sentryRenderer) {
-        if (knight.isInvincible()) return;
+    private void resolveNailHit(WingedSentryController sc) {
+        if (!knight.isAttacking()) return;
 
-        WingedSentry sentry = sentryController.getSentry();
-        // Skip if dead or already overlapping bounding boxes
-        if (!sentry.isAlive() || !sentryController.overlapsKnight()) return;
+        WingedSentry sentry = sc.getSentry();
+        if (!sentry.isAlive()) return;
+        if (sc.getLastNailHitId() == knight.getAttackId()) return; // already hit by this swing
 
-        // Sentry visual bounds (matching WingedSentryRenderer)
-        float sDrawW = 509f;
-        float sDrawH = 398f;
-        float sDrawX = sentry.getX() - sDrawW / 2f;
-        float sDrawY = sentry.getY() - (sDrawH - WingedSentry.HEIGHT) / 2f;
-        boolean sFlip = sentry.isFacingRight();
+        CollisionRect slash = knight.getActiveSlashBox();
+        if (slash == null || !AABB.overlaps(sentry, slash)) return;
 
-        // Knight visual bounds (matching GameScreen renderer)
-        float kDrawW = knightFrame.getRegionWidth();
-        float kDrawH = knightFrame.getRegionHeight();
-        float kDrawX = knight.getX() - kDrawW / 2f;
-        float kDrawY = knight.getY();
-        boolean kFlip = knight.isFacingRight();
+        sc.setLastNailHitId(knight.getAttackId());
 
-        // Use Pixel-Perfect Collision!
-        boolean hit = PixelCollisionUtil.overlaps(
-            knightFrame, kDrawX, kDrawY, kDrawW, kDrawH, kFlip,
-            sentryRenderer.getCurrentFrame(sentry), sDrawX, sDrawY, sDrawW, sDrawH, sFlip
-        );
+        int knockbackDir = sentry.getX() >= knight.getX() ? 1 : -1;
+        sc.hitByNail(NAIL_DAMAGE, knockbackDir, NAIL_KNOCKBACK_FORCE);
 
-        if (hit) {
-            int knockbackDir = knight.getX() < sentry.getX() ? -1 : 1;
-            knight.takeDamage(CONTACT_DAMAGE);
-            knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
+        // Successful nail hits charge the Soul vessel (spec: +11, capped at 99).
+        knight.addSoul(Knight.SOUL_PER_NAIL_HIT);
+
+        // Pogo: a connecting down-slash relaunches the knight upward and
+        // refreshes dash + double jump so platforming chains stay alive.
+        if (knight.getState() == Knight.State.DOWN_SLASH) {
+            knight.pogoBounce();
         }
     }
 
-    private void resolveJavelinDamage(WingedSentryController sentryController, TextureRegion knightFrame,
-                                      JavelinRenderer javelinRenderer) {
+    private void resolveContactDamage(WingedSentryController sc) {
         if (knight.isInvincible()) return;
 
-        Javelin javelin = sentryController.getJavelin();
+        WingedSentry sentry = sc.getSentry();
+        if (!sentry.isAlive() || !sc.overlapsKnight()) return;
+
+        int knockbackDir = knight.getX() < sentry.getX() ? -1 : 1;
+        knight.takeDamage(CONTACT_DAMAGE);
+        knight.applyKnockback(knockbackDir * CONTACT_KNOCKBACK_X, CONTACT_KNOCKBACK_Y);
+    }
+
+    private void resolveJavelinDamage(WingedSentryController sc) {
+        if (knight.isInvincible()) return;
+
+        Javelin javelin = sc.getJavelin();
         if (javelin == null || javelin.getState() != Javelin.State.FLYING) return;
 
-        float jDrawW = 583f;
-        float jDrawH = 27f;
-        float jDrawX = javelin.getX() - jDrawW / 2f;
-        float jDrawY = javelin.getY() + (Javelin.HEIGHT - jDrawH) / 2f;
-        boolean jFlip = !javelin.isFacingRight();
+        CollisionRect damageBox = javelin.getDamageBox();
+        CollisionRect hurtBox   = knight.getHurtBox();
+        if (!AABB.overlaps(damageBox, hurtBox)) return;
 
-        float kDrawW = knightFrame.getRegionWidth();
-        float kDrawH = knightFrame.getRegionHeight();
-        float kDrawX = knight.getX() - kDrawW / 2f;
-        float kDrawY = knight.getY();
-        boolean kFlip = knight.isFacingRight();
-
-        // 1. Fast AABB check first
-        Rectangle jRect = new Rectangle(jDrawX, jDrawY, jDrawW, jDrawH);
-        Rectangle kRect = new Rectangle(kDrawX, kDrawY, kDrawW, kDrawH);
-        if (!jRect.overlaps(kRect)) return;
-
-        TextureRegion javelinFrame = javelinRenderer.getCurrentFrame(javelin);
-
-        // 2. Pixel perfect check
-        boolean hit = PixelCollisionUtil.overlaps(
-            javelinFrame, jDrawX, jDrawY, jDrawW, jDrawH, jFlip,
-            knightFrame, kDrawX, kDrawY, kDrawW, kDrawH, kFlip
-        );
-
-        if (hit) {
-            int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
-            knight.takeDamage(Javelin.DAMAGE);
-            knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
-            javelin.setState(Javelin.State.SNAP); // Trigger snap animation on hit
-        }
+        int knockbackDir = knight.getX() < javelin.getCenterX() ? -1 : 1;
+        knight.takeDamage(Javelin.DAMAGE);
+        knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
+        javelin.setState(Javelin.State.SNAP); // Trigger snap animation on hit
     }
 }

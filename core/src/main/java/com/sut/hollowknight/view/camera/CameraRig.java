@@ -1,6 +1,7 @@
 package com.sut.hollowknight.view.camera;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.badlogic.gdx.math.MathUtils;
 
 public final class CameraRig {
 
@@ -10,14 +11,28 @@ public final class CameraRig {
     private final float mapWidthPx;
     private final float mapHeightPx;
 
+    private float shakeTimer;
+    private float shakeDuration;
+    private float shakeAmplitude;
+
     public CameraRig(OrthographicCamera camera, float mapWidthPx, float mapHeightPx) {
         this.camera = camera;
         this.mapWidthPx = mapWidthPx;
         this.mapHeightPx = mapHeightPx;
     }
 
+
+    // shake requests with higher amplitude override weaker ones
+    public void shake(float amplitude, float duration) {
+        if (shakeTimer <= 0f || amplitude >= shakeAmplitude) {
+            shakeAmplitude = amplitude;
+            shakeDuration = duration;
+            shakeTimer = duration;
+        }
+    }
+
     public void follow(float targetX, float targetY, float delta) {
-        float lerp = LERP_FACTOR * delta;
+        float lerp = 1f - (float) Math.exp(-LERP_FACTOR * delta);
 
         float camX = camera.position.x + (targetX - camera.position.x) * lerp;
         float camY = camera.position.y + (targetY - camera.position.y) * lerp;
@@ -26,6 +41,15 @@ public final class CameraRig {
         float halfH = camera.viewportHeight / 2f;
         camX = Math.max(halfW, Math.min(camX, mapWidthPx  - halfW));
         camY = Math.max(halfH, Math.min(camY, mapHeightPx - halfH));
+
+        if (shakeTimer > 0f) {
+            shakeTimer -= delta;
+            if (shakeTimer < 0f) shakeTimer = 0f;
+            float falloff = shakeDuration > 0f ? shakeTimer / shakeDuration : 0f;
+            float strength = shakeAmplitude * falloff;
+            camX += MathUtils.random(-strength, strength);
+            camY += MathUtils.random(-strength, strength);
+        }
 
         camera.position.set(camX, camY, 0);
         camera.update();

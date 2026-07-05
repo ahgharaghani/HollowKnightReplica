@@ -46,6 +46,9 @@ public class Javelin implements PhysicsBody {
     // Damage
     public static final int DAMAGE = 1;
 
+    // reusable hitbox
+    private final CollisionRect damageBox = new CollisionRect(0, 0, 0, 0);
+
     public Javelin(float x, float y, float dirX) {
         this.x = x;
         this.y = y;
@@ -65,17 +68,12 @@ public class Javelin implements PhysicsBody {
     @Override
     public float getTop()    { return y + HEIGHT; }
 
-    /**
-     * Damage rectangle at the spear tip, aligned on the spear's visual center-y.
-     * Extends {@code DMG_LENGTH} back from the tip so the point and a stretch of
-     * shaft both hit — but not the far tail. Facing flips which side the tip is on.
-     */
     public CollisionRect getDamageBox() {
         float dir  = facingRight ? 1f : -1f;
         float tipX = x + dir * DMG_TIP_REACH;
         float left = dir > 0 ? tipX - DMG_LENGTH : tipX;
         float cy   = y + HEIGHT / 2f;               // visual center of the spear
-        return new CollisionRect(left, cy - DMG_THICK / 2f, DMG_LENGTH, DMG_THICK);
+        return damageBox.set(left, cy - DMG_THICK / 2f, DMG_LENGTH, DMG_THICK);
     }
 
     // ---- PhysicsBody ----
