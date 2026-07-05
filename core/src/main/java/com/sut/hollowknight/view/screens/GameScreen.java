@@ -64,9 +64,9 @@ public class GameScreen extends AbstractScreen {
     private static final float UP_SLASH_EFFECT_OFFSET_X   = 10f;   // forward, along facing
     private static final float UP_SLASH_EFFECT_OFFSET_Y   = 60f;   // above the feet
     private static final float DOWN_SLASH_EFFECT_OFFSET_Y = -150f; // below the feet
-
-    // Render groups resolved by layer NAME at load time. Raw indices silently
-    // shift whenever the map is edited in Tiled; names don't.
+    private static final float DASH_EFFECT_OFFSET_X       = -175f;
+    private static final float DASH_EFFECT_OFFSET_Y       = -75f;
+    
     private static final String[] BG_LAYER_NAMES = {
         "FarFarFarBackgound", "FarFarBackground", "FarBackground",
         "CracksOnTheWall", "MidBackground"
@@ -350,7 +350,9 @@ public class GameScreen extends AbstractScreen {
                     offsetY = DOWN_SLASH_EFFECT_OFFSET_Y;
                     break;
                 case DASH:
-                    invertFlip = true; // fix: trail rendered mirrored on x
+                    invertFlip = true;
+                    offsetX = DASH_EFFECT_OFFSET_X;
+                    offsetY = DASH_EFFECT_OFFSET_Y;
                     break;
                 default:
                     break;
