@@ -33,6 +33,10 @@ public final class PlayerInput {
         return Gdx.input.isKeyJustPressed(settings.getDashKey());
     }
 
+    public boolean isFocusPressed() {
+        return Gdx.input.isKeyPressed(settings.getFocusCastKey());
+    }
+
     public boolean isMoving() {
         return isMoveLeftPressed() ^ isMoveRightPressed();
     }

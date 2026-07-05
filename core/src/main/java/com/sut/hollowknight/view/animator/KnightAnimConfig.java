@@ -55,6 +55,10 @@ public final class KnightAnimConfig {
     public static float UP_SLASH_FPS          = 20f;
     /** Upward slash effect overlay. */
     public static float UP_SLASH_EFFECT_FPS   = 40f;
+    /** Focus channel animation. */
+    public static float FOCUS_FPS             = 12f;
+    /** Focus completion animation. */
+    public static float FOCUS_END_FPS         = 12f;
 
     public static float frameDuration(float fps) {
         if (fps <= 0f) {

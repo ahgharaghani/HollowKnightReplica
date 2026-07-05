@@ -1,8 +1,10 @@
 package com.sut.hollowknight.view.hud;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.view.assets.HudAssets;
@@ -11,16 +13,19 @@ public class HudRenderer {
 
     private final HudAssets assets;
 
+    private final ShaderProgram soulMaskShader;
+
     // ---- Layout ----
     private static final float UI_HEIGHT = 1080f;
     private static final float HUD_X   = 40f;   // frame left edge
     private static final float HUD_TOP = 30f;   // margin from the screen top
 
     private static final float FRAME_W = 257f, FRAME_H = 164f;
-    private static final float ORB_W   = 130f, ORB_H   = 125f;
-    // Orb center inside the frame (measured from the frame art's opaque pixels).
-    private static final float ORB_CENTER_IN_FRAME_X = 129f;
-    private static final float ORB_CENTER_IN_FRAME_Y = 78f;  // from frame bottom
+
+    // Vessel circle
+    private static final float ORB_CENTER_IN_FRAME_X = 74f;
+    private static final float ORB_CENTER_IN_FRAME_Y = 70f;
+    private static final float ORB_W = 130f, ORB_H = 125f;
 
     // Health nodes
     private static final float NODE_W = 126f, NODE_H = 167f;
@@ -48,10 +53,25 @@ public class HudRenderer {
     private float orbTime = 0f;
     private float glowTime = 0f;
 
-    private final TextureRegion liquidClip = new TextureRegion();
-
     public HudRenderer(HudAssets assets) {
         this.assets = assets;
+
+        ShaderProgram shader = new ShaderProgram(
+            Gdx.files.internal("shaders/default.vert"),
+            Gdx.files.internal("shaders/soulmask.frag"));
+        if (!shader.isCompiled()) {
+            Gdx.app.error("HudRenderer",
+                "Soul mask shader failed to compile:\n" + shader.getLog());
+            shader.dispose();
+            shader = null;
+        }
+        this.soulMaskShader = shader;
+    }
+
+    public void dispose() {
+        if (soulMaskShader != null) {
+            soulMaskShader.dispose();
+        }
     }
 
     public void draw(SpriteBatch batch, Knight knight, float delta) {
@@ -61,44 +81,39 @@ public class HudRenderer {
 
         float frameX = HUD_X;
         float frameY = UI_HEIGHT - HUD_TOP - FRAME_H;
-        float orbX = frameX + ORB_CENTER_IN_FRAME_X - ORB_W / 2f;
-        float orbY = frameY + ORB_CENTER_IN_FRAME_Y - ORB_H / 2f;
+        float orbCenterX = frameX + ORB_CENTER_IN_FRAME_X;
+        float orbCenterY = frameY + ORB_CENTER_IN_FRAME_Y;
+        float orbX = orbCenterX - ORB_W / 2f;
+        float orbY = orbCenterY - ORB_H / 2f;
 
-        // 1. Backboard frame
+        // 1. The frame IS the empty vessel (dark circle + crescent).
         batch.draw(assets.getHudFrame(), frameX, frameY, FRAME_W, FRAME_H);
 
-        // 2. Glow halo when a heal / spell is affordable
+        // 2. Rising liquid, masked to the vessel's round window.
+        float fill = MathUtils.clamp(displayedSoul / SOUL_MAX, 0f, 1f);
+        if (fill > 0.005f && soulMaskShader != null) {
+            TextureRegion liquid = currentLiquidFrame(knight);
+            batch.setShader(soulMaskShader);
+            soulMaskShader.setUniformf("u_uvRect",
+                liquid.getU(), liquid.getV(), liquid.getU2(), liquid.getV2());
+            soulMaskShader.setUniformf("u_fill", fill);
+            batch.draw(liquid, orbX, orbY, ORB_W, ORB_H);
+            batch.setShader(null);
+        }
+
+        // 3. Glow face overlay when a heal / spell is affordable.
         if (knight.getSoulAmount() >= SOUL_GLOW_THRESHOLD) {
             glowTime += delta;
-            float pulse = 0.55f + 0.35f * MathUtils.sin(glowTime * 4f);
+            float pulse = 0.65f + 0.25f * MathUtils.sin(glowTime * 4f);
             batch.setColor(1f, 1f, 1f, pulse);
-            batch.draw(assets.getSoulGlow(), orbX - 6f, orbY - 5f, ORB_W + 12f, ORB_H + 12f);
+            batch.draw(assets.getSoulGlow(), orbX, orbY, ORB_W, ORB_H);
             batch.setColor(Color.WHITE);
         } else {
             glowTime = 0f;
         }
 
-        // 3. Soul orb: dark empty shell, then the liquid clipped to the level.
-        TextureRegion orbFrame = currentOrbFrame(knight);
-        batch.setColor(0.22f, 0.25f, 0.34f, 0.9f);
-        batch.draw(orbFrame, orbX, orbY, ORB_W, ORB_H);
-        batch.setColor(Color.WHITE);
-
-        float fill = MathUtils.clamp(displayedSoul / SOUL_MAX, 0f, 1f);
-        int srcH = (int) (orbFrame.getRegionHeight() * fill);
-        if (srcH > 0) {
-            // Bottom `fill` fraction of the orb sprite = the liquid level.
-            liquidClip.setRegion(
-                orbFrame,
-                orbFrame.getRegionX(),
-                orbFrame.getRegionY() + orbFrame.getRegionHeight() - srcH,
-                orbFrame.getRegionWidth(),
-                srcH);
-            batch.draw(liquidClip, orbX, orbY, ORB_W, ORB_H * fill);
-        }
-
-        // 4. Health nodes (masks)
-        float glyphCenterY = frameY + ORB_CENTER_IN_FRAME_Y + NODES_CENTER_Y_OFFSET;
+        // 4. Health nodes (masks).
+        float glyphCenterY = orbCenterY + NODES_CENTER_Y_OFFSET;
         float nodeY = glyphCenterY - NODE_GLYPH_CENTER_Y;
         for (int i = 0; i < nodeStates.length; i++) {
             float nodeX = NODES_START_X + i * NODE_SPACING - NODE_GLYPH_CENTER_X;
@@ -169,7 +184,7 @@ public class HudRenderer {
         }
     }
 
-    private TextureRegion currentOrbFrame(Knight knight) {
+    private TextureRegion currentLiquidFrame(Knight knight) {
         float target = knight.getSoulAmount();
         if (displayedSoul < target - SOUL_EPSILON) {
             return assets.getSoulFillAnim().getKeyFrame(orbTime, true);

@@ -22,6 +22,8 @@ public class KnightAnimator {
     private Animation<TextureRegion> recoilAnim;
     private Animation<TextureRegion> deathAnim;
     private Animation<TextureRegion> doubleJumpAnim;
+    private Animation<TextureRegion> focusAnim;
+    private Animation<TextureRegion> focusEndAnim;
 
     // ---- Slash family ----
     private Animation<TextureRegion> slashAnim;
@@ -196,6 +198,10 @@ public class KnightAnimator {
             KnightAnimConfig.DEATH_FPS,       Animation.PlayMode.NORMAL);
         doubleJumpAnim   = loadAtlas("animation/knight/Double Jump.atlas",  "Double Jump",
             KnightAnimConfig.DOUBLE_JUMP_FPS, Animation.PlayMode.NORMAL);
+        focusAnim        = loadAtlas("animation/knight/Focus.atlas",        "Focus_focus",
+            KnightAnimConfig.FOCUS_FPS,       Animation.PlayMode.LOOP);
+        focusEndAnim     = loadAtlas("animation/knight/Focus End.atlas",    "Focus End_focus",
+            KnightAnimConfig.FOCUS_END_FPS,   Animation.PlayMode.NORMAL);
     }
 
     private Animation<TextureRegion> loadAtlas(String path, String regionPrefix,
@@ -219,6 +225,9 @@ public class KnightAnimator {
 
     //  Body frame
 
+    /** Focus: frames 0..1 charge once, then frames 2..last loop while holding. */
+    private static final int FOCUS_CHARGE_FRAMES = 2;
+
     public TextureRegion getCurrentFrame(Knight knight) {
         Animation<TextureRegion> anim = animationFor(knight);
         if (anim == null) {
@@ -227,11 +236,34 @@ public class KnightAnimator {
         }
 
         float t = knight.getStateTime();
+
+        if (knight.getState() == Knight.State.FOCUS && anim == focusAnim) {
+            return focusFrame(anim, t);
+        }
+
         if (knight.isDead()) {
             // Death plays once and freezes on the last frame.
             return anim.getKeyFrame(t, false);
         }
         return anim.getKeyFrame(t, anim.getPlayMode() == Animation.PlayMode.LOOP);
+    }
+
+    private TextureRegion focusFrame(Animation<TextureRegion> anim, float t) {
+        float fd = anim.getFrameDuration();
+        int total = Math.round(anim.getAnimationDuration() / fd);
+        if (total <= FOCUS_CHARGE_FRAMES) {
+            return anim.getKeyFrame(t, true);
+        }
+
+        float chargeTime = FOCUS_CHARGE_FRAMES * fd;
+        if (t < chargeTime) {
+            return anim.getKeyFrame(t, false);
+        }
+        // Map hold time back into the tail window, then sample as a one-shot so
+        // the frame index lands in [FOCUS_CHARGE_FRAMES, total-1].
+        int loopLen = total - FOCUS_CHARGE_FRAMES;
+        float holdTime = chargeTime + ((t - chargeTime) % (loopLen * fd));
+        return anim.getKeyFrame(holdTime, false);
     }
 
     private Animation<TextureRegion> animationFor(Knight knight) {
@@ -249,6 +281,8 @@ public class KnightAnimator {
 
             case DEATH:             return deathAnim != null ? deathAnim : idleAnim;
             case DOUBLE_JUMP:       return doubleJumpAnim != null ? doubleJumpAnim : jumpAnim;
+            case FOCUS:             return focusAnim != null ? focusAnim : idleAnim;
+            case FOCUS_END:         return focusEndAnim != null ? focusEndAnim : idleAnim;
 
             // Slash family
             case SLASH:             return slashAnim != null ? slashAnim : idleAnim;
@@ -314,6 +348,8 @@ public class KnightAnimator {
     public Animation<TextureRegion> getRecoilAnim()          { return recoilAnim; }
     public Animation<TextureRegion> getDeathAnim()           { return deathAnim; }
     public Animation<TextureRegion> getDoubleJumpAnim()      { return doubleJumpAnim; }
+    public Animation<TextureRegion> getFocusAnim()           { return focusAnim; }
+    public Animation<TextureRegion> getFocusEndAnim()        { return focusEndAnim; }
     public Animation<TextureRegion> getSlashAnim()           { return slashAnim; }
     public Animation<TextureRegion> getSlashAltAnim()        { return slashAltAnim; }
     public Animation<TextureRegion> getDownSlashAnim()       { return downSlashAnim; }

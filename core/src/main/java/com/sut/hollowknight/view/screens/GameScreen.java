@@ -474,5 +474,6 @@ public class GameScreen extends AbstractScreen {
         debugShapes.dispose();
         sentryRenderer.dispose();
         tiktikRenderer.dispose();
+        hudRenderer.dispose();
     }
 }

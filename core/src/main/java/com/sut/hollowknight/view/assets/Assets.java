@@ -51,6 +51,8 @@ public class Assets {
         manager.load("animation/knight/Recoil.atlas",           TextureAtlas.class);
         manager.load("animation/knight/Up Slash.atlas",         TextureAtlas.class);
         manager.load("animation/knight/Up Slash Effect.atlas",  TextureAtlas.class);
+        manager.load("animation/knight/Focus.atlas",           TextureAtlas.class);
+        manager.load("animation/knight/Focus End.atlas",       TextureAtlas.class);
 
         manager.load("animation/effects/RainGlow1.atlas", TextureAtlas.class);
         manager.load("animation/effects/RainGlow2.atlas", TextureAtlas.class);

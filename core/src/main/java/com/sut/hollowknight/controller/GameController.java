@@ -76,6 +76,20 @@ public class GameController {
 
         if (knight.isDead()) return;
 
+        // --- Focus
+        if (knight.isFocusing()) {
+            if (!input.isFocusPressed() || !knight.isGrounded()) {
+                knight.cancelFocus();
+            }
+            wasJumpHeld = jumpHeld;
+            return;
+        }
+        if (input.isFocusPressed() && knight.canFocus()) {
+            knight.beginFocus(false);
+            wasJumpHeld = jumpHeld;
+            return;
+        }
+
         // --- During knockback the player has no control ---
         if (knight.isInKnockback()) {
             wasJumpHeld = jumpHeld;
@@ -210,6 +224,12 @@ public class GameController {
         knight.tickWallJump(delta);
         knight.tickKnockback(delta);
         knight.tickInvincibility(delta);
+        knight.tickFocus(delta);
+
+        if (knight.isFocusing()) {
+            knight.setVelocityX(0f);
+            knight.setVelocityY(0f);
+        }
 
         int wallDir = detectWallDirection();
         knight.setWallDirection(wallDir);
@@ -226,6 +246,7 @@ public class GameController {
             && !knight.isDashingDown()
             && !knight.isAttacking()
             && !knight.isInKnockback()
+            && !knight.isFocusing()
             && knight.getState() != Knight.State.WALL_JUMP;
 
         if (canWallSlide) {
@@ -239,7 +260,10 @@ public class GameController {
             knight.setState(Knight.State.FALL);
         }
 
-        if (knight.isDashing()) {
+        if (knight.isFocusing()) {
+            knight.setVelocityX(0f);
+            knight.setVelocityY(0f);
+        } else if (knight.isDashing()) {
             knight.setVelocityX(knight.getDashDirection() * Knight.DASH_SPEED);
         } else if (knight.isDashingDown()) {
             knight.setVelocityX(0f);
@@ -256,7 +280,7 @@ public class GameController {
         }
         collision.resolveHorizontal(knight);
 
-        if (!knight.isDashing()) {
+        if (!knight.isDashing() && !knight.isFocusing()) {
             knight.setVelocityY(knight.getVelocityY() - Knight.GRAVITY * delta);
         }
 
@@ -265,6 +289,7 @@ public class GameController {
             && !knight.isDashingDown()
             && !knight.isWallSliding()
             && !knight.isAttacking()
+            && !knight.isFocusing()
             && knight.getVelocityY() <= 0
             && !knight.isGrounded()
             && knight.getState() != Knight.State.WALL_JUMP) {
@@ -275,6 +300,10 @@ public class GameController {
         knight.setY(prevY + knight.getVelocityY() * delta);
 
         boolean grounded = collision.resolveVertical(knight, prevY);
+        
+        if (knight.isFocusing()) {
+            grounded = true;
+        }
 
         if (knight.isDashingDown() && grounded) {
             knight.beginDashDownLand();
@@ -334,6 +363,13 @@ public class GameController {
     private void updateAnimationState(float delta) {
         if (knight.isInKnockback()) {
             return;
+        }
+
+        if (knight.isFocusing()) {
+            return;
+        }
+        if (knight.getState() == Knight.State.FOCUS_END) {
+            if (knight.getFocusEndTimer() > 0f) return;
         }
 
         if (knight.isDashing()) {

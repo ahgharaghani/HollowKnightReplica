@@ -50,6 +50,18 @@ public class Knight implements PhysicsBody {
 
     public static final int LOW_HEALTH_THRESHOLD = 1;
 
+    // ---- Focus / healing ----
+    public static final int FOCUS_SOUL_COST = 33;
+    public static final int FOCUS_HEAL_MASKS = 1;
+    public static final float FOCUS_DURATION = 1.5f;
+    public static final float FOCUS_END_DURATION = 0.25f;
+    public static final float QUICK_FOCUS_DURATION = 1.0f;
+
+    private boolean focusing;
+    private float focusTimer;
+    private float focusRequiredDuration = FOCUS_DURATION;
+    private float focusEndTimer;
+
     // ---- Animation state ----
     public enum State {
         IDLE,
@@ -78,6 +90,10 @@ public class Knight implements PhysicsBody {
         WALL_SLIDE,
         WALL_JUMP,
         DOUBLE_JUMP,
+
+        // Focus / healing
+        FOCUS,
+        FOCUS_END,
     }
     private State state = State.IDLE;
     private float stateTime;
@@ -237,6 +253,14 @@ public class Knight implements PhysicsBody {
     public float   getWallJumpTimer()        { return wallJumpTimer; }
     public boolean isWallJumpLocked()        { return wallJumpLockTimer > 0f; }
     public boolean canDoubleJump()           { return doubleJumpAvailable; }
+    public boolean isFocusing()              { return focusing; }
+    public float   getFocusTimer()           { return focusTimer; }
+    public float   getFocusRequiredDuration(){ return focusRequiredDuration; }
+    public float   getFocusEndTimer()        { return focusEndTimer; }
+    public boolean isFocusEnding()           { return focusEndTimer > 0f; }
+    public boolean canFocus() {
+        return grounded && !dead && hpMasks < maxMasks && soulAmount >= FOCUS_SOUL_COST;
+    }
 
     // ---- Mutations ----
 
@@ -319,6 +343,47 @@ public class Knight implements PhysicsBody {
 
     public void consumeSoul(int amount) {
         soulAmount = Math.max(soulAmount - amount, 0);
+    }
+
+    public void beginFocus(boolean quickFocusEquipped) {
+        if (!canFocus()) return;
+        cancelActions();
+        focusing = true;
+        focusTimer = 0f;
+        focusRequiredDuration = quickFocusEquipped ? QUICK_FOCUS_DURATION : FOCUS_DURATION;
+        focusEndTimer = 0f;
+        velocityX = 0f;
+        velocityY = 0f;
+        setState(State.FOCUS);
+    }
+
+    public void cancelFocus() {
+        if (!focusing) return;
+        focusing = false;
+        focusTimer = 0f;
+        focusEndTimer = 0f;
+        if (!dead) setState(grounded ? State.IDLE : State.FALL);
+    }
+
+    public void tickFocus(float delta) {
+        if (focusEndTimer > 0f) {
+            focusEndTimer -= delta;
+            if (focusEndTimer <= 0f) {
+                focusEndTimer = 0f;
+            }
+        }
+        if (!focusing) return;
+        velocityX = 0f;
+        velocityY = 0f;
+        focusTimer += delta;
+        if (focusTimer >= focusRequiredDuration) {
+            focusing = false;
+            focusTimer = 0f;
+            consumeSoul(FOCUS_SOUL_COST);
+            heal(FOCUS_HEAL_MASKS);
+            focusEndTimer = FOCUS_END_DURATION;
+            setState(State.FOCUS_END);
+        }
     }
 
     /** Returns true if invincibility just expired. */
@@ -541,5 +606,8 @@ public class Knight implements PhysicsBody {
         wallJumpTimer = 0f;
         wallJumpLockTimer = 0f;
         dashDownLandTimer = 0f;
+        focusing = false;
+        focusTimer = 0f;
+        focusEndTimer = 0f;
     }
 }

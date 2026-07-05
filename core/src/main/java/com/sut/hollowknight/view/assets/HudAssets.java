@@ -25,9 +25,9 @@ public class HudAssets {
     private static final float HEALTH_IDLE_FPS   = 12f;  // 45-frame breathing loop
     private static final float HEALTH_BREAK_FPS  = 20f;  // 6 frames -> 0.3 s pop
     private static final float HEALTH_REFILL_FPS = 15f;  // 6 frames -> 0.4 s
-    private static final float SOUL_IDLE_FPS     = 10f;  // subtle liquid wobble
-    private static final float SOUL_FILL_FPS     = 15f;  // slosh while gaining soul
-    private static final float SOUL_DRAIN_FPS    = 30f;  // slosh while spending soul
+    private static final float SOUL_IDLE_FPS     = 8f;   // subtle liquid wobble
+    private static final float SOUL_FILL_FPS     = 14f;  // slosh while gaining soul
+    private static final float SOUL_DRAIN_FPS    = 14f;  // slosh while spending soul
 
     // Animations
     private final Animation<TextureRegion> healthIdleAnim;
