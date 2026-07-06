@@ -5,6 +5,7 @@ import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
+import com.sut.hollowknight.model.collision.DamageZone;
 import com.sut.hollowknight.model.input.PlayerInput;
 import com.sut.hollowknight.view.camera.CameraRig;
 
@@ -34,6 +35,11 @@ public class GameController {
     private static final float DAMAGE_SHAKE_DURATION  = 0.25f;
     private boolean wasInvincible = false;
 
+    // ---- Spike damage ----
+    private static final int SPIKE_DAMAGE = 1;
+    private float lastSafeX;
+    private float lastSafeY;
+
     public GameController(Knight knight, TileMapCollider collider,
                           OrthographicCamera camera, float mapWidthPx, float mapHeightPx) {
         this.knight    = knight;
@@ -41,6 +47,8 @@ public class GameController {
         this.collider  = collider;
         this.collision = new CollisionResolver(collider);
         this.cameraRig = new CameraRig(camera, mapWidthPx, mapHeightPx);
+        this.lastSafeX = knight.getX();
+        this.lastSafeY = knight.getY();
     }
 
     public void setPaused(boolean paused) { this.paused = paused; }
@@ -59,6 +67,7 @@ public class GameController {
 
         handleInput();
         applyPhysics(delta);
+        resolveHazards();
         updateAnimationState(delta);
 
         // Shake on the exact frame the knight takes a hit (i-frame rising edge).
@@ -323,6 +332,14 @@ public class GameController {
         knight.setGrounded(grounded);
         wasGrounded = grounded;
 
+        // Remember the last safe spot: standing on ground, clear of spikes.
+        if (grounded
+            && !knight.isInKnockback()
+            && !collider.overlapsAnyDamagingRect(knight.getHurtBox())) {
+            lastSafeX = knight.getX();
+            lastSafeY = knight.getY();
+        }
+
         // Coyote window: short grace period to jump after leaving a platform
         if (grounded) {
             coyoteTimer = COYOTE_TIME;
@@ -335,6 +352,34 @@ public class GameController {
             jumpBufferTimer -= delta;
             if (jumpBufferTimer < 0f) jumpBufferTimer = 0f;
         }
+    }
+
+    private void resolveHazards() {
+        if (knight.isDead()) return;
+
+        // Pogo
+        if (knight.getState() == Knight.State.DOWN_SLASH) {
+            CollisionRect slash = knight.getActiveSlashBox();
+            if (slash != null && collider.overlapsAnyDamagingRect(slash)) {
+                knight.pogoBounce();
+                return;
+            }
+        }
+
+        if (knight.isInvincible()) return;
+        DamageZone zone = collider.getOverlappingDamageZone(knight.getHurtBox());
+        if (zone == null) return;
+
+        knight.takeDamage(SPIKE_DAMAGE);
+        if (knight.isDead()) return; // death plays out where the knight fell
+
+        // Teleport to the spike's referenced SafeSpot
+        if (zone.hasSafeSpot()) {
+            knight.setPosition(zone.getSafeX(), zone.getSafeY());
+        } else {
+            knight.setPosition(lastSafeX, lastSafeY);
+        }
+        knight.applyKnockback(0f, 0f);
     }
 
     private int detectWallDirection() {

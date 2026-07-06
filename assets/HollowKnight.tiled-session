@@ -246,6 +246,7 @@
             "scaleInEditor": 1
         }
     },
+    "last.objectTemplatePath": "C:/Users/ahgha/IdeaProjects/HollowKnight/assets",
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 8,
     "map.tileWidth": 8,
@@ -253,7 +254,7 @@
         "CityOfTears.tmx"
     ],
     "project": "HollowKnight.tiled-project",
-    "property.type": "bool",
+    "property.type": "string",
     "recentFiles": [
         "C:/Users/ahgha/Desktop/CityOfTears.tmx",
         "CityOfTears.tmx",

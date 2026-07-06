@@ -102,6 +102,8 @@ public class GameScreen extends AbstractScreen {
 
     private CombatSystem combat;
 
+    private TileMapCollider collider;
+
     // Debug hitbox overlay — toggle with F3. Tune box constants to the art.
     private ShapeRenderer debugShapes;
     private boolean debugBoxes = false;
@@ -114,8 +116,8 @@ public class GameScreen extends AbstractScreen {
         debugShapes = new ShapeRenderer();
         loadMap();
 
-        TileMapCollider collider = new TileMapCollider(
-            tiledMap, "Gameplay", "Collision");
+        collider = new TileMapCollider(
+            tiledMap, "Gameplay", "Collision", "Damaging", "SafeSpots");
 
         float[] spawn = findStartingPoint();
         Knight knight = new Knight(spawn[0], spawn[1]);
@@ -435,6 +437,12 @@ public class GameScreen extends AbstractScreen {
 
         debugShapes.setColor(Color.RED);
         drawRect(knight.getHurtBox());                     // knight hurtbox
+
+        debugShapes.setColor(Color.MAGENTA);
+        List<CollisionRect> spikes = collider.getDamagingRects();
+        for (int i = 0; i < spikes.size(); i++) {
+            drawRect(spikes.get(i));                       // spike hazard boxes
+        }
 
         CollisionRect slash = knight.getActiveSlashBox();
         if (slash != null) {

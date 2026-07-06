@@ -8,7 +8,9 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class TileMapCollider {
 
@@ -20,8 +22,20 @@ public class TileMapCollider {
     private final float mapHeightPx;
 
     private final List<CollisionRect> collisionRects;
+    private final List<CollisionRect> damagingRects;
+    private final List<DamageZone> damageZones;
 
     public TileMapCollider(TiledMap map, String tileLayerName, String objectLayerName) {
+        this(map, tileLayerName, objectLayerName, null, null);
+    }
+
+    public TileMapCollider(TiledMap map, String tileLayerName,
+                           String objectLayerName, String damagingLayerName) {
+        this(map, tileLayerName, objectLayerName, damagingLayerName, null);
+    }
+
+    public TileMapCollider(TiledMap map, String tileLayerName, String objectLayerName,
+                           String damagingLayerName, String safeSpotsLayerName) {
         TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(tileLayerName);
         this.cols = layer.getWidth();
         this.rows = layer.getHeight();
@@ -38,17 +52,69 @@ public class TileMapCollider {
         }
 
         collisionRects = new ArrayList<>();
-        MapLayer objLayer = map.getLayers().get(objectLayerName);
-        if (objLayer != null) {
-            for (MapObject obj : objLayer.getObjects()) {
-                if (obj instanceof RectangleMapObject) {
-                    RectangleMapObject rectObj = (RectangleMapObject) obj;
-                    float worldX = rectObj.getRectangle().x;
-                    float worldY = rectObj.getRectangle().y;
-                    float w = rectObj.getRectangle().width;
-                    float h = rectObj.getRectangle().height;
-                    collisionRects.add(new CollisionRect(worldX, worldY, w, h));
-                }
+        loadRects(map, objectLayerName, collisionRects);
+
+        // Damaging zones, each optionally referencing a named SafeSpot object.
+        Map<String, float[]> safeSpots = loadSafeSpots(map, safeSpotsLayerName);
+        damageZones = new ArrayList<>();
+        damagingRects = new ArrayList<>();
+        loadDamageZones(map, damagingLayerName, safeSpots, damageZones, damagingRects);
+    }
+
+    private static void loadRects(TiledMap map, String layerName, List<CollisionRect> out) {
+        if (layerName == null) return;
+        MapLayer objLayer = map.getLayers().get(layerName);
+        if (objLayer == null) return;
+        for (MapObject obj : objLayer.getObjects()) {
+            if (obj instanceof RectangleMapObject) {
+                RectangleMapObject rectObj = (RectangleMapObject) obj;
+                float worldX = rectObj.getRectangle().x;
+                float worldY = rectObj.getRectangle().y;
+                float w = rectObj.getRectangle().width;
+                float h = rectObj.getRectangle().height;
+                out.add(new CollisionRect(worldX, worldY, w, h));
+            }
+        }
+    }
+
+    private static Map<String, float[]> loadSafeSpots(TiledMap map, String layerName) {
+        Map<String, float[]> spots = new HashMap<>();
+        if (layerName == null) return spots;
+        MapLayer objLayer = map.getLayers().get(layerName);
+        if (objLayer == null) return spots;
+        for (MapObject obj : objLayer.getObjects()) {
+            String name = obj.getName();
+            if (name == null || name.isEmpty()) continue;
+            Float x = obj.getProperties().get("x", Float.class);
+            Float y = obj.getProperties().get("y", Float.class);
+            if (x != null && y != null) {
+                spots.put(name, new float[]{ x, y });
+            }
+        }
+        return spots;
+    }
+
+    private static void loadDamageZones(TiledMap map, String layerName,
+                                        Map<String, float[]> safeSpots,
+                                        List<DamageZone> zonesOut,
+                                        List<CollisionRect> rectsOut) {
+        if (layerName == null) return;
+        MapLayer objLayer = map.getLayers().get(layerName);
+        if (objLayer == null) return;
+        for (MapObject obj : objLayer.getObjects()) {
+            if (!(obj instanceof RectangleMapObject)) continue;
+            RectangleMapObject rectObj = (RectangleMapObject) obj;
+            CollisionRect rect = new CollisionRect(
+                rectObj.getRectangle().x, rectObj.getRectangle().y,
+                rectObj.getRectangle().width, rectObj.getRectangle().height);
+            rectsOut.add(rect);
+
+            String safeSpotName = obj.getProperties().get("safeSpot", String.class);
+            float[] spot = safeSpotName != null ? safeSpots.get(safeSpotName) : null;
+            if (spot != null) {
+                zonesOut.add(new DamageZone(rect, spot[0], spot[1]));
+            } else {
+                zonesOut.add(new DamageZone(rect));
             }
         }
     }
@@ -78,6 +144,28 @@ public class TileMapCollider {
 
     public List<CollisionRect> getCollisionRects() {
         return collisionRects;
+    }
+
+    public List<CollisionRect> getDamagingRects() {
+        return damagingRects;
+    }
+
+    public boolean overlapsAnyDamagingRect(AABB body) {
+        for (CollisionRect damagingRect : damagingRects) {
+            if (AABB.overlaps(body, damagingRect)) return true;
+        }
+        return false;
+    }
+
+    public DamageZone getOverlappingDamageZone(AABB body) {
+        DamageZone firstHit = null;
+        for (DamageZone zone : damageZones) {
+            if (AABB.overlaps(body, zone.getRect())) {
+                if (zone.hasSafeSpot()) return zone;
+                if (firstHit == null) firstHit = zone;
+            }
+        }
+        return firstHit;
     }
 
     public boolean overlapsAnyRect(float left, float bottom, float right, float top) {
