@@ -361,7 +361,7 @@ public class GameController {
         if (knight.getState() == Knight.State.DOWN_SLASH) {
             CollisionRect slash = knight.getActiveSlashBox();
             if (slash != null && collider.overlapsAnyDamagingRect(slash)) {
-                knight.pogoBounce();
+                if (!knight.hasPogoedThisAttack()) knight.pogoBounce();
                 return;
             }
         }

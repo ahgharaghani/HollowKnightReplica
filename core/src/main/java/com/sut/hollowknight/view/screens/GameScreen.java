@@ -117,7 +117,12 @@ public class GameScreen extends AbstractScreen {
         loadMap();
 
         collider = new TileMapCollider(
-            tiledMap, "Gameplay", "Collision", "Damaging", "SafeSpots");
+            tiledMap,
+            "Gameplay",
+            "Collision",
+            "Damaging",
+            "SafeSpots"
+        );
 
         float[] spawn = findStartingPoint();
         Knight knight = new Knight(spawn[0], spawn[1]);

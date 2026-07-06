@@ -119,6 +119,7 @@ public class Knight implements PhysicsBody {
     private float attackComboTimer;      // counts down ATTACK_COMBO_WINDOW
     private float attackTimer;           // counts down the active slash animation
     private int attackId;
+    private boolean pogoedThisAttack;
 
     // ---- Dash state ----
     public static final float DASH_SPEED        = 720f;
@@ -248,6 +249,7 @@ public class Knight implements PhysicsBody {
     public float   getAttackTimer()          { return attackTimer; }
     public int     getAttackComboCount()     { return attackComboCount; }
     public int     getAttackId()             { return attackId; }
+    public boolean hasPogoedThisAttack()     { return pogoedThisAttack; }
     public boolean isWallSliding()           { return state == State.WALL_SLIDE; }
     public int     getWallDirection()        { return wallDirection; }
     public float   getWallJumpTimer()        { return wallJumpTimer; }
@@ -415,6 +417,7 @@ public class Knight implements PhysicsBody {
         attackTimer = DIRECTIONAL_ATTACK_DURATION;
         attackComboCount = 0;
         attackComboTimer = 0f;
+        pogoedThisAttack = false;
         setState(which);
     }
 
@@ -571,8 +574,7 @@ public class Knight implements PhysicsBody {
         dashingDown = false;
         dashTimer = 0f;
         dashDownTimer = 0f;
-        attackTimer = 0f; // end the slash so the state machine takes over
-        setState(State.JUMP);
+        pogoedThisAttack = true;
     }
 
     //  Death
