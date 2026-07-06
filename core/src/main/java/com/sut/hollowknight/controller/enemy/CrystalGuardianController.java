@@ -100,6 +100,7 @@ public class CrystalGuardianController implements EnemyController {
         }
 
         guardian.addStateTime(delta);
+        guardian.getLaser().tick(delta); // beam art animation clock
 
         switch (guardian.getState()) {
             case IDLE:        updateIdle();          break;
@@ -163,7 +164,8 @@ public class CrystalGuardianController implements EnemyController {
     private boolean seesKnight() {
         if (knight == null) return false;
 
-        float knightCenterY = knight.getY() + Knight.KNIGHT_HEIGHT / 2f;
+        // Torso center: the hurtbox midpoint, NOT the low physics box.
+        float knightCenterY = knight.getHurtBox().getCenterY();
         float dx = knight.getX() - guardian.getX();
 
         boolean inFront = guardian.isFacingRight() ? dx > 0f : dx < 0f;
@@ -240,7 +242,8 @@ public class CrystalGuardianController implements EnemyController {
         float ox = guardian.getMuzzleX();
         float oy = guardian.getMuzzleY();
         if (knight != null) {
-            aimAt(ox, oy, knight.getX(), knight.getY() + Knight.KNIGHT_HEIGHT / 2f);
+            // Aim at the torso — the hurtbox center — not the knight's feet.
+            aimAt(ox, oy, knight.getX(), knight.getHurtBox().getCenterY());
         } else {
             aimX = guardian.isFacingRight() ? 1f : -1f;
             aimY = 0f;

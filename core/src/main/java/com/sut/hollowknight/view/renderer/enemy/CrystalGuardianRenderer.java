@@ -2,8 +2,6 @@ package com.sut.hollowknight.view.renderer.enemy;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
-import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -25,16 +23,25 @@ public class CrystalGuardianRenderer {
     private static final float FOOT_OFFSET_Y   = 3f;
     private static final float SPRITE_CENTER_X = 109f;
 
-    // Laser beam visuals: a soft outer glow around a bright core.
-    private static final float GLOW_SCALE = 1.8f;
-    private static final Color GLOW_COLOR = new Color(1f, 0.45f, 0.85f, 0.55f);
-    private static final Color CORE_COLOR = new Color(1f, 0.9f, 0.97f, 0.95f);
-    // Charging tracking beam: a faint thin thread, no glow.
-    private static final Color TRACKING_COLOR = new Color(1f, 0.55f, 0.85f, 0.6f);
+    // Laser beam visuals — art from Laser.atlas.
+    /** Native beam tile: 117x117 with the pulsing core through the middle. */
+    private static final float BEAM_SEGMENT_LENGTH = 117f;
+    private static final float BEAM_DRAW_HEIGHT    = 117f;
+    /** Muzzle burst canvas (228x123); the flash core sits at this pivot. */
+    private static final float BURST_WIDTH   = 228f;
+    private static final float BURST_HEIGHT  = 123f;
+    private static final float BURST_PIVOT_X = 176f;
+    private static final float BURST_PIVOT_Y = 62f;
+    /** Lamp glow sprite (131x113), drawn centered on the muzzle. */
+    private static final float GLOW_WIDTH  = 131f;
+    private static final float GLOW_HEIGHT = 113f;
+    /** Charging tracking beam: same art, squashed thin and faded. */
+    private static final float TRACKING_HEIGHT = 12f;
+    private static final int   TRACKING_FRAME  = 7; // thickest pulse frame
+    private static final Color TRACKING_COLOR  = new Color(1f, 0.7f, 0.9f, 0.55f);
 
-    /** 1x1 white pixel, rotated and stretched into the beam quad. */
-    private final Texture beamTexture;
-    private final TextureRegion beamRegion;
+    /** Reusable region for the clipped tile at the beam's end — never allocated per frame. */
+    private final TextureRegion beamEndRegion = new TextureRegion();
 
     public CrystalGuardianRenderer(CrystalGuardianAssets assets) {
         this.assets = assets;
@@ -50,20 +57,12 @@ public class CrystalGuardianRenderer {
         }
         this.flashShader = shader;
 
-        // Build the beam texture once — never allocated in the render loop.
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(Color.WHITE);
-        pixmap.fill();
-        beamTexture = new Texture(pixmap);
-        pixmap.dispose();
-        beamRegion = new TextureRegion(beamTexture);
     }
 
     public void dispose() {
         if (flashShader != null) {
             flashShader.dispose();
         }
-        beamTexture.dispose();
     }
 
     public void draw(SpriteBatch batch, CrystalGuardian guardian) {
@@ -98,47 +97,86 @@ public class CrystalGuardianRenderer {
     }
 
     /**
-     * Draws the beam as two rotated quads (glow + core) pivoting on the
-     * muzzle. The rotation angle was cached at fire time — no per-frame
-     * trigonometry here.
+     * Draws the beam with the Laser.atlas art. The pulsing beam tiles repeat
+     * along the beam line, rotated around the muzzle — the angle was cached
+     * at fire time, so there is no per-frame trigonometry. A muzzle burst
+     * plays once on ignition and the lamp glow marks the origin throughout.
      */
     private void drawLaser(SpriteBatch batch, Laser laser) {
         if (!laser.isActive()) return;
 
+        // Charging tracking beam: a thin, faded thread of the same beam art.
+        if (laser.isHarmless()) {
+            Object[] frames = assets.getLaserBeamAnim().getKeyFrames();
+            TextureRegion thin = (TextureRegion) frames[TRACKING_FRAME];
+            batch.setColor(TRACKING_COLOR);
+            drawBeamTiles(batch, laser, thin, TRACKING_HEIGHT);
+            batch.setColor(Color.WHITE);
+            drawMuzzleGlow(batch, laser, 0.6f);
+            return;
+        }
+
+        // Fired beam: pulsing tiles at full thickness (LOOP over 15 frames).
+        TextureRegion tile = assets.getLaserBeamAnim().getKeyFrame(laser.getLife());
+        drawBeamTiles(batch, laser, tile, BEAM_DRAW_HEIGHT);
+
+        // One-shot ignition burst, pivoting on the muzzle along the beam line.
+        if (!assets.getLaserBurstAnim().isAnimationFinished(laser.getLife())) {
+            TextureRegion burst = assets.getLaserBurstAnim().getKeyFrame(laser.getLife());
+            batch.draw(burst,
+                laser.getOriginX() - BURST_PIVOT_X,
+                laser.getOriginY() - BURST_PIVOT_Y,
+                BURST_PIVOT_X, BURST_PIVOT_Y,     // rotate around the flash core
+                BURST_WIDTH, BURST_HEIGHT,
+                1f, 1f, laser.getAngleDeg());
+        }
+
+        drawMuzzleGlow(batch, laser, 1f);
+    }
+
+    /** Repeats a beam tile along the beam line, rotated around the muzzle. */
+    private void drawBeamTiles(SpriteBatch batch, Laser laser,
+                               TextureRegion tile, float drawHeight) {
         float ox = laser.getOriginX();
         float oy = laser.getOriginY();
         float angle = laser.getAngleDeg();
         float length = laser.getLength();
 
-        // The charging beam is a thin harmless thread; the fired beam is thick
-        // with a soft outer glow.
-        if (laser.isHarmless()) {
-            batch.setColor(TRACKING_COLOR);
-            batch.draw(beamRegion,
-                ox, oy - Laser.TRACKING_THICKNESS / 2f,
-                0f, Laser.TRACKING_THICKNESS / 2f,
-                length, Laser.TRACKING_THICKNESS,
+        int fullTiles = (int) (length / BEAM_SEGMENT_LENGTH);
+        for (int i = 0; i < fullTiles; i++) {
+            float sx = ox + laser.getDirX() * (i * BEAM_SEGMENT_LENGTH);
+            float sy = oy + laser.getDirY() * (i * BEAM_SEGMENT_LENGTH);
+            batch.draw(tile,
+                sx, sy - drawHeight / 2f,
+                0f, drawHeight / 2f,              // pivot on the tile's left-center
+                BEAM_SEGMENT_LENGTH, drawHeight,
                 1f, 1f, angle);
-            batch.setColor(Color.WHITE);
-            return;
         }
 
-        float glowThickness = Laser.THICKNESS * GLOW_SCALE;
-        batch.setColor(GLOW_COLOR);
-        batch.draw(beamRegion,
-            ox, oy - glowThickness / 2f,        // position (pre-rotation)
-            0f, glowThickness / 2f,             // origin: pivot on the muzzle
-            length, glowThickness,              // stretched into the beam
-            1f, 1f, angle);
+        // Clipped tile at the terrain hit — trimmed in texture space so the
+        // art never overshoots the wall. Reuses one region: zero allocation.
+        float rem = length - fullTiles * BEAM_SEGMENT_LENGTH;
+        int remPx = (int) (tile.getRegionWidth() * (rem / BEAM_SEGMENT_LENGTH));
+        if (remPx > 0) {
+            beamEndRegion.setRegion(tile, 0, 0, remPx, tile.getRegionHeight());
+            float sx = ox + laser.getDirX() * (fullTiles * BEAM_SEGMENT_LENGTH);
+            float sy = oy + laser.getDirY() * (fullTiles * BEAM_SEGMENT_LENGTH);
+            batch.draw(beamEndRegion,
+                sx, sy - drawHeight / 2f,
+                0f, drawHeight / 2f,
+                rem, drawHeight,
+                1f, 1f, angle);
+        }
+    }
 
-        batch.setColor(CORE_COLOR);
-        batch.draw(beamRegion,
-            ox, oy - Laser.THICKNESS / 2f,
-            0f, Laser.THICKNESS / 2f,
-            length, Laser.THICKNESS,
-            1f, 1f, angle);
-
-        batch.setColor(Color.WHITE);
+    /** Radial glow centered on the lamp while any beam is active. */
+    private void drawMuzzleGlow(SpriteBatch batch, Laser laser, float scale) {
+        float w = GLOW_WIDTH * scale;
+        float h = GLOW_HEIGHT * scale;
+        batch.draw(assets.getLaserGlowRegion(),
+            laser.getOriginX() - w / 2f,
+            laser.getOriginY() - h / 2f,
+            w, h);
     }
 
     public TextureRegion getCurrentFrame(CrystalGuardian guardian) {

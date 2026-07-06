@@ -21,13 +21,13 @@ public class HuskHornheadAssets {
     private static final String DEATH_LAND_PATH  = BASE + "Death Land.atlas";
 
     //  Frame rates
-    private static final float IDLE_FPS       = 10f;
+    private static final float IDLE_FPS       = 8f;
     private static final float WALK_FPS       = 10f;
     private static final float TURN_FPS       = 10f;
     private static final float ANTIC_FPS      = 12f;
-    private static final float LUNGE_FPS      = 12f;
-    private static final float COOLDOWN_FPS   = 12f;
-    private static final float DEATH_AIR_FPS  = 30f;
+    private static final float LUNGE_FPS      = 15f;
+    private static final float COOLDOWN_FPS   = 8f;
+    private static final float DEATH_AIR_FPS  = 8f;
     private static final float DEATH_LAND_FPS = 12f;
 
     // Animations

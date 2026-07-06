@@ -30,6 +30,8 @@ public class Laser {
     private float angleDeg;
     /** Charging tracking beam: drawn thin and deals no damage. */
     private boolean harmless;
+    /** Seconds since activation — drives the beam art animation. */
+    private float life;
 
     /** Damaging beam — locked at fire time. */
     public void activate(float originX, float originY,
@@ -46,6 +48,7 @@ public class Laser {
         this.length = length;
         this.angleDeg = (float) Math.toDegrees(Math.atan2(dirY, dirX));
         this.harmless = harmless;
+        this.life = 0f;
         this.active = true;
     }
 
@@ -54,7 +57,13 @@ public class Laser {
         this.harmless = false;
     }
 
+    /** Advances the beam's animation clock. No-op while inactive. */
+    public void tick(float delta) {
+        if (active) life += delta;
+    }
+
     public boolean isActive()   { return active; }
+    public float getLife()      { return life; }
     public boolean isHarmless() { return harmless; }
     public float getOriginX()  { return originX; }
     public float getOriginY()  { return originY; }
