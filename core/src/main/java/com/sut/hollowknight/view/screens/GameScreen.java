@@ -22,22 +22,31 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.IntArray;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
+import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
+import com.sut.hollowknight.controller.enemy.HuskHornheadController;
 import com.sut.hollowknight.controller.enemy.TiktikController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
+import com.sut.hollowknight.model.enemy.CrystalGuardian;
+import com.sut.hollowknight.model.enemy.HuskHornhead;
 import com.sut.hollowknight.model.enemy.Javelin;
+import com.sut.hollowknight.model.enemy.Laser;
 import com.sut.hollowknight.model.enemy.Tiktik;
 import com.sut.hollowknight.model.enemy.WingedSentry;
 import com.sut.hollowknight.view.animator.KnightAnimator;
 import com.sut.hollowknight.view.assets.Assets;
 import com.sut.hollowknight.view.assets.HudAssets;
+import com.sut.hollowknight.view.assets.CrystalGuardianAssets;
+import com.sut.hollowknight.view.assets.HuskHornheadAssets;
 import com.sut.hollowknight.view.assets.TiktikAssets;
 import com.sut.hollowknight.view.assets.WingedSentryAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.effects.RainEffect;
+import com.sut.hollowknight.view.renderer.enemy.CrystalGuardianRenderer;
+import com.sut.hollowknight.view.renderer.enemy.HuskHornheadRenderer;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
 import com.sut.hollowknight.view.renderer.enemy.TiktikRenderer;
 import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
@@ -96,6 +105,14 @@ public class GameScreen extends AbstractScreen {
     private List<TiktikController> tiktikControllers;
     private TiktikRenderer tiktikRenderer;
 
+    private HuskHornheadAssets hornheadAssets;
+    private List<HuskHornheadController> hornheadControllers;
+    private HuskHornheadRenderer hornheadRenderer;
+
+    private CrystalGuardianAssets guardianAssets;
+    private List<CrystalGuardianController> guardianControllers;
+    private CrystalGuardianRenderer guardianRenderer;
+
     private List<EnemyController> enemyControllers;
 
     private HudRenderer hudRenderer;
@@ -138,10 +155,14 @@ public class GameScreen extends AbstractScreen {
 
         initWingedSentries(collider, knight);
         initTiktiks(collider, knight);
+        initHornheads(collider, knight);
+        initGuardians(collider, knight);
 
         enemyControllers = new ArrayList<>();
         enemyControllers.addAll(sentryControllers);
         enemyControllers.addAll(tiktikControllers);
+        enemyControllers.addAll(hornheadControllers);
+        enemyControllers.addAll(guardianControllers);
         combat = new CombatSystem(knight, enemyControllers);
 
         hudRenderer = new HudRenderer(new HudAssets(Assets.manager));
@@ -194,6 +215,60 @@ public class GameScreen extends AbstractScreen {
                 TiktikController tiktikController = new TiktikController(tiktik, collider);
                 tiktikController.setKnight(knight);
                 tiktikControllers.add(tiktikController);
+            }
+        }
+    }
+
+    private void initHornheads(TileMapCollider collider, Knight knight) {
+        hornheadAssets = new HuskHornheadAssets(Assets.manager);
+        hornheadRenderer = new HuskHornheadRenderer(hornheadAssets);
+
+        hornheadControllers = new ArrayList<>();
+
+        MapLayer spawnLayer = tiledMap.getLayers().get("HornheadSpawns");
+        if (spawnLayer == null) {
+            Gdx.app.log("GameScreen", "HornheadSpawns layer not found! No hornheads spawned.");
+            return;
+        }
+
+        for (MapObject obj : spawnLayer.getObjects()) {
+            Float x = obj.getProperties().get("x", Float.class);
+            Float y = obj.getProperties().get("y", Float.class);
+            if (x != null && y != null) {
+                Gdx.app.log("GameScreen", "Spawning hornhead at (" + x + ", " + y + ")");
+                HuskHornhead hornhead = new HuskHornhead(x, y);
+                HuskHornheadController hornheadController = new HuskHornheadController(hornhead, collider);
+                hornheadController.setKnight(knight);
+                hornheadControllers.add(hornheadController);
+            }
+        }
+    }
+
+    private void initGuardians(TileMapCollider collider, Knight knight) {
+        guardianAssets = new CrystalGuardianAssets(Assets.manager);
+        guardianRenderer = new CrystalGuardianRenderer(guardianAssets);
+
+        guardianControllers = new ArrayList<>();
+
+        MapLayer spawnLayer = tiledMap.getLayers().get("GuardianSpawns");
+        if (spawnLayer == null) {
+            Gdx.app.log("GameScreen", "GuardianSpawns layer not found! No guardians spawned.");
+            return;
+        }
+
+        for (MapObject obj : spawnLayer.getObjects()) {
+            Float x = obj.getProperties().get("x", Float.class);
+            Float y = obj.getProperties().get("y", Float.class);
+            if (x != null && y != null) {
+                // Optional per-spawn "facingRight" bool set in Tiled
+                // (native art faces left, so the default watch is leftward).
+                Boolean facingRight = obj.getProperties().get("facingRight", Boolean.class);
+                boolean faceRight = facingRight != null && facingRight;
+                Gdx.app.log("GameScreen", "Spawning guardian at (" + x + ", " + y + ")");
+                CrystalGuardian guardian = new CrystalGuardian(x, y, faceRight);
+                CrystalGuardianController guardianController = new CrystalGuardianController(guardian, collider);
+                guardianController.setKnight(knight);
+                guardianControllers.add(guardianController);
             }
         }
     }
@@ -391,8 +466,16 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        for (int i = 0; i < tiktikControllers.size(); i++) {
-            tiktikRenderer.draw(batch, tiktikControllers.get(i).getTiktik());
+        for (TiktikController tiktikController : tiktikControllers) {
+            tiktikRenderer.draw(batch, tiktikController.getTiktik());
+        }
+
+        for (HuskHornheadController hornheadController : hornheadControllers) {
+            hornheadRenderer.draw(batch, hornheadController.getHornhead());
+        }
+
+        for (CrystalGuardianController guardianController : guardianControllers) {
+            guardianRenderer.draw(batch, guardianController.getGuardian());
         }
 
         batch.end();
@@ -436,8 +519,14 @@ public class GameScreen extends AbstractScreen {
         for (WingedSentryController sc : sentryControllers) {
             drawBox(sc.getSentry());                       // sentry body box
         }
-        for (int i = 0; i < tiktikControllers.size(); i++) {
-            drawBox(tiktikControllers.get(i).getTiktik()); // tiktik body box
+        for (TiktikController tiktikController : tiktikControllers) {
+            drawBox(tiktikController.getTiktik()); // tiktik body box
+        }
+        for (HuskHornheadController hornheadController : hornheadControllers) {
+            drawBox(hornheadController.getHornhead()); // hornhead body box
+        }
+        for (CrystalGuardianController guardianController : guardianControllers) {
+            drawBox(guardianController.getGuardian()); // guardian body box
         }
 
         debugShapes.setColor(Color.RED);
@@ -465,6 +554,25 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
+        // Hornhead vision rectangles (cyan) — only meaningful while alive
+        debugShapes.setColor(Color.CYAN);
+        for (HuskHornheadController hornheadController : hornheadControllers) {
+            HuskHornhead hornhead = hornheadController.getHornhead();
+            if (hornhead.isAlive()) {
+                drawRect(hornhead.getVisionRect());
+            }
+        }
+
+        // Guardian laser beams (yellow line along the beam core)
+        debugShapes.setColor(Color.YELLOW);
+        for (CrystalGuardianController guardianController : guardianControllers) {
+            Laser laser = guardianController.getLaser();
+            if (laser.isActive()) {
+                debugShapes.line(laser.getOriginX(), laser.getOriginY(),
+                    laser.getEndX(), laser.getEndY());
+            }
+        }
+
         debugShapes.end();
     }
 
@@ -487,6 +595,8 @@ public class GameScreen extends AbstractScreen {
         debugShapes.dispose();
         sentryRenderer.dispose();
         tiktikRenderer.dispose();
+        hornheadRenderer.dispose();
+        guardianRenderer.dispose();
         hudRenderer.dispose();
     }
 }

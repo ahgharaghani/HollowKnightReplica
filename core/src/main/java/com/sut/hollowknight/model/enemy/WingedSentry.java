@@ -59,11 +59,11 @@ public class WingedSentry implements PhysicsBody {
 
     // ---- Nail-hit recoil ----
     /** Initial recoil speed in px/s; decays linearly over the duration. */
-    public static final float RECOIL_SPEED = 900f;
+    public static final float RECOIL_SPEED = 1800f;
     /** How long one recoil impulse lasts, in seconds. */
     public static final float RECOIL_DURATION = 0.18f;
     /** Relative mass — heavier enemies recoil less. 1 = standard. */
-    public static final float MASS = 1.0f;
+    public static final float MASS = 1f;
 
     private float recoilVelX;
     private float recoilVelY;

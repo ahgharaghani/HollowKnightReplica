@@ -1,0 +1,13 @@
+Death Air.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+Death Air
+index:2
+bounds:2,2,285,189
+Death Air
+index:1
+bounds:289,2,285,189
+Death Air
+index:0
+bounds:576,2,285,189

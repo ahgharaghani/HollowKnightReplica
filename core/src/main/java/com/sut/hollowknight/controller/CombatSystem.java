@@ -1,11 +1,13 @@
 package com.sut.hollowknight.controller;
 
+import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.enemy.Javelin;
+import com.sut.hollowknight.model.enemy.Laser;
 
 import java.util.List;
 
@@ -19,6 +21,12 @@ public class CombatSystem {
     // Javelin damage
     private static final float JAVELIN_KNOCKBACK_X = 380f;
     private static final float JAVELIN_KNOCKBACK_Y = 260f;
+
+    // Crystal Guardian laser damage
+    private static final float LASER_KNOCKBACK_X = 420f;
+    private static final float LASER_KNOCKBACK_Y = 260f;
+    /** March step along the beam when testing the knight's hurtbox. */
+    private static final float LASER_SAMPLE_STEP = 12f;
 
     // Nail attack
     private static final int   NAIL_DAMAGE = 1;
@@ -40,6 +48,9 @@ public class CombatSystem {
             resolveContactDamage(enemy);
             if (enemy instanceof WingedSentryController) {
                 resolveJavelinDamage((WingedSentryController) enemy);
+            }
+            if (enemy instanceof CrystalGuardianController) {
+                resolveLaserDamage((CrystalGuardianController) enemy);
             }
         }
     }
@@ -97,5 +108,40 @@ public class CombatSystem {
         knight.takeDamage(Javelin.DAMAGE);
         knight.applyKnockback(knockbackDir * JAVELIN_KNOCKBACK_X, JAVELIN_KNOCKBACK_Y);
         javelin.setState(Javelin.State.SNAP);
+    }
+
+    private void resolveLaserDamage(CrystalGuardianController gc) {
+        if (knight.isInvincible()) return;
+
+        Laser laser = gc.getLaser();
+        if (laser == null || !laser.isActive() || laser.isHarmless()) return;
+
+        CollisionRect hurtBox = knight.getHurtBox();
+        float half   = Laser.THICKNESS / 2f;
+        float left   = hurtBox.getLeft()   - half;
+        float right  = hurtBox.getRight()  + half;
+        float bottom = hurtBox.getBottom() - half;
+        float top    = hurtBox.getTop()    + half;
+
+        float ox = laser.getOriginX();
+        float oy = laser.getOriginY();
+        float dirX = laser.getDirX();
+        float dirY = laser.getDirY();
+        float length = laser.getLength();
+
+        boolean hit = false;
+        for (float t = 0f; t <= length; t += LASER_SAMPLE_STEP) {
+            float px = ox + dirX * t;
+            float py = oy + dirY * t;
+            if (px >= left && px <= right && py >= bottom && py <= top) {
+                hit = true;
+                break;
+            }
+        }
+        if (!hit) return;
+
+        int knockbackDir = knight.getX() < ox ? -1 : 1;
+        knight.takeDamage(Laser.DAMAGE);
+        knight.applyKnockback(knockbackDir * LASER_KNOCKBACK_X, LASER_KNOCKBACK_Y);
     }
 }
