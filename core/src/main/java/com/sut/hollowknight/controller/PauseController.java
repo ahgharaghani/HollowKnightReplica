@@ -66,7 +66,8 @@ public class PauseController {
     }
 
     public String getCheatCodesText() {
-        return "Ctrl+B  Boss Teleport  |  Ctrl+F  Noclip  |  Ctrl+H  Heal\n" +
-               "Ctrl+S  Refill Soul   |  Ctrl+G  God Mode |  Ctrl+K  Insta-Kill";
+        return "Ctrl+B  Boss Arena Teleport   |   Ctrl+F  Noclip / Spectator\n" +
+               "Ctrl+H  Emergency Heal (arm)  |   Ctrl+S  Refill Soul\n" +
+               "Ctrl+G  God Mode              |   Ctrl+K  Kill All Enemies";
     }
 }

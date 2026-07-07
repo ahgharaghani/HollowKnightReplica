@@ -80,6 +80,13 @@ public class GameController {
             return;
         }
 
+        // Noclip/Spectator cheat: free-fly with no gravity, collisions, or hazards.
+        if (knight.isNoclip()) {
+            applyNoclipMovement(delta);
+            cameraRig.follow(knight.getX(), knight.getY(), delta);
+            return;
+        }
+
         handleInput();
         applyPhysics(delta);
         resolveHazards();
@@ -405,7 +412,27 @@ public class GameController {
         }
     }
 
+    /** Noclip flight speed — fast map traversal for testing (spec Part 3). */
+    private static final float NOCLIP_SPEED = Knight.MOVE_SPEED * 3f;
+
+    /** Free-fly movement: direct position writes, physics pipeline bypassed. */
+    private void applyNoclipMovement(float delta) {
+        float dx = 0f;
+        float dy = 0f;
+        if (input.isMoveLeftPressed())  { dx -= 1f; knight.setFacingRight(false); }
+        if (input.isMoveRightPressed()) { dx += 1f; knight.setFacingRight(true);  }
+        if (input.isMoveUpPressed())    { dy += 1f; }
+        if (input.isMoveDownPressed())  { dy -= 1f; }
+        knight.setPosition(knight.getX() + dx * NOCLIP_SPEED * delta,
+                           knight.getY() + dy * NOCLIP_SPEED * delta);
+        // Velocity stays zeroed and stateTime frozen: movement anims are off.
+        knight.setVelocityX(0f);
+        knight.setVelocityY(0f);
+    }
+
     private void resolveHazards() {
+        if (knight.isGodMode()) return; // cheat: spikes can't touch a god
+
         if (knight.isDead()) return;
 
         // Pogo

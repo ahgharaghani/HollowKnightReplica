@@ -20,6 +20,7 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.IntArray;
+import com.sut.hollowknight.controller.CheatController;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
 import com.sut.hollowknight.controller.PauseController;
@@ -140,6 +141,8 @@ public class GameScreen extends AbstractScreen {
      *  world is drawn (so the captured frame excludes the dim overlay). */
     private boolean settingsRequested = false;
 
+    private CheatController cheatController;
+
     private CombatSystem combat;
 
     private TileMapCollider collider;
@@ -187,6 +190,10 @@ public class GameScreen extends AbstractScreen {
         enemyControllers.addAll(hornheadControllers);
         enemyControllers.addAll(guardianControllers);
         combat = new CombatSystem(knight, enemyControllers);
+
+        float[] bossArena = findBossArena();
+        cheatController = new CheatController(knight, enemyControllers,
+            bossArena[0], bossArena[1]);
 
         spiritRenderer = new VengefulSpiritRenderer(new VengefulSpiritAssets(Assets.manager));
         wraithRenderer = new HowlingWraithRenderer(new HowlingWraithAssets(Assets.manager));
@@ -340,6 +347,23 @@ public class GameScreen extends AbstractScreen {
         return indices.toArray();
     }
 
+    /** Locate the "Boss Arena" marker object (Ctrl+B teleport target). */
+    private float[] findBossArena() {
+        for (MapLayer layer : tiledMap.getLayers()) {
+            for (MapObject obj : layer.getObjects()) {
+                if ("Boss Arena".equals(obj.getName())) {
+                    Float ox = obj.getProperties().get("x", Float.class);
+                    Float oy = obj.getProperties().get("y", Float.class);
+                    if (ox != null && oy != null) {
+                        return new float[]{ ox, oy };
+                    }
+                }
+            }
+        }
+        Gdx.app.log("GameScreen", "Boss Arena not found, using Starting Point");
+        return findStartingPoint();
+    }
+
     private float[] findStartingPoint() {
         for (MapLayer layer : tiledMap.getLayers()) {
             for (MapObject obj : layer.getObjects()) {
@@ -396,6 +420,9 @@ public class GameScreen extends AbstractScreen {
             uiStage.act(delta);
             return;
         }
+
+        // Cheat combos (Left Ctrl + key) — active only while unpaused.
+        cheatController.update();
 
         GameSession.addPlayTime(delta);
 

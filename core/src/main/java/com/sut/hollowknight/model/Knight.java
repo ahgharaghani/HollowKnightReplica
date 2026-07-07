@@ -128,6 +128,14 @@ public class Knight implements PhysicsBody {
         SCREAM,
     }
     private State state = State.IDLE;
+
+    // ---- Cheat flags ----
+    /** God Mode: immune to every damage source (spikes, enemies, boss). */
+    private boolean godMode = false;
+    /** Noclip: free-fly spectator; no gravity, collisions, or damage. */
+    private boolean noclip = false;
+    /** One-shot Emergency Heal: swaps death for one mask when HP empties. */
+    private boolean emergencyHealArmed = false;
     private float stateTime;
 
     // ---- Combat ----
@@ -348,6 +356,7 @@ public class Knight implements PhysicsBody {
     }
 
     public void takeDamage(int amount) {
+        if (godMode || noclip) return; // cheat: untouchable
         if (invincible) return;
         if (dead) return; // a dead knight can't be hit again
         hpMasks -= amount;
@@ -356,6 +365,12 @@ public class Knight implements PhysicsBody {
         invincibleTimer = INVINCIBLE_DURATION;
         // Cancel any active action when hit.
         cancelActions();
+        if (hpMasks <= 0 && emergencyHealArmed) {
+            // Emergency Heal cheat: one-shot save — an extra mask instead of death.
+            emergencyHealArmed = false;
+            hpMasks = 1;
+            return;
+        }
         if (hpMasks <= 0 && !dead) {
             startDeath();
         }
@@ -390,6 +405,39 @@ public class Knight implements PhysicsBody {
     public void consumeSoul(int amount) {
         soulAmount = Math.max(soulAmount - amount, 0);
     }
+
+    // ---- Cheats (spec Part 3) ----
+
+    public boolean isGodMode() { return godMode; }
+
+    /** Toggle God Mode; returns the new state. */
+    public boolean toggleGodMode() {
+        godMode = !godMode;
+        return godMode;
+    }
+
+    public boolean isNoclip() { return noclip; }
+
+    /**
+     * Toggle Noclip; on entry, cancels actions and freezes velocity so the
+     * knight hangs in the air in a static pose (movement animations off).
+     * Returns the new state.
+     */
+    public boolean toggleNoclip() {
+        noclip = !noclip;
+        if (noclip) {
+            cancelActions();
+            velocityX = 0f;
+            velocityY = 0f;
+            setState(State.IDLE);
+        }
+        return noclip;
+    }
+
+    /** Arm the one-shot Emergency Heal (consumed when HP would hit zero). */
+    public void armEmergencyHeal() { emergencyHealArmed = true; }
+
+    public boolean isEmergencyHealArmed() { return emergencyHealArmed; }
 
     public void beginFocus(boolean quickFocusEquipped) {
         if (!canFocus()) return;
