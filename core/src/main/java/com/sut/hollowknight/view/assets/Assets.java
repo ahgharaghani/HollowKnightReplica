@@ -54,6 +54,8 @@ public class Assets {
         manager.load("animation/knight/Up Slash Effect.atlas",  TextureAtlas.class);
         manager.load("animation/knight/Focus.atlas",           TextureAtlas.class);
         manager.load("animation/knight/Focus End.atlas",       TextureAtlas.class);
+        manager.load("animation/knight/Fireball Antic.atlas",  TextureAtlas.class);
+        manager.load("animation/knight/Fireball Cast.atlas",   TextureAtlas.class);
 
         manager.load("animation/effects/RainGlow1.atlas", TextureAtlas.class);
         manager.load("animation/effects/RainGlow2.atlas", TextureAtlas.class);
@@ -62,6 +64,7 @@ public class Assets {
         TiktikAssets.loadAll(manager);
         HuskHornheadAssets.loadAll(manager);
         CrystalGuardianAssets.loadAll(manager);
+        VengefulSpiritAssets.loadAll(manager);
         HudAssets.loadAll(manager);
 
         manager.load("ui/keybindings/button_skin_0004_square_key.png", Texture.class);

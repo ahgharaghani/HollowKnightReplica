@@ -1,0 +1,25 @@
+Ball Wall Impact.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+Fireball Wall Impact_fireball_wall_impact_effect0000
+index:0
+bounds:1568,2,259,204
+Fireball Wall Impact_fireball_wall_impact_effect0001
+index:1
+bounds:1307,2,259,204
+Fireball Wall Impact_fireball_wall_impact_effect0002
+index:2
+bounds:1046,2,259,204
+Fireball Wall Impact_fireball_wall_impact_effect0003
+index:3
+bounds:785,2,259,204
+Fireball Wall Impact_fireball_wall_impact_effect0004
+index:4
+bounds:524,2,259,204
+Fireball Wall Impact_fireball_wall_impact_effect0005
+index:5
+bounds:263,2,259,204
+Fireball Wall Impact_fireball_wall_impact_effect0006
+index:6
+bounds:2,2,259,204

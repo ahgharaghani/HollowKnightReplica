@@ -43,6 +43,21 @@ public class Knight implements PhysicsBody {
     public static final int SOUL_PER_NAIL_HIT = 11;
     public static final float POGO_IMPULSE = 560f;
 
+    // ---- Spells (Vengeful Spirit) ----
+    /** A cast drains one third of the 99-soul vessel. */
+    public static final int   SPELL_SOUL_COST   = 33;
+    /** Movement stays locked for the cast (Blast plays 8 frames @ 24 FPS). */
+    public static final float CAST_DURATION     = 8f / 24f;
+    /** The fireball is spawned partway through the cast, as the Blast erupts. */
+    public static final float CAST_RELEASE_TIME = 2f / 24f;
+    /** Fireball spawn offset ahead of the knight center, along the facing dir. */
+    public static final float SPELL_SPAWN_FORWARD = 40f;
+    /** Fireball spawn height above the feet (roughly chest level). */
+    public static final float SPELL_SPAWN_HEIGHT  = 62f;
+
+    private float   castTimer;        // counts down CAST_DURATION
+    private boolean spellReleased;    // true once the fireball has been spawned
+
     // ---- Health & soul ----
     private int hpMasks;
     private int maxMasks;
@@ -94,6 +109,9 @@ public class Knight implements PhysicsBody {
         // Focus / healing
         FOCUS,
         FOCUS_END,
+
+        // Spell casting (Vengeful Spirit)
+        CAST,
     }
     private State state = State.IDLE;
     private float stateTime;
@@ -264,6 +282,17 @@ public class Knight implements PhysicsBody {
         return grounded && !dead && hpMasks < maxMasks && soulAmount >= FOCUS_SOUL_COST;
     }
 
+    public boolean isCasting()        { return castTimer > 0f; }
+    public float   getCastTimer()     { return castTimer; }
+    public boolean isSpellReleased()  { return spellReleased; }
+    public boolean canCastSpell() {
+        return !dead
+            && !focusing
+            && knockbackTimer <= 0f
+            && castTimer <= 0f
+            && soulAmount >= SPELL_SOUL_COST;
+    }
+
     // ---- Mutations ----
 
     public void setPosition(float x, float y) {
@@ -386,6 +415,61 @@ public class Knight implements PhysicsBody {
             focusEndTimer = FOCUS_END_DURATION;
             setState(State.FOCUS_END);
         }
+    }
+
+    // ------------------------------------------------------------------
+    //  Spell casting (Vengeful Spirit)
+    // ------------------------------------------------------------------
+
+    /** Begin a cast: locks movement, consumes soul, freezes the knight in place. */
+    public void beginCast() {
+        if (!canCastSpell()) return;
+        cancelActions();
+        consumeSoul(SPELL_SOUL_COST);
+        castTimer = CAST_DURATION;
+        spellReleased = false;
+        velocityX = 0f;
+        velocityY = 0f;
+        setState(State.CAST);
+    }
+
+    /**
+     * Ticks the cast timer. Call once per frame. When the release moment passes
+     * the caller should spawn the fireball; this method flips {@code spellReleased}
+     * exactly once so the controller can detect that rising edge.
+     *
+     * @return true on the single frame the fireball should be spawned.
+     */
+    public boolean tickCast(float delta) {
+        if (castTimer <= 0f) return false;
+
+        boolean releaseNow = false;
+        float elapsed = CAST_DURATION - castTimer;
+        if (!spellReleased && elapsed >= CAST_RELEASE_TIME) {
+            spellReleased = true;
+            releaseNow = true;
+        }
+
+        // Frozen in place for the whole cast.
+        velocityX = 0f;
+        velocityY = 0f;
+
+        castTimer -= delta;
+        if (castTimer <= 0f) {
+            castTimer = 0f;
+            if (!dead) setState(grounded ? State.IDLE : State.FALL);
+        }
+        return releaseNow;
+    }
+
+    /** World x where the fireball should appear (ahead of the knight). */
+    public float getSpellSpawnX() {
+        return x + (facingRight ? 1f : -1f) * SPELL_SPAWN_FORWARD;
+    }
+
+    /** World y (center) where the fireball should appear. */
+    public float getSpellSpawnY() {
+        return y + SPELL_SPAWN_HEIGHT;
     }
 
     /** Returns true if invincibility just expired. */
@@ -611,5 +695,7 @@ public class Knight implements PhysicsBody {
         focusing = false;
         focusTimer = 0f;
         focusEndTimer = 0f;
+        castTimer = 0f;
+        // spellReleased is intentionally left as-is; beginCast resets it.
     }
 }

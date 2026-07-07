@@ -1,0 +1,22 @@
+Fireball Cast.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Fireball1 Cast_cast_v030005
+index:0
+bounds:704,2,349,186
+Fireball1 Cast_cast_v030006
+index:1
+bounds:704,190,349,186
+Fireball1 Cast_cast_v030007
+index:2
+bounds:353,2,349,186
+Fireball1 Cast_cast_v030008
+index:3
+bounds:353,190,349,186
+Fireball1 Cast_cast_v030009
+index:4
+bounds:2,2,349,186
+Fireball1 Cast_cast_v030013
+index:5
+bounds:2,190,349,186

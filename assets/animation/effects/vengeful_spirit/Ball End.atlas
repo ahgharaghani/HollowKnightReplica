@@ -1,0 +1,13 @@
+Ball End.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+Ball End_fireball_v020007
+index:0
+bounds:640,2,317,143
+Ball End_fireball_v020008
+index:1
+bounds:321,2,317,143
+Ball End_fireball_v020009
+index:2
+bounds:2,2,317,143

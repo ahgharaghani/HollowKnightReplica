@@ -3,11 +3,13 @@ package com.sut.hollowknight.controller;
 import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
+import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.Laser;
+import com.sut.hollowknight.model.spell.VengefulSpirit;
 
 import java.util.List;
 
@@ -27,6 +29,10 @@ public class CombatSystem {
     private static final float LASER_KNOCKBACK_Y = 260f;
     /** March step along the beam when testing the knight's hurtbox. */
     private static final float LASER_SAMPLE_STEP = 12f;
+
+    // Vengeful Spirit — the ball passes through bodies, so knockback is a
+    // shove along its travel direction rather than away from the knight.
+    private static final float SPIRIT_KNOCKBACK_SCALE = 1.2f;
 
     // Nail attack
     private static final int   NAIL_DAMAGE = 1;
@@ -51,6 +57,32 @@ public class CombatSystem {
             }
             if (enemy instanceof CrystalGuardianController) {
                 resolveLaserDamage((CrystalGuardianController) enemy);
+            }
+        }
+    }
+
+    /**
+     * Vengeful Spirit vs enemies: the ball passes THROUGH bodies, damaging
+     * each enemy at most once per cast (tracked by identity in the model).
+     * Spell kills grant no soul — soul is a nail-combat resource.
+     */
+    public void resolveSpiritHits(List<VengefulSpiritController> spirits) {
+        for (int i = 0; i < spirits.size(); i++) {
+            VengefulSpirit spirit = spirits.get(i).getSpirit();
+            if (!spirit.isFlying()) continue;
+
+            CollisionRect damageBox = spirit.getDamageBox();
+            for (int j = 0; j < enemies.size(); j++) {
+                EnemyController enemy = enemies.get(j);
+                if (!enemy.isAlive()) continue;
+
+                int id = System.identityHashCode(enemy);
+                if (!spirit.canHit(id)) continue;
+                if (!AABB.overlaps(enemy.getBodyBox(), damageBox)) continue;
+
+                spirit.markHit(id);
+                float dirX = spirit.isFacingRight() ? 1f : -1f;
+                enemy.hitByNail(VengefulSpirit.DAMAGE, dirX, 0f, SPIRIT_KNOCKBACK_SCALE);
             }
         }
     }

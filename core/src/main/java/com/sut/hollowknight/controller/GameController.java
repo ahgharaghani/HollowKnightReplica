@@ -1,13 +1,18 @@
 package com.sut.hollowknight.controller;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.DamageZone;
 import com.sut.hollowknight.model.input.PlayerInput;
+import com.sut.hollowknight.model.spell.VengefulSpirit;
 import com.sut.hollowknight.view.camera.CameraRig;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class GameController {
 
@@ -40,6 +45,11 @@ public class GameController {
     private float lastSafeX;
     private float lastSafeY;
 
+    // ---- Spells (Vengeful Spirit) ----
+    private final List<VengefulSpiritController> spirits = new ArrayList<>();
+    private static final float CAST_SHAKE_AMPLITUDE = 4f;
+    private static final float CAST_SHAKE_DURATION  = 0.15f;
+
     public GameController(Knight knight, TileMapCollider collider,
                           OrthographicCamera camera, float mapWidthPx, float mapHeightPx) {
         this.knight    = knight;
@@ -69,6 +79,7 @@ public class GameController {
         applyPhysics(delta);
         resolveHazards();
         updateAnimationState(delta);
+        updateSpirits(delta);
 
         // Shake on the exact frame the knight takes a hit (i-frame rising edge).
         boolean invincibleNow = knight.isInvincible();
@@ -84,6 +95,18 @@ public class GameController {
         boolean jumpHeld = input.isJumpPressed();
 
         if (knight.isDead()) return;
+
+        // --- Spell cast: locks control for the cast animation. Trigger only
+        //     when not already mid-cast / focus / knockback.
+        if (knight.isCasting()) {
+            wasJumpHeld = jumpHeld;
+            return;
+        }
+        if (input.isCastSpellJustPressed() && knight.canCastSpell()) {
+            knight.beginCast();
+            wasJumpHeld = jumpHeld;
+            return;
+        }
 
         // --- Focus
         if (knight.isFocusing()) {
@@ -235,6 +258,15 @@ public class GameController {
         knight.tickInvincibility(delta);
         knight.tickFocus(delta);
 
+        // Cast: freeze in place; spawn the fireball on the release frame.
+        if (knight.tickCast(delta)) {
+            spawnVengefulSpirit();
+        }
+        if (knight.isCasting()) {
+            knight.setVelocityX(0f);
+            knight.setVelocityY(0f);
+        }
+
         if (knight.isFocusing()) {
             knight.setVelocityX(0f);
             knight.setVelocityY(0f);
@@ -289,7 +321,7 @@ public class GameController {
         }
         collision.resolveHorizontal(knight);
 
-        if (!knight.isDashing() && !knight.isFocusing()) {
+        if (!knight.isDashing() && !knight.isFocusing() && !knight.isCasting()) {
             knight.setVelocityY(knight.getVelocityY() - Knight.GRAVITY * delta);
         }
 
@@ -410,6 +442,9 @@ public class GameController {
             return;
         }
 
+        if (knight.isCasting()) {
+            return;
+        }
         if (knight.isFocusing()) {
             return;
         }
@@ -481,6 +516,32 @@ public class GameController {
             }
         }
     }
+
+    // ------------------------------------------------------------------
+    //  Spells (Vengeful Spirit)
+    // ------------------------------------------------------------------
+
+    private void spawnVengefulSpirit() {
+        VengefulSpirit spirit = new VengefulSpirit(
+            knight.getSpellSpawnX(),
+            knight.getSpellSpawnY(),
+            knight.isFacingRight());
+        spirits.add(new VengefulSpiritController(spirit, collider));
+        // A small kick of camera shake sells the release.
+        cameraRig.shake(CAST_SHAKE_AMPLITUDE, CAST_SHAKE_DURATION);
+    }
+
+    private void updateSpirits(float delta) {
+        for (int i = spirits.size() - 1; i >= 0; i--) {
+            VengefulSpiritController sc = spirits.get(i);
+            sc.update(delta);
+            if (sc.isDone()) {
+                spirits.remove(i);
+            }
+        }
+    }
+
+    public List<VengefulSpiritController> getSpirits() { return spirits; }
 
     public Knight getKnight()            { return knight; }
     public TileMapCollider getCollider() { return collision.getCollider(); }

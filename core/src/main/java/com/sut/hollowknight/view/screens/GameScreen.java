@@ -27,6 +27,7 @@ import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.HuskHornheadController;
 import com.sut.hollowknight.controller.enemy.TiktikController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
+import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
@@ -42,10 +43,13 @@ import com.sut.hollowknight.view.assets.CrystalGuardianAssets;
 import com.sut.hollowknight.view.assets.HuskHornheadAssets;
 import com.sut.hollowknight.view.assets.TiktikAssets;
 import com.sut.hollowknight.view.assets.WingedSentryAssets;
+import com.sut.hollowknight.view.assets.VengefulSpiritAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.effects.RainEffect;
+import com.sut.hollowknight.model.spell.VengefulSpirit;
 import com.sut.hollowknight.view.renderer.enemy.CrystalGuardianRenderer;
+import com.sut.hollowknight.view.renderer.spell.VengefulSpiritRenderer;
 import com.sut.hollowknight.view.renderer.enemy.HuskHornheadRenderer;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
 import com.sut.hollowknight.view.renderer.enemy.TiktikRenderer;
@@ -113,6 +117,8 @@ public class GameScreen extends AbstractScreen {
     private List<CrystalGuardianController> guardianControllers;
     private CrystalGuardianRenderer guardianRenderer;
 
+    private VengefulSpiritRenderer spiritRenderer;
+
     private List<EnemyController> enemyControllers;
 
     private HudRenderer hudRenderer;
@@ -164,6 +170,8 @@ public class GameScreen extends AbstractScreen {
         enemyControllers.addAll(hornheadControllers);
         enemyControllers.addAll(guardianControllers);
         combat = new CombatSystem(knight, enemyControllers);
+
+        spiritRenderer = new VengefulSpiritRenderer(new VengefulSpiritAssets(Assets.manager));
 
         hudRenderer = new HudRenderer(new HudAssets(Assets.manager));
     }
@@ -358,6 +366,7 @@ public class GameScreen extends AbstractScreen {
         }
 
         combat.resolve(delta);
+        combat.resolveSpiritHits(controller.getSpirits());
     }
 
     @Override
@@ -478,6 +487,12 @@ public class GameScreen extends AbstractScreen {
             guardianRenderer.draw(batch, guardianController.getGuardian());
         }
 
+        // Vengeful Spirit fireballs (index-based: no Iterator allocation).
+        List<VengefulSpiritController> spirits = controller.getSpirits();
+        for (int i = 0; i < spirits.size(); i++) {
+            spiritRenderer.draw(batch, spirits.get(i).getSpirit());
+        }
+
         batch.end();
 
         // Foreground layers
@@ -570,6 +585,16 @@ public class GameScreen extends AbstractScreen {
             if (laser.isActive()) {
                 debugShapes.line(laser.getOriginX(), laser.getOriginY(),
                     laser.getEndX(), laser.getEndY());
+            }
+        }
+
+        // Vengeful Spirit damage boxes (orange) while flying
+        debugShapes.setColor(Color.ORANGE);
+        List<VengefulSpiritController> spiritControllers = controller.getSpirits();
+        for (int i = 0; i < spiritControllers.size(); i++) {
+            VengefulSpirit spirit = spiritControllers.get(i).getSpirit();
+            if (spirit.isFlying()) {
+                drawRect(spirit.getDamageBox());
             }
         }
 

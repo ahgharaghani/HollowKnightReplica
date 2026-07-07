@@ -1,0 +1,16 @@
+Ball.png
+size:2048,256
+filter:Linear,Linear
+repeat:none
+Ball_fireball_v020000
+index:0
+bounds:959,2,317,143
+Ball_fireball_v020001
+index:1
+bounds:640,2,317,143
+Ball_fireball_v020002
+index:2
+bounds:321,2,317,143
+Ball_fireball_v020003
+index:3
+bounds:2,2,317,143

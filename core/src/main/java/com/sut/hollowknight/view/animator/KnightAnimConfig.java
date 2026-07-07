@@ -60,6 +60,11 @@ public final class KnightAnimConfig {
     /** Focus completion animation. */
     public static float FOCUS_END_FPS         = 12f;
 
+    /** Spell cast wind-up (Fireball Antic). */
+    public static float CAST_ANTIC_FPS        = 24f;
+    /** Spell cast release & follow-through (Fireball Cast). */
+    public static float CAST_FPS              = 24f;
+
     public static float frameDuration(float fps) {
         if (fps <= 0f) {
             throw new IllegalArgumentException("FPS must be positive: " + fps);

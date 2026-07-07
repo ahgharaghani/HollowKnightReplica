@@ -37,6 +37,11 @@ public final class PlayerInput {
         return Gdx.input.isKeyPressed(settings.getFocusCastKey());
     }
 
+    /** Cast the Vengeful Spirit spell (Quick Cast key, default F). */
+    public boolean isCastSpellJustPressed() {
+        return Gdx.input.isKeyJustPressed(settings.getQuickCastKey());
+    }
+
     public boolean isMoving() {
         return isMoveLeftPressed() ^ isMoveRightPressed();
     }

@@ -26,6 +26,10 @@ public class KnightAnimator {
     private Animation<TextureRegion> focusAnim;
     private Animation<TextureRegion> focusEndAnim;
 
+    // ---- Spell cast (Vengeful Spirit) ----
+    private Animation<TextureRegion> castAnticAnim;
+    private Animation<TextureRegion> castAnim;
+
     // ---- Slash family ----
     private Animation<TextureRegion> slashAnim;
     private Animation<TextureRegion> slashAltAnim;
@@ -220,6 +224,14 @@ public class KnightAnimator {
             KnightAnimConfig.FOCUS_FPS,       Animation.PlayMode.LOOP);
         focusEndAnim     = loadAtlas("animation/knight/Focus End.atlas",    "Focus End_focus",
             KnightAnimConfig.FOCUS_END_FPS,   Animation.PlayMode.NORMAL);
+
+        // Spell cast: the wind-up (Fireball Antic), then the release pose
+        // (Fireball Cast). Region names carry the frame digits, so the frames
+        // are gathered by prefix and ordered by name.
+        castAnticAnim = loadByPrefix("animation/knight/Fireball Antic.atlas",
+            "Fireball Antic_cast", KnightAnimConfig.CAST_ANTIC_FPS);
+        castAnim      = loadByPrefix("animation/knight/Fireball Cast.atlas",
+            "Fireball1 Cast_cast", KnightAnimConfig.CAST_FPS);
     }
 
     private Animation<TextureRegion> loadAtlas(String path, String regionPrefix,
@@ -239,6 +251,20 @@ public class KnightAnimator {
         if (frames.size == 0) return null;
 
         return new Animation<>(KnightAnimConfig.frameDuration(fps), frames, mode);
+    }
+
+    /** Like {@link #loadAtlas} but gathers frames by name prefix (name order). */
+    private Animation<TextureRegion> loadByPrefix(String path, String prefix, float fps) {
+        if (!Assets.manager.isLoaded(path)) return null;
+
+        TextureAtlas atlas = Assets.manager.get(path, TextureAtlas.class);
+        for (Texture t : atlas.getTextures()) {
+            t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        }
+        Array<TextureRegion> frames = regionsByPrefix(atlas, prefix);
+        if (frames.size == 0) return null;
+        return new Animation<>(KnightAnimConfig.frameDuration(fps), frames,
+            Animation.PlayMode.NORMAL);
     }
 
     /**
@@ -271,6 +297,11 @@ public class KnightAnimator {
         }
 
         float t = knight.getStateTime();
+
+        // Cast: the antic wind-up until the ball releases, then the cast pose.
+        if (knight.getState() == Knight.State.CAST) {
+            return castFrame(t);
+        }
 
         if (knight.getState() == Knight.State.FOCUS && anim == focusAnim) {
             return focusFrame(anim, t);
@@ -316,6 +347,18 @@ public class KnightAnimator {
         return anim.getKeyFrame(holdTime, false);
     }
 
+    /**
+     * Cast: Fireball Antic plays up to the release instant, then Fireball
+     * Cast carries the follow-through. Both clamp on their last frame.
+     */
+    private TextureRegion castFrame(float t) {
+        if (t < Knight.CAST_RELEASE_TIME || castAnim == null) {
+            Animation<TextureRegion> antic = castAnticAnim != null ? castAnticAnim : idleAnim;
+            return antic.getKeyFrame(t, false);
+        }
+        return castAnim.getKeyFrame(t - Knight.CAST_RELEASE_TIME, false);
+    }
+
     private Animation<TextureRegion> animationFor(Knight knight) {
         switch (knight.getState()) {
             case RUN:               return walkAnim != null ? walkAnim : idleAnim;
@@ -349,6 +392,9 @@ public class KnightAnimator {
             // Wall family
             case WALL_SLIDE:        return wallSlideAnim != null ? wallSlideAnim : fallAnim;
             case WALL_JUMP:         return wallJumpAnim != null ? wallJumpAnim : jumpAnim;
+
+            // Spell cast — the frame split is handled in castFrame().
+            case CAST:              return castAnticAnim != null ? castAnticAnim : idleAnim;
 
             case IDLE:
             default: {
