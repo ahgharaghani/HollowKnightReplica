@@ -27,6 +27,7 @@ import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.HuskHornheadController;
 import com.sut.hollowknight.controller.enemy.TiktikController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
+import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
@@ -43,12 +44,15 @@ import com.sut.hollowknight.view.assets.CrystalGuardianAssets;
 import com.sut.hollowknight.view.assets.HuskHornheadAssets;
 import com.sut.hollowknight.view.assets.TiktikAssets;
 import com.sut.hollowknight.view.assets.WingedSentryAssets;
+import com.sut.hollowknight.view.assets.HowlingWraithAssets;
 import com.sut.hollowknight.view.assets.VengefulSpiritAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.effects.RainEffect;
+import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
 import com.sut.hollowknight.view.renderer.enemy.CrystalGuardianRenderer;
+import com.sut.hollowknight.view.renderer.spell.HowlingWraithRenderer;
 import com.sut.hollowknight.view.renderer.spell.VengefulSpiritRenderer;
 import com.sut.hollowknight.view.renderer.enemy.HuskHornheadRenderer;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
@@ -119,6 +123,9 @@ public class GameScreen extends AbstractScreen {
 
     private VengefulSpiritRenderer spiritRenderer;
 
+    /** Draws Howling Wraiths blasts (plume + base shockwave). */
+    private HowlingWraithRenderer wraithRenderer;
+
     private List<EnemyController> enemyControllers;
 
     private HudRenderer hudRenderer;
@@ -172,6 +179,7 @@ public class GameScreen extends AbstractScreen {
         combat = new CombatSystem(knight, enemyControllers);
 
         spiritRenderer = new VengefulSpiritRenderer(new VengefulSpiritAssets(Assets.manager));
+        wraithRenderer = new HowlingWraithRenderer(new HowlingWraithAssets(Assets.manager));
 
         hudRenderer = new HudRenderer(new HudAssets(Assets.manager));
     }
@@ -367,6 +375,7 @@ public class GameScreen extends AbstractScreen {
 
         combat.resolve(delta);
         combat.resolveSpiritHits(controller.getSpirits());
+        combat.resolveWraithHits(controller.getWraiths());
     }
 
     @Override
@@ -493,6 +502,12 @@ public class GameScreen extends AbstractScreen {
             spiritRenderer.draw(batch, spirits.get(i).getSpirit());
         }
 
+        // Howling Wraiths blasts (stationary; plume above, base under feet).
+        List<HowlingWraithController> wraiths = controller.getWraiths();
+        for (int i = 0; i < wraiths.size(); i++) {
+            wraithRenderer.draw(batch, wraiths.get(i).getWraith());
+        }
+
         batch.end();
 
         // Foreground layers
@@ -595,6 +610,15 @@ public class GameScreen extends AbstractScreen {
             VengefulSpirit spirit = spiritControllers.get(i).getSpirit();
             if (spirit.isFlying()) {
                 drawRect(spirit.getDamageBox());
+            }
+        }
+
+        // Howling Wraiths damage boxes (orange) while the ticks are live
+        List<HowlingWraithController> wraithControllers = controller.getWraiths();
+        for (int i = 0; i < wraithControllers.size(); i++) {
+            HowlingWraith wraith = wraithControllers.get(i).getWraith();
+            if (!wraith.isDone()) {
+                drawRect(wraith.getDamageBox());
             }
         }
 

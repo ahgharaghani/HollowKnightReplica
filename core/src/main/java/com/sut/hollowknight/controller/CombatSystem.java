@@ -3,12 +3,14 @@ package com.sut.hollowknight.controller;
 import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
+import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.Laser;
+import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
 
 import java.util.List;
@@ -33,6 +35,10 @@ public class CombatSystem {
     // Vengeful Spirit — the ball passes through bodies, so knockback is a
     // shove along its travel direction rather than away from the knight.
     private static final float SPIRIT_KNOCKBACK_SCALE = 1.2f;
+
+    // Howling Wraiths — three light ticks; the shove pushes away from the
+    // scream's center with a small upward lift.
+    private static final float WRAITH_KNOCKBACK_SCALE = 0.6f;
 
     // Nail attack
     private static final int   NAIL_DAMAGE = 1;
@@ -83,6 +89,32 @@ public class CombatSystem {
                 spirit.markHit(id);
                 float dirX = spirit.isFacingRight() ? 1f : -1f;
                 enemy.hitByNail(VengefulSpirit.DAMAGE, dirX, 0f, SPIRIT_KNOCKBACK_SCALE);
+            }
+        }
+    }
+
+    /**
+     * Howling Wraiths vs enemies: the blast is stationary and fires three
+     * rapid ticks; every alive enemy inside the hitbox takes each tick.
+     * pollTick() is drained in a loop so a long frame cannot swallow ticks.
+     */
+    public void resolveWraithHits(List<HowlingWraithController> wraiths) {
+        for (int i = 0; i < wraiths.size(); i++) {
+            HowlingWraith wraith = wraiths.get(i).getWraith();
+            while (wraith.pollTick()) {
+                CollisionRect damageBox = wraith.getDamageBox();
+                for (int j = 0; j < enemies.size(); j++) {
+                    EnemyController enemy = enemies.get(j);
+                    if (!enemy.isAlive()) continue;
+
+                    AABB body = enemy.getBodyBox();
+                    if (!AABB.overlaps(body, damageBox)) continue;
+
+                    float centerX = (body.getLeft() + body.getRight()) / 2f;
+                    float dirX = centerX >= wraith.getAnchorX() ? 1f : -1f;
+                    enemy.hitByNail(HowlingWraith.DAMAGE_PER_TICK, dirX, 1f,
+                        WRAITH_KNOCKBACK_SCALE);
+                }
             }
         }
     }

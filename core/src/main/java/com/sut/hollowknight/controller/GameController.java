@@ -1,6 +1,7 @@
 package com.sut.hollowknight.controller;
 
 import com.badlogic.gdx.graphics.OrthographicCamera;
+import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.TileMapCollider;
@@ -8,6 +9,7 @@ import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.DamageZone;
 import com.sut.hollowknight.model.input.PlayerInput;
+import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
 import com.sut.hollowknight.view.camera.CameraRig;
 
@@ -47,6 +49,9 @@ public class GameController {
 
     // ---- Spells (Vengeful Spirit) ----
     private final List<VengefulSpiritController> spirits = new ArrayList<>();
+
+    // ---- Spells (Howling Wraiths) ----
+    private final List<HowlingWraithController> wraiths = new ArrayList<>();
     private static final float CAST_SHAKE_AMPLITUDE = 4f;
     private static final float CAST_SHAKE_DURATION  = 0.15f;
 
@@ -80,6 +85,7 @@ public class GameController {
         resolveHazards();
         updateAnimationState(delta);
         updateSpirits(delta);
+        updateWraiths(delta);
 
         // Shake on the exact frame the knight takes a hit (i-frame rising edge).
         boolean invincibleNow = knight.isInvincible();
@@ -98,12 +104,16 @@ public class GameController {
 
         // --- Spell cast: locks control for the cast animation. Trigger only
         //     when not already mid-cast / focus / knockback.
-        if (knight.isCasting()) {
+        if (knight.isCasting() || knight.isScreaming()) {
             wasJumpHeld = jumpHeld;
             return;
         }
         if (input.isCastSpellJustPressed() && knight.canCastSpell()) {
-            knight.beginCast();
+            if (input.isMoveUpPressed()) {
+                knight.beginScream();   // up + cast: Howling Wraiths
+            } else {
+                knight.beginCast();     // plain cast: Vengeful Spirit
+            }
             wasJumpHeld = jumpHeld;
             return;
         }
@@ -263,6 +273,15 @@ public class GameController {
             spawnVengefulSpirit();
         }
         if (knight.isCasting()) {
+            knight.setVelocityX(0f);
+            knight.setVelocityY(0f);
+        }
+
+        // Scream: freeze in place; erupt the wraiths on the release frame.
+        if (knight.tickScream(delta)) {
+            spawnHowlingWraith();
+        }
+        if (knight.isScreaming()) {
             knight.setVelocityX(0f);
             knight.setVelocityY(0f);
         }
@@ -542,6 +561,30 @@ public class GameController {
     }
 
     public List<VengefulSpiritController> getSpirits() { return spirits; }
+
+    // ------------------------------------------------------------------
+    //  Spells (Howling Wraiths)
+    // ------------------------------------------------------------------
+
+    private void spawnHowlingWraith() {
+        // Anchored at the knight's center/feet at the eruption instant; the
+        // blast stays fixed in place per the spec.
+        wraiths.add(new HowlingWraithController(
+            new HowlingWraith(knight.getX(), knight.getY(), knight.isFacingRight())));
+        cameraRig.shake(CAST_SHAKE_AMPLITUDE, CAST_SHAKE_DURATION);
+    }
+
+    private void updateWraiths(float delta) {
+        for (int i = wraiths.size() - 1; i >= 0; i--) {
+            HowlingWraithController wc = wraiths.get(i);
+            wc.update(delta);
+            if (wc.isDone()) {
+                wraiths.remove(i);
+            }
+        }
+    }
+
+    public List<HowlingWraithController> getWraiths() { return wraiths; }
 
     public Knight getKnight()            { return knight; }
     public TileMapCollider getCollider() { return collision.getCollider(); }

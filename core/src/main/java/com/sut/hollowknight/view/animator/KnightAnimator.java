@@ -30,6 +30,11 @@ public class KnightAnimator {
     private Animation<TextureRegion> castAnticAnim;
     private Animation<TextureRegion> castAnim;
 
+    // ---- Spell cast (Howling Wraiths) ----
+    private Animation<TextureRegion> screamStartAnim;
+    private Animation<TextureRegion> screamAnim;
+    private Animation<TextureRegion> screamEndAnim;
+
     // ---- Slash family ----
     private Animation<TextureRegion> slashAnim;
     private Animation<TextureRegion> slashAltAnim;
@@ -232,6 +237,17 @@ public class KnightAnimator {
             "Fireball Antic_cast", KnightAnimConfig.CAST_ANTIC_FPS);
         castAnim      = loadByPrefix("animation/knight/Fireball Cast.atlas",
             "Fireball1 Cast_cast", KnightAnimConfig.CAST_FPS);
+
+        // Howling Wraiths: wind-up, hold loop, recovery. The Scream atlas
+        // regions share one name and are index-tagged; loadAtlas resolves
+        // them via findRegions (index order), and the _cast-suffixed atlases
+        // fall back to the index sort.
+        screamStartAnim = loadAtlas("animation/knight/Scream Start.atlas", "Scream Start_cast",
+            KnightAnimConfig.SCREAM_START_FPS, Animation.PlayMode.NORMAL);
+        screamAnim      = loadAtlas("animation/knight/Scream.atlas",       "Scream",
+            KnightAnimConfig.SCREAM_FPS,       Animation.PlayMode.LOOP);
+        screamEndAnim   = loadAtlas("animation/knight/Scream End.atlas",   "Scream End_cast",
+            KnightAnimConfig.SCREAM_END_FPS,   Animation.PlayMode.NORMAL);
     }
 
     private Animation<TextureRegion> loadAtlas(String path, String regionPrefix,
@@ -303,6 +319,11 @@ public class KnightAnimator {
             return castFrame(t);
         }
 
+        // Scream: wind-up, blast hold, then the recovery pose.
+        if (knight.getState() == Knight.State.SCREAM) {
+            return screamFrame(t);
+        }
+
         if (knight.getState() == Knight.State.FOCUS && anim == focusAnim) {
             return focusFrame(anim, t);
         }
@@ -359,6 +380,22 @@ public class KnightAnimator {
         return castAnim.getKeyFrame(t - Knight.CAST_RELEASE_TIME, false);
     }
 
+    /**
+     * Scream: Scream Start plays through the wind-up, the Scream loop holds
+     * while the wraiths blast, and Scream End covers the final moments.
+     */
+    private TextureRegion screamFrame(float t) {
+        if (t < Knight.SCREAM_RELEASE_TIME || screamAnim == null) {
+            Animation<TextureRegion> start = screamStartAnim != null ? screamStartAnim : idleAnim;
+            return start.getKeyFrame(t, false);
+        }
+        float endWindow = 2f * KnightAnimConfig.frameDuration(KnightAnimConfig.SCREAM_END_FPS);
+        if (screamEndAnim != null && t >= Knight.SCREAM_DURATION - endWindow) {
+            return screamEndAnim.getKeyFrame(t - (Knight.SCREAM_DURATION - endWindow), false);
+        }
+        return screamAnim.getKeyFrame(t - Knight.SCREAM_RELEASE_TIME, true);
+    }
+
     private Animation<TextureRegion> animationFor(Knight knight) {
         switch (knight.getState()) {
             case RUN:               return walkAnim != null ? walkAnim : idleAnim;
@@ -395,6 +432,8 @@ public class KnightAnimator {
 
             // Spell cast — the frame split is handled in castFrame().
             case CAST:              return castAnticAnim != null ? castAnticAnim : idleAnim;
+            // Scream — the frame split is handled in screamFrame().
+            case SCREAM:            return screamStartAnim != null ? screamStartAnim : idleAnim;
 
             case IDLE:
             default: {

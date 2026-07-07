@@ -58,6 +58,17 @@ public class Knight implements PhysicsBody {
     private float   castTimer;        // counts down CAST_DURATION
     private boolean spellReleased;    // true once the fireball has been spawned
 
+    // ---- Spells (Howling Wraiths) ----
+    /** The wraiths' blast lasts 13 frames @ 20 FPS once erupted. */
+    public static final float SCREAM_EFFECT_DURATION = 13f / 20f;
+    /** Short wind-up before the eruption (Scream Start: 2 frames @ 24 FPS). */
+    public static final float SCREAM_RELEASE_TIME = 2f / 24f;
+    /** Movement stays locked for the whole scream. */
+    public static final float SCREAM_DURATION = SCREAM_RELEASE_TIME + SCREAM_EFFECT_DURATION;
+
+    private float   screamTimer;      // counts down SCREAM_DURATION
+    private boolean screamReleased;   // true once the wraiths have erupted
+
     // ---- Health & soul ----
     private int hpMasks;
     private int maxMasks;
@@ -112,6 +123,9 @@ public class Knight implements PhysicsBody {
 
         // Spell casting (Vengeful Spirit)
         CAST,
+
+        // Spell casting (Howling Wraiths)
+        SCREAM,
     }
     private State state = State.IDLE;
     private float stateTime;
@@ -290,6 +304,7 @@ public class Knight implements PhysicsBody {
             && !focusing
             && knockbackTimer <= 0f
             && castTimer <= 0f
+            && screamTimer <= 0f
             && soulAmount >= SPELL_SOUL_COST;
     }
 
@@ -471,6 +486,54 @@ public class Knight implements PhysicsBody {
     public float getSpellSpawnY() {
         return y + SPELL_SPAWN_HEIGHT;
     }
+
+    // ------------------------------------------------------------------
+    //  Spell casting (Howling Wraiths)
+    // ------------------------------------------------------------------
+
+    /** Begin a scream: locks movement, consumes soul, freezes the knight. */
+    public void beginScream() {
+        if (!canCastSpell()) return;
+        cancelActions();
+        consumeSoul(SPELL_SOUL_COST);
+        screamTimer = SCREAM_DURATION;
+        screamReleased = false;
+        velocityX = 0f;
+        velocityY = 0f;
+        setState(State.SCREAM);
+    }
+
+    /**
+     * Ticks the scream timer (mirrors {@link #tickCast}). Flips
+     * {@code screamReleased} exactly once so the controller can detect the
+     * rising edge and spawn the blast.
+     *
+     * @return true on the single frame the wraiths should erupt.
+     */
+    public boolean tickScream(float delta) {
+        if (screamTimer <= 0f) return false;
+
+        boolean releaseNow = false;
+        float elapsed = SCREAM_DURATION - screamTimer;
+        if (!screamReleased && elapsed >= SCREAM_RELEASE_TIME) {
+            screamReleased = true;
+            releaseNow = true;
+        }
+
+        // Frozen in place for the whole scream.
+        velocityX = 0f;
+        velocityY = 0f;
+
+        screamTimer -= delta;
+        if (screamTimer <= 0f) {
+            screamTimer = 0f;
+            if (!dead) setState(grounded ? State.IDLE : State.FALL);
+        }
+        return releaseNow;
+    }
+
+    public boolean isScreaming()      { return screamTimer > 0f; }
+    public boolean isScreamReleased() { return screamReleased; }
 
     /** Returns true if invincibility just expired. */
     public boolean tickInvincibility(float delta) {
@@ -696,6 +759,7 @@ public class Knight implements PhysicsBody {
         focusTimer = 0f;
         focusEndTimer = 0f;
         castTimer = 0f;
-        // spellReleased is intentionally left as-is; beginCast resets it.
+        screamTimer = 0f;
+        // spellReleased/screamReleased are left as-is; begin* resets them.
     }
 }

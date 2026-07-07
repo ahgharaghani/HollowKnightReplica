@@ -1,0 +1,28 @@
+Scream Base.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Scream1 Base_power_blast0000
+index:0
+bounds:706,138,350,134
+Scream1 Base_power_blast0001
+index:1
+bounds:354,2,350,134
+Scream1 Base_power_blast0002
+index:2
+bounds:706,274,350,134
+Scream1 Base_power_blast0003
+index:3
+bounds:354,138,350,134
+Scream1 Base_power_blast0004
+index:4
+bounds:2,2,350,134
+Scream1 Base_power_blast0005
+index:5
+bounds:354,274,350,134
+Scream1 Base_power_blast0006
+index:6
+bounds:2,138,350,134
+Scream1 Base_power_blast0007
+index:7
+bounds:2,274,350,134

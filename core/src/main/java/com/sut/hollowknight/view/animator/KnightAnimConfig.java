@@ -65,6 +65,13 @@ public final class KnightAnimConfig {
     /** Spell cast release & follow-through (Fireball Cast). */
     public static float CAST_FPS              = 24f;
 
+    /** Scream wind-up (Scream Start). */
+    public static float SCREAM_START_FPS      = 24f;
+    /** Scream hold loop while the wraiths blast. */
+    public static float SCREAM_FPS            = 24f;
+    /** Scream recovery pose (Scream End). */
+    public static float SCREAM_END_FPS        = 24f;
+
     public static float frameDuration(float fps) {
         if (fps <= 0f) {
             throw new IllegalArgumentException("FPS must be positive: " + fps);

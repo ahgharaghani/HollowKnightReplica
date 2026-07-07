@@ -1,8 +1,8 @@
 {
     "activeFile": "CityOfTears.tmx",
     "expandedProjectPaths": [
-        "ui",
-        "."
+        ".",
+        "ui"
     ],
     "fileStates": {
         "": {
@@ -124,11 +124,11 @@
             "expandedGroupLayers": [
                 12
             ],
-            "scale": 0.125,
-            "selectedLayer": 3,
+            "scale": 0.5,
+            "selectedLayer": 9,
             "viewCenter": {
-                "x": 1596,
-                "y": 2704
+                "x": 1235,
+                "y": 4000
             }
         },
         "CityOfTears.tmx#BG_far_0008_a": {
@@ -256,8 +256,8 @@
     "project": "HollowKnight.tiled-project",
     "property.type": "string",
     "recentFiles": [
-        "C:/Users/ahgha/Desktop/CityOfTears.tmx",
         "CityOfTears.tmx",
+        "C:/Users/ahgha/Desktop/CityOfTears.tmx",
         "ruin_plat_float_06.tsx"
     ],
     "tileset.embedInMap": true,
