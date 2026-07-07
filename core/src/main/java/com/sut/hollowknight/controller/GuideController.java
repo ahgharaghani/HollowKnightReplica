@@ -1,7 +1,6 @@
 package com.sut.hollowknight.controller;
 
 import com.badlogic.gdx.Game;
-import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.view.screens.MainMenuScreen;
 
 /**
@@ -11,29 +10,9 @@ import com.sut.hollowknight.view.screens.MainMenuScreen;
 public class GuideController {
 
     private final Game game;
-    private final GameSettings settings;
 
     public GuideController(Game game) {
         this.game = game;
-        this.settings = GameSettings.getInstance();
-    }
-
-    /** Builds key bindings text from current settings. */
-    public String getKeyBindingsText() {
-        return String.format(
-            "Move Left:  key code %d\n" +
-            "Move Right: key code %d\n" +
-            "Jump:       key code %d\n" +
-            "Attack:     key code %d\n" +
-            "Dash:       key code %d\n" +
-            "Focus:      A\n" +
-            "Inventory:  I\n" +
-            "Pause:      Escape",
-            settings.getMoveLeftKey(),
-            settings.getMoveRightKey(),
-            settings.getJumpKey(),
-            settings.getAttackKey(),
-            settings.getDashKey());
     }
 
     public String getAbilitiesText() {
