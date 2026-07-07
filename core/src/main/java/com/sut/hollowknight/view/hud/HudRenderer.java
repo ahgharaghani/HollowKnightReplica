@@ -7,6 +7,8 @@ import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.math.MathUtils;
 import com.sut.hollowknight.model.Knight;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.sut.hollowknight.view.MenuUi;
 import com.sut.hollowknight.view.assets.HudAssets;
 
 public class HudRenderer {
@@ -14,6 +16,14 @@ public class HudRenderer {
     private final HudAssets assets;
 
     private final ShaderProgram soulMaskShader;
+
+    // ---- Cheat status text (bottom-left corner) ----
+    private static final float CHEAT_TEXT_X = 40f;
+    private static final float CHEAT_TEXT_Y = 56f; // baseline above screen bottom
+
+    private final BitmapFont cheatFont;
+    /** Reused across frames: no per-frame String garbage. */
+    private final StringBuilder cheatText = new StringBuilder(64);
 
     // ---- Layout ----
     private static final float UI_HEIGHT = 1080f;
@@ -64,12 +74,16 @@ public class HudRenderer {
             shader = null;
         }
         this.soulMaskShader = shader;
+
+        cheatFont = MenuUi.buildPerpetuaFont(28);
+        cheatFont.setColor(MenuUi.ACCENT);
     }
 
     public void dispose() {
         if (soulMaskShader != null) {
             soulMaskShader.dispose();
         }
+        cheatFont.dispose();
     }
 
     public void draw(SpriteBatch batch, Knight knight, float delta) {
@@ -118,6 +132,32 @@ public class HudRenderer {
             float nodeX = NODES_START_X + i * NODE_SPACING - NODE_GLYPH_CENTER_X;
             batch.draw(nodeFrame(i), nodeX, nodeY, NODE_W, NODE_H);
         }
+
+        // 4. Active cheat codes indicator (bottom-left corner).
+        drawCheatStatus(batch, knight);
+    }
+
+    /** Draws the list of currently active cheats; nothing when none are on. */
+    private void drawCheatStatus(SpriteBatch batch, Knight knight) {
+        boolean god    = knight.isGodMode();
+        boolean noclip = knight.isNoclip();
+        boolean heal   = knight.isEmergencyHealArmed();
+        if (!god && !noclip && !heal) return;
+
+        cheatText.setLength(0);
+        cheatText.append("CHEATS: ");
+        boolean first = true;
+        if (god)    first = appendCheat(first, "GOD MODE");
+        if (noclip) first = appendCheat(first, "NOCLIP");
+        if (heal)   first = appendCheat(first, "EMERGENCY HEAL");
+
+        cheatFont.draw(batch, cheatText, CHEAT_TEXT_X, CHEAT_TEXT_Y);
+    }
+
+    private boolean appendCheat(boolean first, String name) {
+        if (!first) cheatText.append("   |   ");
+        cheatText.append(name);
+        return false;
     }
 
     // ---- internals ----

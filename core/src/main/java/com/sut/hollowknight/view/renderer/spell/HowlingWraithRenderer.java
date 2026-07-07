@@ -16,13 +16,13 @@ public class HowlingWraithRenderer {
 
     // Plume canvas is 332x306; the art rises from the anchor upward, so it is
     // drawn bottom-anchored at the feet.
-    private static final float SCREAM_DRAW_WIDTH  = 332f;
-    private static final float SCREAM_DRAW_HEIGHT = 306f;
+    private static final float SCREAM_DRAW_WIDTH  = 300f;
+    private static final float SCREAM_DRAW_HEIGHT = SCREAM_DRAW_WIDTH * 306f / 332f;
 
     // Base canvas is 350x134 with the shockwave art in the lower half, so
     // centering the canvas on the feet places the art just under them.
-    private static final float BASE_DRAW_WIDTH  = 350f;
-    private static final float BASE_DRAW_HEIGHT = 134f;
+    private static final float BASE_DRAW_WIDTH  = 250f;
+    private static final float BASE_DRAW_HEIGHT = BASE_DRAW_WIDTH * 134f / 350f;
 
     public HowlingWraithRenderer(HowlingWraithAssets assets) {
         this.assets = assets;
