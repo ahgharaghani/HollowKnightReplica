@@ -28,6 +28,7 @@ public class Assets {
         // Knight animations
         manager.load("animation/knight/KnightIdle.atlas", TextureAtlas.class);
         manager.load("animation/knight/KnightWalk.atlas", TextureAtlas.class);
+        manager.load("animation/knight/Run.atlas", TextureAtlas.class);
         manager.load("animation/knight/Airborne.atlas", TextureAtlas.class);
         manager.load("animation/knight/Land.atlas", TextureAtlas.class);
 

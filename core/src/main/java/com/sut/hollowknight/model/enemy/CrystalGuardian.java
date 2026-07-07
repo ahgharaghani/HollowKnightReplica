@@ -53,9 +53,10 @@ public class CrystalGuardian implements PhysicsBody {
     /**
      * Aim clamp: the crystal arms can aim horizontally and diagonally but
      * cannot point straight up or down, so the beam always keeps a horizontal
-     * component. Measured as elevation from horizontal.
+     * component. Measured as elevation from horizontal — the beam may aim up to
+     * 45 degrees above and 45 degrees below the straight eye line.
      */
-    public static final float MAX_AIM_ANGLE_DEG = 60f;
+    public static final float MAX_AIM_ANGLE_DEG = 45f;
 
     // Idle sweep — slowly turns left/right to patrol the immediate sightline.
     public static final float IDLE_TURN_MIN_INTERVAL = 1.8f;
@@ -74,7 +75,7 @@ public class CrystalGuardian implements PhysicsBody {
     public static final float TURN_DURATION        = 0.3f;
 
     // Enrage — charge to the spotted position, then stop.
-    public static final float ENRAGE_SPEED = 330f;
+    public static final float ENRAGE_SPEED = 475f;
 
     // Laser muzzle — the head-lamp, measured against the drawn sprite.
     /** Forward offset of the lamp from the body center, along facing. */

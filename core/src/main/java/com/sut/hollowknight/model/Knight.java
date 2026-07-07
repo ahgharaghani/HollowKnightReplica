@@ -15,7 +15,7 @@ public class Knight implements PhysicsBody {
 
     // ---- Movement constants ----
     public static final float GRAVITY      = 980f;   // px/s^2
-    public static final float MOVE_SPEED   = 250f;
+    public static final float MOVE_SPEED   = 340f;
     public static final float JUMP_IMPULSE = 620f;
     public static final float FRICTION     = 600f;
     public static final float JUMP_CUT_MULTIPLIER = 0.45f;

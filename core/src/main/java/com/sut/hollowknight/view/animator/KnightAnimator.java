@@ -16,6 +16,7 @@ public class KnightAnimator {
     private Animation<TextureRegion> idleAnim;
     private Animation<TextureRegion> idleLowHealthAnim;
     private Animation<TextureRegion> walkAnim;
+    private Animation<TextureRegion> runIntroAnim; // idle_to_run lead-in, plays once
     private Animation<TextureRegion> jumpAnim;
     private Animation<TextureRegion> fallAnim;
     private Animation<TextureRegion> landAnim;
@@ -81,9 +82,26 @@ public class KnightAnimator {
         }
 
 
-        // Walk (legacy KnightWalk)
+        // Run (preferred) — falls back to the legacy KnightWalk atlas.
 
-        if (Assets.manager.isLoaded("animation/knight/KnightWalk.atlas")) {
+        if (Assets.manager.isLoaded("animation/knight/Run.atlas")) {
+            TextureAtlas runAtlas = Assets.manager.get(
+                "animation/knight/Run.atlas", TextureAtlas.class);
+            // Region names carry the frame digits (Run_run0000, Run_idle_to_run0000),
+            // so filter by prefix and order by name — findRegions("Run_run") misses them.
+            Array<TextureRegion> loopFrames  = regionsByPrefix(runAtlas, "Run_run");
+            Array<TextureRegion> introFrames = regionsByPrefix(runAtlas, "Run_idle_to_run");
+            // Loop run_0001..0007 — the 0000 frame belongs to the lead-in.
+            if (loopFrames.size > 1) loopFrames.removeIndex(0);
+            walkAnim = new Animation<>(
+                KnightAnimConfig.frameDuration(KnightAnimConfig.WALK_FPS),
+                loopFrames, Animation.PlayMode.LOOP);
+            if (introFrames.size > 0) {
+                runIntroAnim = new Animation<>(
+                    KnightAnimConfig.frameDuration(KnightAnimConfig.WALK_FPS),
+                    introFrames, Animation.PlayMode.NORMAL);
+            }
+        } else if (Assets.manager.isLoaded("animation/knight/KnightWalk.atlas")) {
             TextureAtlas walkAtlas = Assets.manager.get(
                 "animation/knight/KnightWalk.atlas", TextureAtlas.class);
             Array<TextureAtlas.AtlasRegion> walkFrames = walkAtlas.findRegions("KnightWalk");
@@ -223,6 +241,23 @@ public class KnightAnimator {
         return new Animation<>(KnightAnimConfig.frameDuration(fps), frames, mode);
     }
 
+    /**
+     * Collects atlas regions whose name starts with {@code prefix}, ordered by
+     * name. The frames are zero-padded (…0000, 0001), so lexicographic name
+     * order is frame order.
+     */
+    private static Array<TextureRegion> regionsByPrefix(TextureAtlas atlas, String prefix) {
+        Array<TextureAtlas.AtlasRegion> all = atlas.getRegions();
+        Array<TextureAtlas.AtlasRegion> matched = new Array<>();
+        for (TextureAtlas.AtlasRegion r : all) {
+            if (r.name.startsWith(prefix)) matched.add(r);
+        }
+        matched.sort(Comparator.comparing(r -> r.name));
+        Array<TextureRegion> out = new Array<>(matched.size);
+        for (TextureAtlas.AtlasRegion r : matched) out.add(r);
+        return out;
+    }
+
     //  Body frame
 
     /** Focus: frames 0..1 charge once, then frames 2..last loop while holding. */
@@ -241,11 +276,26 @@ public class KnightAnimator {
             return focusFrame(anim, t);
         }
 
+        // Run: play the idle_to_run lead-in once, then loop the run cycle.
+        if (knight.getState() == Knight.State.RUN && anim == walkAnim) {
+            return runFrame(t);
+        }
+
         if (knight.isDead()) {
             // Death plays once and freezes on the last frame.
             return anim.getKeyFrame(t, false);
         }
         return anim.getKeyFrame(t, anim.getPlayMode() == Animation.PlayMode.LOOP);
+    }
+
+    /** Lead-in (idle_to_run) plays once, then the run cycle loops. */
+    private TextureRegion runFrame(float t) {
+        if (runIntroAnim != null) {
+            float introDur = runIntroAnim.getAnimationDuration();
+            if (t < introDur) return runIntroAnim.getKeyFrame(t, false);
+            t -= introDur;
+        }
+        return walkAnim.getKeyFrame(t, true);
     }
 
     private TextureRegion focusFrame(Animation<TextureRegion> anim, float t) {
