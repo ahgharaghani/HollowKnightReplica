@@ -22,6 +22,7 @@ import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.IntArray;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
+import com.sut.hollowknight.controller.PauseController;
 import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.HuskHornheadController;
@@ -30,6 +31,7 @@ import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
+import com.sut.hollowknight.model.GameSession;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
 import com.sut.hollowknight.model.enemy.HuskHornhead;
@@ -48,6 +50,7 @@ import com.sut.hollowknight.view.assets.HowlingWraithAssets;
 import com.sut.hollowknight.view.assets.VengefulSpiritAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
+import com.sut.hollowknight.view.ui.PauseOverlay;
 import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
@@ -130,6 +133,13 @@ public class GameScreen extends AbstractScreen {
 
     private HudRenderer hudRenderer;
 
+    // ---- Pause menu (ESC) ----
+    private PauseController pauseController;
+    private PauseOverlay pauseOverlay;
+    /** Set when "Settings" is clicked; consumed in renderGraphics after the
+     *  world is drawn (so the captured frame excludes the dim overlay). */
+    private boolean settingsRequested = false;
+
     private CombatSystem combat;
 
     private TileMapCollider collider;
@@ -182,6 +192,17 @@ public class GameScreen extends AbstractScreen {
         wraithRenderer = new HowlingWraithRenderer(new HowlingWraithAssets(Assets.manager));
 
         hudRenderer = new HudRenderer(new HudAssets(Assets.manager));
+
+        pauseController = new PauseController(game);
+        pauseOverlay = new PauseOverlay(
+            pauseController.getCheatCodesText(),
+            () -> {                       // Continue
+                pauseController.resume(this);
+                pauseOverlay.setVisible(false);
+            },
+            () -> settingsRequested = true, // Settings (deferred to render)
+            () -> pauseController.saveAndQuit(this));
+        uiStage.addActor(pauseOverlay);
     }
 
     private void initWingedSentries(TileMapCollider collider, Knight knight) {
@@ -364,6 +385,20 @@ public class GameScreen extends AbstractScreen {
 
     @Override
     public void updateLogic(float delta) {
+        // ---- Pause menu (spec: opens with ESC during gameplay) ----
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            boolean nowPaused = !controller.isPaused();
+            controller.setPaused(nowPaused);
+            pauseOverlay.setVisible(nowPaused);
+        }
+        if (controller.isPaused()) {
+            // World stays frozen; only the overlay widgets animate.
+            uiStage.act(delta);
+            return;
+        }
+
+        GameSession.addPlayTime(delta);
+
         controller.update(delta);
         rainEffect.update(delta);
         glassRainEffect.update(delta);
@@ -528,6 +563,32 @@ public class GameScreen extends AbstractScreen {
         batch.end();
 
         renderDebugBoxes();
+
+        // ---- Pause menu overlay ----
+        if (settingsRequested) {
+            settingsRequested = false;
+            // Capture BEFORE the dim overlay is drawn: the Settings screen
+            // applies its own darkening to the raw frame.
+            pauseController.openSettings(this, captureFrame());
+            return;
+        }
+        if (controller.isPaused()) {
+            uiViewport.apply(true);
+            uiStage.draw();
+        }
+    }
+
+    /**
+     * Grab the current framebuffer as a texture. Used as the backdrop of the
+     * Settings screen when it is opened from the pause menu. Ownership of the
+     * returned texture passes to that screen.
+     */
+    private Texture captureFrame() {
+        Pixmap pixmap = Pixmap.createFromFrameBuffer(0, 0,
+            Gdx.graphics.getBackBufferWidth(), Gdx.graphics.getBackBufferHeight());
+        Texture tex = new Texture(pixmap);
+        pixmap.dispose();
+        return tex;
     }
 
     /** F3 toggles an overlay of every collision/hurt/damage box, in world space. */
@@ -647,5 +708,6 @@ public class GameScreen extends AbstractScreen {
         hornheadRenderer.dispose();
         guardianRenderer.dispose();
         hudRenderer.dispose();
+        pauseOverlay.dispose();
     }
 }

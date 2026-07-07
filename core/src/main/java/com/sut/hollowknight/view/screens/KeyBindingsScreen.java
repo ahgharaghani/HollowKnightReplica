@@ -35,6 +35,9 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
     private BitmapFont perpetuaFont;
     private BitmapFont keycapFont;
 
+    /** Non-null when opened from the pause-menu Settings screen. */
+    private SettingsScreen returnScreen;
+
     private final Map<BindingAction, KeyBindingButton> buttons =
         new EnumMap<>(BindingAction.class);
 
@@ -50,6 +53,12 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
         MenuUi.registerBodyStyle(skin, perpetuaFont);
 
         createUI();
+    }
+
+    /** Pause-context variant: BACK returns to the given Settings instance. */
+    public KeyBindingsScreen(Game game, SettingsScreen returnScreen) {
+        this(game);
+        this.returnScreen = returnScreen;
     }
 
     private void createUI() {
@@ -123,7 +132,12 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
         btnBack.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
-                controller.backToSettings();
+                if (returnScreen != null) {
+                    game.setScreen(returnScreen);
+                    Gdx.app.postRunnable(KeyBindingsScreen.this::dispose);
+                } else {
+                    controller.backToSettings();
+                }
             }
         });
         // Use a wide invisible hit-target so the whole "BACK" line is clickable.

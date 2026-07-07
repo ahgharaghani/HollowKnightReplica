@@ -4,7 +4,9 @@ import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.CheckBox;
 import com.badlogic.gdx.scenes.scene2d.ui.Label;
@@ -14,6 +16,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ChangeListener;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.sut.hollowknight.controller.SettingsController;
 import com.sut.hollowknight.view.MenuUi;
 import com.sut.hollowknight.view.ui.AnimatedPointerButton;
@@ -30,6 +33,13 @@ public class SettingsScreen extends AbstractMenuScreen {
     private Label languageValueLabel;
     private Label themeValueLabel;
 
+    // ---- Pause-menu context (null when opened from the main menu) ----
+    /** Frozen game frame shown behind the settings; owned + disposed here. */
+    private Texture pauseBackdrop;
+    /** The still-paused GameScreen to hand back when BACK is clicked. */
+    private GameScreen returnScreen;
+    private TextButton btnBack;
+
     public SettingsScreen(Game game) {
         super(game);
         this.controller = new SettingsController(game);
@@ -41,6 +51,30 @@ public class SettingsScreen extends AbstractMenuScreen {
         MenuUi.registerBodyStyle(skin, perpetuaFont);
 
         createUI();
+    }
+
+    /**
+     * Pause-menu variant: the exact same Settings UI as the main menu, but
+     * rendered over a frozen, darkened snapshot of the running game.
+     *
+     * @param gameSnapshot captured framebuffer of the paused game (ownership
+     *                     passes to this screen; disposed with it)
+     * @param returnScreen the still-paused GameScreen to return to on BACK
+     */
+    public SettingsScreen(Game game, Texture gameSnapshot, GameScreen returnScreen) {
+        this(game);
+        this.pauseBackdrop = gameSnapshot;
+        this.returnScreen = returnScreen;
+
+        // Framebuffer pixmaps are stored top-down; flip the region vertically.
+        TextureRegion region = new TextureRegion(gameSnapshot);
+        region.flip(false, true);
+        menuBackgroundImage.setDrawable(new TextureRegionDrawable(region));
+        // Darken the frozen game via a multiplicative tint — no extra
+        // overlay quad, so it costs nothing per frame.
+        menuBackgroundImage.setColor(0.42f, 0.42f, 0.48f, 1f);
+
+        btnBack.setText("Back to Game");
     }
 
     private void createUI() {
@@ -122,7 +156,13 @@ public class SettingsScreen extends AbstractMenuScreen {
         TextButton btnKeyBindings = new AnimatedPointerButton("Key Bindings", skin, "bodyBtn");
         btnKeyBindings.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                controller.openKeyBindings();
+                if (returnScreen != null) {
+                    // Keep the pause context alive: BACK on the KeyBindings
+                    // screen returns to THIS instance, not a fresh one.
+                    game.setScreen(new KeyBindingsScreen(game, SettingsScreen.this));
+                } else {
+                    controller.openKeyBindings();
+                }
             }
         });
         body.add(controlsLabel).left().width(280);
@@ -160,10 +200,18 @@ public class SettingsScreen extends AbstractMenuScreen {
         root.add(body).growX().row();
 
         // --- Back ---
-        TextButton btnBack = new AnimatedPointerButton("Back to Main Menu", skin, "headingBtn");
+        btnBack = new AnimatedPointerButton("Back to Main Menu", skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                controller.backToMainMenu();
+                if (returnScreen != null) {
+                    // Came from the pause menu — hand the still-paused game back.
+                    game.setScreen(returnScreen);
+                    // This click was dispatched by our own stage; defer disposal
+                    // until the event pass has unwound.
+                    Gdx.app.postRunnable(SettingsScreen.this::dispose);
+                } else {
+                    controller.backToMainMenu();
+                }
             }
         });
 
@@ -172,6 +220,14 @@ public class SettingsScreen extends AbstractMenuScreen {
         footer.bottom().padBottom(50);
         uiStage.addActor(footer);
         footer.add(btnBack).width(420).height(60);
+    }
+
+    @Override
+    protected void refreshBackgroundImage() {
+        // Keep the frozen-game backdrop when opened from pause; show() and
+        // theme changes would otherwise restore the menu theme art.
+        if (pauseBackdrop != null) return;
+        super.refreshBackgroundImage();
     }
 
     private static String volumeText(float v) {
@@ -195,5 +251,8 @@ public class SettingsScreen extends AbstractMenuScreen {
         skin.dispose();
         trajanFont.dispose();
         perpetuaFont.dispose();
+        if (pauseBackdrop != null) {
+            pauseBackdrop.dispose();
+        }
     }
 }
