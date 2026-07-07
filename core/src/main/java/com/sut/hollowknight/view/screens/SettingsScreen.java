@@ -222,6 +222,15 @@ public class SettingsScreen extends AbstractMenuScreen {
         footer.add(btnBack).width(420).height(60);
     }
 
+    /**
+     * The frozen-game snapshot when this screen was opened from the pause
+     * menu, or null. Package-private: shared with the KeyBindings sub-screen.
+     * Ownership stays with this screen — callers must NOT dispose it.
+     */
+    Texture getPauseBackdrop() {
+        return pauseBackdrop;
+    }
+
     @Override
     protected void refreshBackgroundImage() {
         // Keep the frozen-game backdrop when opened from pause; show() and

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.scenes.scene2d.Actor;
 import com.badlogic.gdx.scenes.scene2d.InputEvent;
 import com.badlogic.gdx.scenes.scene2d.ui.HorizontalGroup;
@@ -15,6 +16,7 @@ import com.badlogic.gdx.scenes.scene2d.ui.Skin;
 import com.badlogic.gdx.scenes.scene2d.ui.Table;
 import com.badlogic.gdx.scenes.scene2d.ui.TextButton;
 import com.badlogic.gdx.scenes.scene2d.utils.ClickListener;
+import com.badlogic.gdx.scenes.scene2d.utils.TextureRegionDrawable;
 import com.badlogic.gdx.utils.Align;
 import com.sut.hollowknight.controller.KeyBindingsController;
 import com.sut.hollowknight.controller.KeyBindingsController.BindingAction;
@@ -59,6 +61,28 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
     public KeyBindingsScreen(Game game, SettingsScreen returnScreen) {
         this(game);
         this.returnScreen = returnScreen;
+
+        // Reuse the frozen-game snapshot owned by the pause Settings screen,
+        // so the ongoing game stays visible behind this sub-screen too.
+        // NOT disposed here — the Settings screen outlives this round trip.
+        Texture backdrop = returnScreen.getPauseBackdrop();
+        if (backdrop != null) {
+            TextureRegion region = new TextureRegion(backdrop);
+            region.flip(false, true);
+            menuBackgroundImage.setDrawable(new TextureRegionDrawable(region));
+            // Same darkening tint as the pause Settings screen.
+            menuBackgroundImage.setColor(0.42f, 0.42f, 0.48f, 1f);
+        }
+    }
+
+    @Override
+    protected void refreshBackgroundImage() {
+        // Keep the frozen-game backdrop when reached from the pause menu;
+        // show() would otherwise restore the menu theme art.
+        if (returnScreen != null && returnScreen.getPauseBackdrop() != null) {
+            return;
+        }
+        super.refreshBackgroundImage();
     }
 
     private void createUI() {
