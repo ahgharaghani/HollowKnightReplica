@@ -26,7 +26,7 @@ public class HowlingWraith {
     // (drawn ~300x277 rising from the feet). The bottom is lifted off the
     // ground so it specifically covers enemies at and above head height.
     public static final float DMG_WIDTH         = 300f;
-    public static final float DMG_HEIGHT        = 250f;
+    public static final float DMG_HEIGHT        = 277f;
     public static final float DMG_BOTTOM_OFFSET = 30f;
 
     // Fixed anchor: per the spec the wraiths stay exactly where they erupted.
