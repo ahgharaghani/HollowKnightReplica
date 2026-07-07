@@ -14,18 +14,18 @@ public class VengefulSpiritRenderer {
 
     private final VengefulSpiritAssets assets;
 
-    // Ball art canvas is 317x143; keep that aspect at a readable in-world size.
-    private static final float BALL_DRAW_WIDTH  = 170f;
-    private static final float BALL_DRAW_HEIGHT = BALL_DRAW_WIDTH * 143f / 317f;
+    // Ball art canvas is 317x143;
+    private static final float BALL_DRAW_WIDTH  = 317f;
+    private static final float BALL_DRAW_HEIGHT = 143;
 
     // Wall impact art canvas is 259x204.
-    private static final float WALL_DRAW_WIDTH  = 130f;
-    private static final float WALL_DRAW_HEIGHT = WALL_DRAW_WIDTH * 204f / 259f;
+    private static final float WALL_DRAW_WIDTH  = 259f;
+    private static final float WALL_DRAW_HEIGHT = 204f;
 
     // Blast art canvas is 306x289 — the emergence burst that envelops the
     // knight (hurtbox is 110 tall), anchored where the ball spawned.
-    private static final float BLAST_DRAW_WIDTH  = 190f;
-    private static final float BLAST_DRAW_HEIGHT = BLAST_DRAW_WIDTH * 289f / 306f;
+    private static final float BLAST_DRAW_WIDTH  = 306f;
+    private static final float BLAST_DRAW_HEIGHT = 289f;
 
     public VengefulSpiritRenderer(VengefulSpiritAssets assets) {
         this.assets = assets;

@@ -7,16 +7,6 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 
-/**
- * Animations for the Vengeful Spirit spell:
- * <ul>
- *   <li><b>Ball</b> — the travelling fireball. Frame 1 plays once as it leaves
- *       the knight, then frames 2–4 loop for the flight (20 FPS).</li>
- *   <li><b>Ball End</b> — the fireball dissipating on wall impact (24 FPS).</li>
- *   <li><b>Blast</b> — the burst on the knight as the ball emerges (24 FPS).</li>
- *   <li><b>Ball Wall Impact</b> — the burst on the wall the ball strikes (24 FPS).</li>
- * </ul>
- */
 public class VengefulSpiritAssets {
 
     private static final String BASE = "animation/effects/vengeful_spirit/";
@@ -34,13 +24,24 @@ public class VengefulSpiritAssets {
     /** Frame index at which the ball flight loop begins (2nd frame). */
     private static final int BALL_LOOP_START = 1;
 
-    private final Animation<TextureRegion> ballAnim;      // full 4-frame ball, NORMAL
+    private final Animation<TextureRegion> ballAnim;
     private final Animation<TextureRegion> ballEndAnim;
     private final Animation<TextureRegion> blastAnim;
     private final Animation<TextureRegion> wallImpactAnim;
 
+    /** Captured at build-time so we never have to call getKeyFrames(). */
+    private final int ballFrameCount;
+
     public VengefulSpiritAssets(AssetManager manager) {
-        ballAnim       = build(manager, BALL_PATH,        BALL_FPS,        Animation.PlayMode.NORMAL);
+        TextureAtlas ballAtlas = manager.get(BALL_PATH, TextureAtlas.class);
+        Array<TextureAtlas.AtlasRegion> ballFrames = ballAtlas.getRegions();
+        if (ballFrames.size == 0) {
+            throw new IllegalStateException("Atlas '" + BALL_PATH + "' has no regions");
+        }
+        setLinear(ballAtlas);
+        ballAnim        = new Animation<>(1f / BALL_FPS, ballFrames, Animation.PlayMode.NORMAL);
+        ballFrameCount  = ballFrames.size;
+
         ballEndAnim    = build(manager, BALL_END_PATH,    BALL_END_FPS,    Animation.PlayMode.NORMAL);
         blastAnim      = build(manager, BLAST_PATH,       BLAST_FPS,       Animation.PlayMode.NORMAL);
         wallImpactAnim = build(manager, WALL_IMPACT_PATH, WALL_IMPACT_FPS, Animation.PlayMode.NORMAL);
@@ -62,10 +63,14 @@ public class VengefulSpiritAssets {
         if (frames.size == 0) {
             throw new IllegalStateException("Atlas '" + path + "' has no regions");
         }
+        setLinear(atlas);
+        return new Animation<>(1f / fps, frames, mode);
+    }
+
+    private static void setLinear(TextureAtlas atlas) {
         for (Texture t : atlas.getTextures()) {
             t.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         }
-        return new Animation<>(1f / fps, frames, mode);
     }
 
     // ---- Frame selection ----
@@ -76,12 +81,13 @@ public class VengefulSpiritAssets {
      */
     public TextureRegion getBallFrame(float stateTime) {
         float fd = ballAnim.getFrameDuration();
-        int total = ((TextureRegion[]) ballAnim.getKeyFrames()).length;
+        int total = ballFrameCount;
+
         if (total <= BALL_LOOP_START + 1) {
             return ballAnim.getKeyFrame(stateTime, true);
         }
 
-        float leadTime = BALL_LOOP_START * fd;      // duration of the intro frame(s)
+        float leadTime = BALL_LOOP_START * fd;
         if (stateTime < leadTime) {
             return ballAnim.getKeyFrame(stateTime, false);
         }
