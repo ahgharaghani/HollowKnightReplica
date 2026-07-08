@@ -33,6 +33,8 @@ import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.GameSession;
+import com.sut.hollowknight.model.GameSettings;
+import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
 import com.sut.hollowknight.model.enemy.HuskHornhead;
@@ -43,6 +45,7 @@ import com.sut.hollowknight.model.enemy.WingedSentry;
 import com.sut.hollowknight.view.animator.KnightAnimator;
 import com.sut.hollowknight.view.assets.Assets;
 import com.sut.hollowknight.view.assets.HudAssets;
+import com.sut.hollowknight.view.assets.InventoryAssets;
 import com.sut.hollowknight.view.assets.CrystalGuardianAssets;
 import com.sut.hollowknight.view.assets.HuskHornheadAssets;
 import com.sut.hollowknight.view.assets.TiktikAssets;
@@ -52,6 +55,7 @@ import com.sut.hollowknight.view.assets.VengefulSpiritAssets;
 import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.ui.PauseOverlay;
+import com.sut.hollowknight.view.ui.InventoryOverlay;
 import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
@@ -129,6 +133,7 @@ public class GameScreen extends AbstractScreen {
 
     /** Draws Howling Wraiths blasts (plume + base shockwave). */
     private HowlingWraithRenderer wraithRenderer;
+    private InventoryOverlay inventoryOverlay;
 
     private List<EnemyController> enemyControllers;
 
@@ -210,6 +215,17 @@ public class GameScreen extends AbstractScreen {
             () -> settingsRequested = true, // Settings (deferred to render)
             () -> pauseController.saveAndQuit(this));
         uiStage.addActor(pauseOverlay);
+
+        // ---- Charm inventory (spec: Charms & Inventory System) ----
+        if (GameSession.isActive()) {
+            knight.getCharms().loadFromNames(GameSession.getActive().equippedCharms);
+            knight.getCharms().setVoidHeartAcquired(GameSession.getActive().bossDefeated);
+        }
+        inventoryOverlay = new InventoryOverlay(
+            knight, new InventoryAssets(Assets.manager),
+            uiStage.getViewport().getWorldWidth(),
+            uiStage.getViewport().getWorldHeight());
+        uiStage.addActor(inventoryOverlay);
     }
 
     private void initWingedSentries(TileMapCollider collider, Knight knight) {
@@ -409,6 +425,30 @@ public class GameScreen extends AbstractScreen {
 
     @Override
     public void updateLogic(float delta) {
+        // ---- Inventory menu (spec: 'i' pauses the game at any moment
+        //      outside animation-lock frames and opens the charm menu) ----
+        if (inventoryOverlay.isShown()) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
+                    || Gdx.input.isKeyJustPressed(
+                        GameSettings.getInstance().getInventoryKey())) {
+                inventoryOverlay.beginClose();
+            }
+            uiStage.act(delta);
+            if (inventoryOverlay.isHidden()) {
+                controller.setPaused(false); // reverse sweep finished
+            }
+            return;
+        }
+        if (!controller.isPaused()
+                && Gdx.input.isKeyJustPressed(
+                    GameSettings.getInstance().getInventoryKey())
+                && canOpenInventory()) {
+            controller.setPaused(true);
+            inventoryOverlay.open();
+            uiStage.act(delta);
+            return;
+        }
+
         // ---- Pause menu (spec: opens with ESC during gameplay) ----
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             boolean nowPaused = !controller.isPaused();
@@ -438,6 +478,12 @@ public class GameScreen extends AbstractScreen {
         combat.resolve(delta);
         combat.resolveSpiritHits(controller.getSpirits());
         combat.resolveWraithHits(controller.getWraiths());
+    }
+
+    /** Spec: the inventory cannot open during animation-lock frames. */
+    private boolean canOpenInventory() {
+        Knight knight = controller.getKnight();
+        return !knight.isDead() && !knight.isCasting() && !knight.isScreaming();
     }
 
     @Override
@@ -483,7 +529,10 @@ public class GameScreen extends AbstractScreen {
         // Flash while invincible: blink the sprite alpha ~10x/sec.
         boolean flashOff = knight.isInvincible()
             && ((int) (knight.getInvincibleTimer() * INVINCIBLE_FLASH_HZ) & 1) == 0;
+        // Sharp Shadow: the dash reads as a living shade - tint it void-dark.
+        boolean shadowDash = knight.isDashing() && knight.hasCharm(Charm.SHARP_SHADOW);
         if (flashOff) batch.setColor(1f, 1f, 1f, 0.3f);
+        else if (shadowDash) batch.setColor(0.30f, 0.22f, 0.42f, 1f);
 
         if (knight.isFacingRight()) {
             batch.draw(frame,
@@ -497,7 +546,7 @@ public class GameScreen extends AbstractScreen {
                 +frameW, frameH);
         }
 
-        if (flashOff) batch.setColor(Color.WHITE);
+        if (flashOff || shadowDash) batch.setColor(Color.WHITE);
 
         // Effect overlays (slash arcs, dash dust).
         TextureRegion effect = knightAnimator.getCurrentEffectFrame(knight);
@@ -559,6 +608,9 @@ public class GameScreen extends AbstractScreen {
         }
 
         // Vengeful Spirit fireballs (index-based: no Iterator allocation).
+        // Void Heart: the knight's spells surge with void - tint them dark.
+        boolean voidSpells = knight.hasCharm(Charm.VOID_HEART);
+        if (voidSpells) batch.setColor(0.42f, 0.28f, 0.58f, 1f);
         List<VengefulSpiritController> spirits = controller.getSpirits();
         for (int i = 0; i < spirits.size(); i++) {
             spiritRenderer.draw(batch, spirits.get(i).getSpirit());
@@ -569,6 +621,7 @@ public class GameScreen extends AbstractScreen {
         for (int i = 0; i < wraiths.size(); i++) {
             wraithRenderer.draw(batch, wraiths.get(i).getWraith());
         }
+        if (voidSpells) batch.setColor(Color.WHITE);
 
         batch.end();
 
@@ -736,5 +789,6 @@ public class GameScreen extends AbstractScreen {
         guardianRenderer.dispose();
         hudRenderer.dispose();
         pauseOverlay.dispose();
+        inventoryOverlay.dispose();
     }
 }

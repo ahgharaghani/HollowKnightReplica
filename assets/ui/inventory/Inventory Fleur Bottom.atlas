@@ -1,0 +1,31 @@
+Inventory Fleur Bottom.png
+size:2048,512
+filter:Linear,Linear
+repeat:none
+Inventory_Fleur_Bottom Up
+index:5
+bounds:2,278,741,67
+Inventory_Fleur_Bottom Up
+index:2
+bounds:2,209,741,67
+Inventory_Fleur_Bottom Up
+index:7
+bounds:745,278,741,67
+Inventory_Fleur_Bottom Up
+index:4
+bounds:2,140,741,67
+Inventory_Fleur_Bottom Up
+index:1
+bounds:745,209,741,67
+Inventory_Fleur_Bottom Up
+index:6
+bounds:2,71,741,67
+Inventory_Fleur_Bottom Up
+index:3
+bounds:745,140,741,67
+Inventory_Fleur_Bottom Up
+index:8
+bounds:2,2,741,67
+Inventory_Fleur_Bottom Up
+index:0
+bounds:745,71,741,67

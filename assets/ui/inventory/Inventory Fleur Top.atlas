@@ -1,0 +1,40 @@
+Inventory Fleur Top.png
+size:2048,1024
+filter:Linear,Linear
+repeat:none
+Inventory_Fleur_Top Up
+index:11
+bounds:2,818,1212,134
+Inventory_Fleur_Top Up
+index:2
+bounds:2,682,930,134
+Inventory_Fleur_Top Up
+index:7
+bounds:2,546,930,134
+Inventory_Fleur_Top Up
+index:4
+bounds:2,410,930,134
+Inventory_Fleur_Top Up
+index:9
+bounds:2,274,930,134
+Inventory_Fleur_Top Up
+index:1
+bounds:2,138,930,134
+Inventory_Fleur_Top Up
+index:6
+bounds:2,2,930,134
+Inventory_Fleur_Top Up
+index:3
+bounds:934,682,930,134
+Inventory_Fleur_Top Up
+index:8
+bounds:934,546,930,134
+Inventory_Fleur_Top Up
+index:0
+bounds:934,410,930,134
+Inventory_Fleur_Top Up
+index:5
+bounds:934,274,930,134
+Inventory_Fleur_Top Up
+index:10
+bounds:934,138,930,134

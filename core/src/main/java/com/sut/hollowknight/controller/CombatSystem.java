@@ -6,6 +6,7 @@ import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
+import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.collision.AABB;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.enemy.Javelin;
@@ -45,8 +46,23 @@ public class CombatSystem {
     /** 1 = standard recoil strength (a Heavy Blow charm would pass ~1.75). */
     private static final float NAIL_KNOCKBACK_SCALE = 1f;
 
+    // ---- Charm modifiers (spec: Charms & Inventory System) ----
+    /** Unbreakable Strength: nail damage boosted (+50%, rounded up). */
+    private static final int   UNBREAKABLE_NAIL_DAMAGE = 2;
+    /** Soul Catcher: extra SOUL absorbed per successful nail hit. */
+    private static final int   SOUL_CATCHER_BONUS_SOUL = 3;
+    /** Heavy Blow: enemies recoil much further when struck. */
+    private static final float HEAVY_BLOW_KNOCKBACK_SCALE = 1.75f;
+    /** Void Heart: ability (spell) damage is raised by 50%. */
+    private static final float VOID_HEART_SPELL_SCALE = 1.5f;
+
     private final Knight knight;
     private final List<EnemyController> enemies;
+
+    // Sharp Shadow: one hit per enemy per dash, tracked with NEGATIVE ids
+    // so they can never collide with the knight's positive attack ids.
+    private boolean wasDashing;
+    private int sharpShadowDashId = -1;
 
     public CombatSystem(Knight knight, List<EnemyController> enemies) {
         this.knight = knight;
@@ -54,9 +70,11 @@ public class CombatSystem {
     }
 
     public void resolve(float delta) {
+        updateSharpShadowDash();
         for (int i = 0; i < enemies.size(); i++) {
             EnemyController enemy = enemies.get(i);
             resolveNailHit(enemy);
+            resolveSharpShadowHit(enemy);
             resolveContactDamage(enemy);
             if (enemy instanceof WingedSentryController) {
                 resolveJavelinDamage((WingedSentryController) enemy);
@@ -88,7 +106,7 @@ public class CombatSystem {
 
                 spirit.markHit(id);
                 float dirX = spirit.isFacingRight() ? 1f : -1f;
-                enemy.hitByNail(VengefulSpirit.DAMAGE, dirX, 0f, SPIRIT_KNOCKBACK_SCALE);
+                enemy.hitByNail(spellDamage(VengefulSpirit.DAMAGE), dirX, 0f, SPIRIT_KNOCKBACK_SCALE);
             }
         }
     }
@@ -112,11 +130,57 @@ public class CombatSystem {
 
                     float centerX = (body.getLeft() + body.getRight()) / 2f;
                     float dirX = centerX >= wraith.getAnchorX() ? 1f : -1f;
-                    enemy.hitByNail(HowlingWraith.DAMAGE_PER_TICK, dirX, 1f,
+                    enemy.hitByNail(spellDamage(HowlingWraith.DAMAGE_PER_TICK), dirX, 1f,
                         WRAITH_KNOCKBACK_SCALE);
                 }
             }
         }
+    }
+
+    // ------------------------------------------------------------------
+    //  Charm helpers (spec: Charms & Inventory System)
+    // ------------------------------------------------------------------
+
+    /** Unbreakable Strength: the nail strikes harder. */
+    private int nailDamage() {
+        return knight.hasCharm(Charm.UNBREAKABLE_STRENGTH)
+            ? UNBREAKABLE_NAIL_DAMAGE : NAIL_DAMAGE;
+    }
+
+    /** Heavy Blow: enemies are thrown much further by each hit. */
+    private float nailKnockbackScale() {
+        return knight.hasCharm(Charm.HEAVY_BLOW)
+            ? NAIL_KNOCKBACK_SCALE * HEAVY_BLOW_KNOCKBACK_SCALE
+            : NAIL_KNOCKBACK_SCALE;
+    }
+
+    /** Void Heart: abilities strike 50% harder. */
+    private int spellDamage(int baseDamage) {
+        return knight.hasCharm(Charm.VOID_HEART)
+            ? Math.round(baseDamage * VOID_HEART_SPELL_SCALE)
+            : baseDamage;
+    }
+
+    private boolean isShadowDashing() {
+        return knight.isDashing() && knight.hasCharm(Charm.SHARP_SHADOW);
+    }
+
+    /** Assigns a fresh (negative) hit id to every new Sharp Shadow dash. */
+    private void updateSharpShadowDash() {
+        boolean dashingNow = knight.isDashing();
+        if (dashingNow && !wasDashing) sharpShadowDashId--;
+        wasDashing = dashingNow;
+    }
+
+    /** Sharp Shadow: dashing through a body cuts it once per dash. */
+    private void resolveSharpShadowHit(EnemyController enemy) {
+        if (!isShadowDashing() || !enemy.isAlive()) return;
+        if (enemy.getLastNailHitId() == sharpShadowDashId) return;
+        if (!AABB.overlaps(enemy.getBodyBox(), knight.getHurtBox())) return;
+
+        enemy.setLastNailHitId(sharpShadowDashId);
+        float dirX = enemy.getBodyBox().getCenterX() >= knight.getX() ? 1f : -1f;
+        enemy.hitByNail(nailDamage(), dirX, 0f, NAIL_KNOCKBACK_SCALE);
     }
 
     /** Knight's active slash vs the enemy body. One hit per swing per enemy. */
@@ -140,9 +204,13 @@ public class CombatSystem {
                 dirX = enemy.getBodyBox().getCenterX() >= knight.getX() ? 1f : -1f;
                 break;
         }
-        enemy.hitByNail(NAIL_DAMAGE, dirX, dirY, NAIL_KNOCKBACK_SCALE);
+        enemy.hitByNail(nailDamage(), dirX, dirY, nailKnockbackScale());
 
-        knight.addSoul(Knight.SOUL_PER_NAIL_HIT);
+        // Soul Catcher: nail combat feeds the vessel faster.
+        int soulGain = knight.hasCharm(Charm.SOUL_CATCHER)
+            ? Knight.SOUL_PER_NAIL_HIT + SOUL_CATCHER_BONUS_SOUL
+            : Knight.SOUL_PER_NAIL_HIT;
+        knight.addSoul(soulGain);
 
         if (knight.getState() == Knight.State.DOWN_SLASH) {
             knight.pogoBounce();
@@ -151,6 +219,8 @@ public class CombatSystem {
 
     private void resolveContactDamage(EnemyController enemy) {
         if (knight.isInvincible()) return;
+        // Sharp Shadow: the shade passes harmlessly through bodies mid-dash.
+        if (isShadowDashing()) return;
         if (!enemy.isAlive() || !enemy.overlapsKnight()) return;
 
         int knockbackDir = knight.getX() < enemy.getBodyBox().getCenterX() ? -1 : 1;

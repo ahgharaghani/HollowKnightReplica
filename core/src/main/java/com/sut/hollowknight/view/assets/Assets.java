@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
+import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.enums.MenuTheme;
 
 public class Assets {
@@ -82,6 +83,19 @@ public class Assets {
         manager.load("ui/keybindings/button_mouse_left_click.png", Texture.class);
         manager.load("ui/keybindings/button_mouse_middle_click.png", Texture.class);
         manager.load("ui/keybindings/button_mouse_right_click.png", Texture.class);
+
+        // ---- Inventory menu & charms (spec: Charms & Inventory System) ----
+        manager.load(InventoryAssets.FLEUR_CORNER_ATLAS, TextureAtlas.class);
+        manager.load(InventoryAssets.FLEUR_TOP_ATLAS, TextureAtlas.class);
+        manager.load(InventoryAssets.FLEUR_BOTTOM_ATLAS, TextureAtlas.class);
+        manager.load(InventoryAssets.SIDE_ARROW_ATLAS, TextureAtlas.class);
+        manager.load(InventoryAssets.BACKBOARD_PNG, Texture.class);
+        manager.load(InventoryAssets.NOTCH_PNG, Texture.class);
+        manager.load(InventoryAssets.COST_LIT_PNG, Texture.class);
+        manager.load(InventoryAssets.COST_UNLIT_PNG, Texture.class);
+        for (Charm charm : Charm.values()) {
+            manager.load(charm.getIconPath(), Texture.class);
+        }
     }
 
     public static boolean update() {

@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
+import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.collision.CollisionResolver;
 import com.sut.hollowknight.model.collision.CollisionRect;
@@ -134,7 +135,7 @@ public class GameController {
             return;
         }
         if (input.isFocusPressed() && knight.canFocus()) {
-            knight.beginFocus(false);
+            knight.beginFocus(knight.hasCharm(Charm.QUICK_FOCUS));
             wasJumpHeld = jumpHeld;
             return;
         }

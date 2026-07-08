@@ -1,5 +1,8 @@
 package com.sut.hollowknight.model;
 
+import com.sut.hollowknight.model.charms.Charm;
+import com.sut.hollowknight.model.charms.CharmLoadout;
+
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.PhysicsBody;
 
@@ -136,6 +139,9 @@ public class Knight implements PhysicsBody {
     private boolean noclip = false;
     /** One-shot Emergency Heal: swaps death for one mask when HP empties. */
     private boolean emergencyHealArmed = false;
+
+    /** Equipped charms (passive modifiers) + the 3-notch capacity rule. */
+    private final CharmLoadout charms = new CharmLoadout();
     private float stateTime;
 
     // ---- Combat ----
@@ -152,6 +158,8 @@ public class Knight implements PhysicsBody {
     public static final float ATTACK_COMBO_WINDOW = 0.45f;
     /** Down/up slash duration (slightly longer arc). */
     public static final float DIRECTIONAL_ATTACK_DURATION = 0.40f;
+    /** Quick Slash charm: slashes recover ~35% faster. */
+    public static final float QUICK_SLASH_ATTACK_SCALE = 0.65f;
     /** Wall slash duration. */
     public static final float WALL_SLASH_DURATION = 0.35f;
 
@@ -165,6 +173,10 @@ public class Knight implements PhysicsBody {
     public static final float DASH_SPEED        = 720f;
     public static final float DASH_DURATION     = 0.18f;
     public static final float DASH_COOLDOWN     = 0.80f;
+    /** Dashmaster charm: dash cooldown is halved. */
+    public static final float DASHMASTER_COOLDOWN_SCALE = 0.5f;
+    /** Sharp Shadow charm: the dash carries the bearer 20% further. */
+    public static final float SHARP_SHADOW_DASH_SCALE   = 1.2f;
     public static final float DASH_DOWN_SPEED   = 1100f;
     public static final float DASH_DOWN_DURATION = 0.35f;
     public static final float DASH_DOWN_LAND_DURATION = 0.30f;
@@ -289,6 +301,9 @@ public class Knight implements PhysicsBody {
     public float   getAttackTimer()          { return attackTimer; }
     public int     getAttackComboCount()     { return attackComboCount; }
     public int     getAttackId()             { return attackId; }
+
+    public CharmLoadout getCharms()      { return charms; }
+    public boolean hasCharm(Charm charm) { return charms.isEquipped(charm); }
     public boolean hasPogoedThisAttack()     { return pogoedThisAttack; }
     public boolean isWallSliding()           { return state == State.WALL_SLIDE; }
     public int     getWallDirection()        { return wallDirection; }
@@ -601,7 +616,7 @@ public class Knight implements PhysicsBody {
     public State beginSlash() {
         boolean alt = attackComboCount > 0 && attackComboTimer > 0f;
         attackId++;
-        attackTimer = (ATTACK_DURATION);
+        attackTimer = charmAttackDuration(ATTACK_DURATION);
         attackComboCount = alt ? 0 : 1;
         attackComboTimer = ATTACK_COMBO_WINDOW;
         return alt ? State.SLASH_ALT : State.SLASH;
@@ -609,7 +624,7 @@ public class Knight implements PhysicsBody {
 
     public void beginDirectionalSlash(State which) {
         attackId++;
-        attackTimer = DIRECTIONAL_ATTACK_DURATION;
+        attackTimer = charmAttackDuration(DIRECTIONAL_ATTACK_DURATION);
         attackComboCount = 0;
         attackComboTimer = 0f;
         pogoedThisAttack = false;
@@ -648,13 +663,25 @@ public class Knight implements PhysicsBody {
 
     //  Dash helpers
 
+    /** Dashmaster: dash more often (halved cooldown). */
+    private float charmDashCooldown() {
+        return hasCharm(Charm.DASHMASTER)
+            ? DASH_COOLDOWN * DASHMASTER_COOLDOWN_SCALE : DASH_COOLDOWN;
+    }
+
+    /** Quick Slash: much faster slash recovery. */
+    private float charmAttackDuration(float base) {
+        return hasCharm(Charm.QUICK_SLASH) ? base * QUICK_SLASH_ATTACK_SCALE : base;
+    }
+
     public void beginDash(int direction) {
         if (dashCooldownTimer > 0f) return;
         dashing = true;
         dashingDown = false;
         dashDirection = direction;
-        dashTimer = DASH_DURATION;
-        dashCooldownTimer = DASH_COOLDOWN;
+        dashTimer = hasCharm(Charm.SHARP_SHADOW)
+            ? DASH_DURATION * SHARP_SHADOW_DASH_SCALE : DASH_DURATION;
+        dashCooldownTimer = charmDashCooldown();
         velocityY = 0f; // dash is horizontal, ignore gravity during the burst
         velocityX = direction * DASH_SPEED;
         facingRight = (direction > 0);
@@ -667,7 +694,7 @@ public class Knight implements PhysicsBody {
         dashingDown = true;
         dashDirection = 0;
         dashDownTimer = DASH_DOWN_DURATION;
-        dashCooldownTimer = DASH_COOLDOWN;
+        dashCooldownTimer = charmDashCooldown();
         velocityX = 0f;
         velocityY = -DASH_DOWN_SPEED;
         setState(State.DASH_DOWN);
