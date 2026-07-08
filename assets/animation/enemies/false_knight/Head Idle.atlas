@@ -1,0 +1,19 @@
+Head Idle.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+Head Idle
+index:4
+bounds:2,2,151,147
+Head Idle
+index:1
+bounds:155,2,151,147
+Head Idle
+index:3
+bounds:308,2,151,147
+Head Idle
+index:0
+bounds:461,2,151,147
+Head Idle
+index:2
+bounds:614,2,151,147

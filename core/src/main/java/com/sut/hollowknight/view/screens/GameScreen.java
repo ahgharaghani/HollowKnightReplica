@@ -34,6 +34,7 @@ import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.GameSession;
+import com.sut.hollowknight.model.AchievementsRegistry;
 import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.npc.Zote;
@@ -59,6 +60,7 @@ import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.ui.PauseOverlay;
 import com.sut.hollowknight.view.ui.InventoryOverlay;
+import com.sut.hollowknight.view.ui.AchievementToastOverlay;
 import com.sut.hollowknight.view.ui.ZoteDialogueOverlay;
 import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.model.spell.HowlingWraith;
@@ -145,6 +147,7 @@ public class GameScreen extends AbstractScreen {
     private ZoteController zoteController;
     private ZoteRenderer zoteRenderer;
     private ZoteDialogueOverlay zoteDialogue;
+    private AchievementToastOverlay achievementToasts;
 
     private List<EnemyController> enemyControllers;
 
@@ -226,6 +229,14 @@ public class GameScreen extends AbstractScreen {
             () -> settingsRequested = true, // Settings (deferred to render)
             () -> pauseController.saveAndQuit(this));
         uiStage.addActor(pauseOverlay);
+
+        // ---- Achievements (spec: Achievements) ----
+        if (GameSession.isActive()) {
+            AchievementsRegistry.getInstance()
+                .syncFrom(GameSession.getActive().unlockedAchievementIds);
+        }
+        achievementToasts = new AchievementToastOverlay();
+        AchievementsRegistry.setUnlockListener(achievementToasts);
 
         // ---- Charm inventory (spec: Charms & Inventory System) ----
         if (GameSession.isActive()) {
@@ -423,6 +434,32 @@ public class GameScreen extends AbstractScreen {
     }
 
     /** Locate the "ZoteSpawn" point in the map's Objects layer. */
+    /**
+     * Watches game state for achievement conditions (spec: Achievements).
+     * AchievementsRegistry.unlock() de-duplicates, so calling these every
+     * frame is a cheap no-op once earned. No allocations here.
+     */
+    private void checkAchievements() {
+        AchievementsRegistry reg = AchievementsRegistry.getInstance();
+
+        // Falsehood + Completion (+ Speedrun under 10 min): the False
+        // Knight is this build's final boss, so beating him finishes
+        // the game. Boss logic only has to set bossDefeated = true.
+        if (GameSession.isActive() && GameSession.getActive().bossDefeated) {
+            reg.onFalseKnightDefeated();
+            reg.onGameFinished(GameSession.getActive().playTimeSeconds);
+        }
+
+        // True Hunter: every enemy in the level dead at once.
+        boolean anyAlive = false;
+        for (int i = 0; i < enemyControllers.size(); i++) {
+            if (enemyControllers.get(i).isAlive()) { anyAlive = true; break; }
+        }
+        if (!anyAlive && !enemyControllers.isEmpty()) {
+            reg.onAllEnemiesKilled();
+        }
+    }
+
     private float[] findZoteSpawn() {
         for (MapLayer layer : tiledMap.getLayers()) {
             for (MapObject obj : layer.getObjects()) {
@@ -516,6 +553,7 @@ public class GameScreen extends AbstractScreen {
 
         controller.update(delta);
         zoteController.update(delta);
+        checkAchievements();
         rainEffect.update(delta);
         glassRainEffect.update(delta);
 
@@ -695,6 +733,9 @@ public class GameScreen extends AbstractScreen {
         hudRenderer.draw(batch, controller.getKnight(), Gdx.graphics.getDeltaTime());
         zoteDialogue.drawDialogue(batch,
                 uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
+        achievementToasts.draw(batch,
+                uiViewport.getWorldWidth(), uiViewport.getWorldHeight(),
+                Gdx.graphics.getDeltaTime());
         batch.end();
 
         renderDebugBoxes();
@@ -846,5 +887,7 @@ public class GameScreen extends AbstractScreen {
         pauseOverlay.dispose();
         inventoryOverlay.dispose();
         zoteDialogue.dispose();
+        AchievementsRegistry.setUnlockListener(null);
+        achievementToasts.dispose();
     }
 }

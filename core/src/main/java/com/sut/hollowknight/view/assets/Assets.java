@@ -110,6 +110,12 @@ public class Assets {
         for (String voice : ZoteAssets.VOICE_SFX) {
             manager.load(voice, Sound.class);
         }
+
+        // Achievement icons (spec: Achievements) - needed by the toast.
+        for (com.sut.hollowknight.model.Achievement a
+                : com.sut.hollowknight.model.AchievementsRegistry.getInstance().all()) {
+            manager.load(a.getIconPath(), Texture.class);
+        }
     }
 
     public static boolean update() {

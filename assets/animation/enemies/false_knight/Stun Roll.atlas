@@ -1,0 +1,24 @@
+Stun Roll.png
+size:2048,2048
+filter:Linear,Linear
+repeat:none
+Stun Roll
+index:3
+bounds:2,1278,1095,636
+Stun Roll
+index:0
+bounds:2,640,1095,636
+Stun Roll
+index:2
+bounds:2,2,1095,636
+
+Stun Roll2.png
+size:2048,2048
+filter:Linear,Linear
+repeat:none
+Stun Roll
+index:4
+bounds:2,640,1095,636
+Stun Roll
+index:1
+bounds:2,2,1095,636

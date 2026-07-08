@@ -35,6 +35,22 @@ public class GameDatabase {
         }
     }
 
+    /** Union of unlocked achievement ids across all save slots. */
+    public static java.util.List<String> loadAllUnlockedAchievementIds() {
+        java.util.List<String> ids = new java.util.ArrayList<>();
+        try (Connection conn = getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                 "SELECT DISTINCT achievement_id FROM slot_achievements");
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                ids.add(rs.getString(1));
+            }
+        } catch (SQLException e) {
+            System.err.println("Achievements load failed: " + e.getMessage());
+        }
+        return ids;
+    }
+
     private static Connection getConnection() throws SQLException {
         return DriverManager.getConnection(DB_URL);
     }

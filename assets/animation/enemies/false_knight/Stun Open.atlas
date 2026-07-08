@@ -1,0 +1,21 @@
+Stun Open.png
+size:2048,2048
+filter:Linear,Linear
+repeat:none
+Stun Open
+index:2
+bounds:2,1278,1095,636
+Stun Open
+index:1
+bounds:2,640,1095,636
+Stun Open
+index:3
+bounds:2,2,1095,636
+
+Stun Open2.png
+size:2048,1024
+filter:Linear,Linear
+repeat:none
+Stun Open
+index:0
+bounds:2,2,1095,636

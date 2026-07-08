@@ -1,0 +1,28 @@
+Head Hit.png
+size:512,512
+filter:Linear,Linear
+repeat:none
+Head Hit
+index:6
+bounds:2,300,151,147
+Head Hit
+index:3
+bounds:2,151,151,147
+Head Hit
+index:0
+bounds:155,300,151,147
+Head Hit
+index:5
+bounds:2,2,151,147
+Head Hit
+index:2
+bounds:155,151,151,147
+Head Hit
+index:7
+bounds:308,300,151,147
+Head Hit
+index:4
+bounds:155,2,151,147
+Head Hit
+index:1
+bounds:308,151,151,147

@@ -1,0 +1,13 @@
+Head Spaz.png
+size:512,256
+filter:Linear,Linear
+repeat:none
+Head Spaz
+index:2
+bounds:2,2,151,147
+Head Spaz
+index:1
+bounds:155,2,151,147
+Head Spaz
+index:0
+bounds:308,2,151,147

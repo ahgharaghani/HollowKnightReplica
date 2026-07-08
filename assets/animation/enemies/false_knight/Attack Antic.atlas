@@ -1,0 +1,27 @@
+Attack Antic.png
+size:2048,2048
+filter:Linear,Linear
+repeat:none
+Attack Antic
+index:4
+bounds:2,1278,1095,636
+Attack Antic
+index:1
+bounds:2,1278,1095,636
+Attack Antic
+index:3
+bounds:2,640,1095,636
+Attack Antic
+index:0
+bounds:2,2,1095,636
+
+Attack Antic2.png
+size:2048,1024
+filter:Linear,Linear
+repeat:none
+Attack Antic
+index:5
+bounds:2,2,1095,636
+Attack Antic
+index:2
+bounds:2,2,1095,636

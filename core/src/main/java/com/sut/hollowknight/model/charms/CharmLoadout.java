@@ -1,5 +1,7 @@
 package com.sut.hollowknight.model.charms;
 
+import com.sut.hollowknight.model.AchievementsRegistry;
+
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -62,6 +64,10 @@ public final class CharmLoadout {
     public boolean unequip(Charm charm) { return equipped.remove(charm); }
 
     public void setVoidHeartAcquired(boolean acquired) {
+        if (acquired && !voidHeartAcquired) {
+            // spec: Charmed - Acquire Void Heart.
+            AchievementsRegistry.getInstance().onVoidHeartAcquired();
+        }
         voidHeartAcquired = acquired;
         if (!acquired) equipped.remove(Charm.VOID_HEART);
     }

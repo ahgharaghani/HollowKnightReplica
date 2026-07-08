@@ -1,44 +1,30 @@
 package com.sut.hollowknight.model;
 
+/**
+ * One achievement: identity, display text, icon and unlock state
+ * (spec: Achievements).
+ */
 public class Achievement {
 
     private final String id;
-    private final String displayName;
+    private final String title;
     private final String description;
-    private final String codeName;        // shown when locked (e.g. "???")
-    private final String hiddenDescription; // shown when locked
+    private final String iconPath;
     private boolean unlocked;
 
-    public Achievement(String id,
-                       String displayName,
-                       String description,
-                       String codeName,
-                       String hiddenDescription,
-                       boolean unlocked) {
+    public Achievement(String id, String title,
+                       String description, String iconPath) {
         this.id = id;
-        this.displayName = displayName;
+        this.title = title;
         this.description = description;
-        this.codeName = codeName;
-        this.hiddenDescription = hiddenDescription;
-        this.unlocked = unlocked;
+        this.iconPath = iconPath;
     }
 
-    public String getId()                 { return id; }
-    public String getDisplayName()        { return displayName; }
-    public String getDescription()        { return description; }
-    public String getCodeName()           { return codeName; }
-    public String getHiddenDescription()  { return hiddenDescription; }
-    public boolean isUnlocked()           { return unlocked; }
+    public String  getId()          { return id; }
+    public String  getTitle()       { return title; }
+    public String  getDescription() { return description; }
+    public String  getIconPath()    { return iconPath; }
+    public boolean isUnlocked()     { return unlocked; }
 
-    public void unlock() {
-        this.unlocked = true;
-    }
-
-    public String getDisplayTitle() {
-        return unlocked ? displayName : codeName;
-    }
-
-    public String getDisplayDescription() {
-        return unlocked ? description : hiddenDescription;
-    }
+    public void unlock() { this.unlocked = true; }
 }

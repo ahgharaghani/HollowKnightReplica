@@ -3,6 +3,7 @@ package com.sut.hollowknight.controller;
 import com.badlogic.gdx.Game;
 import com.sut.hollowknight.model.Achievement;
 import com.sut.hollowknight.model.AchievementsRegistry;
+import com.sut.hollowknight.model.db.GameDatabase;
 import com.sut.hollowknight.view.screens.MainMenuScreen;
 
 import java.util.List;
@@ -15,6 +16,8 @@ public class AchievementsController {
     public AchievementsController(Game game) {
         this.game = game;
         this.registry = AchievementsRegistry.getInstance();
+        // Show global progress: union of unlocks across every save slot.
+        registry.syncFrom(GameDatabase.loadAllUnlockedAchievementIds());
     }
 
     public List<Achievement> getAllAchievements() {

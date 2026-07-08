@@ -1,0 +1,10 @@
+Turn.png
+size:2048,2048
+filter:Linear,Linear
+repeat:none
+Turn
+index:1
+bounds:2,640,1095,636
+Turn
+index:0
+bounds:2,2,1095,636
