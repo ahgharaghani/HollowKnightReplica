@@ -1,8 +1,8 @@
 {
     "activeFile": "CityOfTears.tmx",
     "expandedProjectPaths": [
-        ".",
-        "ui"
+        "ui",
+        "."
     ],
     "fileStates": {
         "": {
@@ -125,10 +125,10 @@
                 12
             ],
             "scale": 0.5,
-            "selectedLayer": 9,
+            "selectedLayer": 6,
             "viewCenter": {
-                "x": 1235,
-                "y": 4000
+                "x": 2329,
+                "y": 1620
             }
         },
         "CityOfTears.tmx#BG_far_0008_a": {

@@ -96,6 +96,16 @@ public class Assets {
         for (Charm charm : Charm.values()) {
             manager.load(charm.getIconPath(), Texture.class);
         }
+
+        // ---- Zote & dialogue UI (spec: NPC Interaction - Zote) ----
+        manager.load(ZoteAssets.IDLE_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.TALK_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.ATTACK_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.ARROW_UP_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.ARROW_DOWN_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.FLEUR_TOP_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.FLEUR_BOTTOM_ATLAS, TextureAtlas.class);
+        manager.load(ZoteAssets.PROMPT_PNG, Texture.class);
     }
 
     public static boolean update() {

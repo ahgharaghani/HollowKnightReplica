@@ -30,6 +30,10 @@ public class GameData {
     // ---- Equipped charms (list of charm names) ----
     public List<String> equippedCharms = new ArrayList<>();
 
+    // ---- Zote (NPC) progress ----
+    public boolean zoteMet;          // intro heard; precepts come next
+    public int     zotePreceptIndex; // next precept to recite (0-56)
+
     public static GameData newGame(int slotIndex) {
         GameData d = new GameData();
         d.slotIndex         = slotIndex;

@@ -21,6 +21,7 @@ import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.IntArray;
 import com.sut.hollowknight.controller.CheatController;
+import com.sut.hollowknight.controller.ZoteController;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
 import com.sut.hollowknight.controller.PauseController;
@@ -35,6 +36,7 @@ import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.GameSession;
 import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.charms.Charm;
+import com.sut.hollowknight.model.npc.Zote;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
 import com.sut.hollowknight.model.enemy.HuskHornhead;
@@ -46,6 +48,7 @@ import com.sut.hollowknight.view.animator.KnightAnimator;
 import com.sut.hollowknight.view.assets.Assets;
 import com.sut.hollowknight.view.assets.HudAssets;
 import com.sut.hollowknight.view.assets.InventoryAssets;
+import com.sut.hollowknight.view.assets.ZoteAssets;
 import com.sut.hollowknight.view.assets.CrystalGuardianAssets;
 import com.sut.hollowknight.view.assets.HuskHornheadAssets;
 import com.sut.hollowknight.view.assets.TiktikAssets;
@@ -56,12 +59,14 @@ import com.sut.hollowknight.view.effects.GlassRainEffect;
 import com.sut.hollowknight.view.hud.HudRenderer;
 import com.sut.hollowknight.view.ui.PauseOverlay;
 import com.sut.hollowknight.view.ui.InventoryOverlay;
+import com.sut.hollowknight.view.ui.ZoteDialogueOverlay;
 import com.sut.hollowknight.view.effects.RainEffect;
 import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
 import com.sut.hollowknight.view.renderer.enemy.CrystalGuardianRenderer;
 import com.sut.hollowknight.view.renderer.spell.HowlingWraithRenderer;
 import com.sut.hollowknight.view.renderer.spell.VengefulSpiritRenderer;
+import com.sut.hollowknight.view.renderer.ZoteRenderer;
 import com.sut.hollowknight.view.renderer.enemy.HuskHornheadRenderer;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
 import com.sut.hollowknight.view.renderer.enemy.TiktikRenderer;
@@ -134,6 +139,12 @@ public class GameScreen extends AbstractScreen {
     /** Draws Howling Wraiths blasts (plume + base shockwave). */
     private HowlingWraithRenderer wraithRenderer;
     private InventoryOverlay inventoryOverlay;
+
+    // ---- Zote NPC (spec: NPC Interaction - Zote) ----
+    private Zote zote;
+    private ZoteController zoteController;
+    private ZoteRenderer zoteRenderer;
+    private ZoteDialogueOverlay zoteDialogue;
 
     private List<EnemyController> enemyControllers;
 
@@ -226,6 +237,19 @@ public class GameScreen extends AbstractScreen {
             uiStage.getViewport().getWorldWidth(),
             uiStage.getViewport().getWorldHeight());
         uiStage.addActor(inventoryOverlay);
+
+        // ---- Zote the Mighty at his ZoteSpawn marker ----
+        float[] zoteSpawn = findZoteSpawn();
+        zote = new Zote(zoteSpawn[0], zoteSpawn[1]);
+        zoteController = new ZoteController(zote, knight);
+        if (GameSession.isActive()) {
+            zoteController.restoreProgress(
+                    GameSession.getActive().zoteMet,
+                    GameSession.getActive().zotePreceptIndex);
+        }
+        ZoteAssets zoteAssets = new ZoteAssets(Assets.manager);
+        zoteRenderer = new ZoteRenderer(zoteAssets);
+        zoteDialogue = new ZoteDialogueOverlay(zoteController, zote, zoteAssets);
     }
 
     private void initWingedSentries(TileMapCollider collider, Knight knight) {
@@ -397,6 +421,23 @@ public class GameScreen extends AbstractScreen {
         return new float[]{ 100, 100 };
     }
 
+    /** Locate the "ZoteSpawn" point in the map's Objects layer. */
+    private float[] findZoteSpawn() {
+        for (MapLayer layer : tiledMap.getLayers()) {
+            for (MapObject obj : layer.getObjects()) {
+                if ("ZoteSpawn".equals(obj.getName())) {
+                    Float ox = obj.getProperties().get("x", Float.class);
+                    Float oy = obj.getProperties().get("y", Float.class);
+                    if (ox != null && oy != null) {
+                        return new float[]{ ox, oy };
+                    }
+                }
+            }
+        }
+        Gdx.app.log("GameScreen", "ZoteSpawn not found; using Starting Point");
+        return findStartingPoint();
+    }
+
     private void initShader() {
         ShaderProgram.pedantic = false;
         backgroundShader = new ShaderProgram(
@@ -449,6 +490,12 @@ public class GameScreen extends AbstractScreen {
             return;
         }
 
+        // ---- Zote dialogue (spec: world stays frozen while talking) ----
+        if (zoteController.isDialogueActive()) {
+            zoteController.update(delta);
+            return;
+        }
+
         // ---- Pause menu (spec: opens with ESC during gameplay) ----
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             boolean nowPaused = !controller.isPaused();
@@ -467,6 +514,7 @@ public class GameScreen extends AbstractScreen {
         GameSession.addPlayTime(delta);
 
         controller.update(delta);
+        zoteController.update(delta);
         rainEffect.update(delta);
         glassRainEffect.update(delta);
 
@@ -586,6 +634,10 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
+        // Zote the Mighty idles at his spawn; prompt hovers above him.
+        zoteRenderer.draw(batch, zote);
+        zoteDialogue.drawPrompt(batch);
+
         for (WingedSentryController sc : sentryControllers) {
             sentryRenderer.draw(batch, sc.getSentry());
 
@@ -640,6 +692,8 @@ public class GameScreen extends AbstractScreen {
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
         hudRenderer.draw(batch, controller.getKnight(), Gdx.graphics.getDeltaTime());
+        zoteDialogue.drawDialogue(batch,
+                uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
         batch.end();
 
         renderDebugBoxes();
@@ -790,5 +844,6 @@ public class GameScreen extends AbstractScreen {
         hudRenderer.dispose();
         pauseOverlay.dispose();
         inventoryOverlay.dispose();
+        zoteDialogue.dispose();
     }
 }
