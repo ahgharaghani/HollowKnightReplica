@@ -28,13 +28,12 @@ import com.sut.hollowknight.view.assets.ZoteAssets;
 public class ZoteDialogueOverlay {
 
     // ---- Prompt (world space) ----
-    private static final float PROMPT_SCALE  = 0.85f;
-    private static final float PROMPT_LIFT   = 24f;   // gap above Zote's head
+    private static final float PROMPT_SCALE  = 1f; // native size (1:1)
+    private static final float PROMPT_LIFT   = 5f;   // gap above Zote's head
     private static final float OVAL_MAX_DIST = 1.45f; // reaches the corners
     private static final float OVAL_FEATHER  = 0.28f; // soft oval border
 
     // ---- Dialogue box (screen space) ----
-    private static final float BOX_WIDTH_PCT  = 0.62f;
     private static final float BOX_HEIGHT_PCT = 0.30f;
     private static final float BOX_CENTER_Y   = 0.60f;
     private static final float BOX_MIN_SCALE  = 0.15f; // "starts small"
@@ -143,7 +142,9 @@ public class ZoteDialogueOverlay {
         if (s <= 0f) return;
         float k = s * s * (3f - 2f * s); // smoothstep pop
 
-        float fullW = uiW * BOX_WIDTH_PCT;
+        // The panel spans the native top fleur, so the ornament fits
+        // the box exactly as in the original game.
+        float fullW = fleurTop[fleurTop.length - 1].getRegionWidth() + 36f;
         float fullH = uiH * BOX_HEIGHT_PCT;
         float scale = BOX_MIN_SCALE + (1f - BOX_MIN_SCALE) * k;
         float w  = fullW * scale;
@@ -158,8 +159,8 @@ public class ZoteDialogueOverlay {
 
         // Fleur sweeps track the pop-up frame for frame, so they play
         // forward while opening and in reverse while closing.
-        drawFleur(batch, fleurTop,    s, k, cx, cy + h / 2f, w * 0.82f);
-        drawFleur(batch, fleurBottom, s, k, cx, cy - h / 2f, w * 0.58f);
+        drawFleur(batch, fleurTop,    s, k, cx, cy + h / 2f);
+        drawFleur(batch, fleurBottom, s, k, cx, cy - h / 2f);
 
         ZoteController.Phase phase = controller.getPhase();
         boolean showText = phase == ZoteController.Phase.TYPING
@@ -175,33 +176,37 @@ public class ZoteDialogueOverlay {
         // Pager arrow, centred on the middle of the bottom fleur.
         float arrowCy = cy - h / 2f;
         if (phase == ZoteController.Phase.WAIT_INPUT) {
-            TextureRegion f = arrowUp[(int) (controller.getPhaseTimer()
-                    * ARROW_FPS) % arrowUp.length];
-            drawArrow(batch, f, cx, arrowCy, 42f);
+            // Plays once and holds its final frame - no looping.
+            int idx = Math.min(arrowUp.length - 1,
+                    (int) (controller.getPhaseTimer() * ARROW_FPS));
+            drawArrow(batch, arrowUp[idx], cx, arrowCy);
         } else if (phase == ZoteController.Phase.ARROW_DOWN) {
             int idx = Math.min(arrowDown.length - 1,
                     (int) (controller.getPhaseTimer() * ARROW_FPS));
-            drawArrow(batch, arrowDown[idx], cx, arrowCy, 52f);
+            drawArrow(batch, arrowDown[idx], cx, arrowCy);
         }
     }
 
     private void drawFleur(SpriteBatch batch, TextureRegion[] frames,
                            float progress, float alpha,
-                           float cx, float cy, float targetW) {
+                           float cx, float cy) {
         int idx = Math.min(frames.length - 1,
                 (int) (progress * frames.length));
         TextureRegion f = frames[idx];
-        float fw = targetW;
-        float fh = fw * f.getRegionHeight() / (float) f.getRegionWidth();
+        // Native size (1:1) - the art is rendered exactly as authored.
+        float fw = f.getRegionWidth();
+        float fh = f.getRegionHeight();
         batch.setColor(1f, 1f, 1f, alpha);
         batch.draw(f, cx - fw / 2f, cy - fh / 2f, fw, fh);
         batch.setColor(Color.WHITE);
     }
 
     private void drawArrow(SpriteBatch batch, TextureRegion f,
-                           float cx, float cy, float targetH) {
-        float aw = targetH * f.getRegionWidth() / (float) f.getRegionHeight();
-        batch.draw(f, cx - aw / 2f, cy - targetH / 2f, aw, targetH);
+                           float cx, float cy) {
+        // Native size (1:1) - the art is rendered exactly as authored.
+        float aw = f.getRegionWidth();
+        float ah = f.getRegionHeight();
+        batch.draw(f, cx - aw / 2f, cy - ah / 2f, aw, ah);
     }
 
     public void dispose() {

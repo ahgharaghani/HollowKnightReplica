@@ -120,6 +120,8 @@ public class ZoteController {
     private void updateInactive(float delta) {
         if (!zote.isAngry()) {
             zote.setFacingRight(knight.getX() >= zote.getX());
+        } else {
+            checkTantrumContact(); // anyone in his path gets shoved
         }
         boolean inRange = !zote.isAngry() && isKnightInRange();
         promptProgress += (inRange ? PROMPT_SPEED : -PROMPT_SPEED) * delta;
@@ -185,7 +187,7 @@ public class ZoteController {
         setPhase(Phase.INACTIVE);
     }
 
-    /** Nail contact: no damage - just rage plus a little recoil (spec). */
+    /** Nail contact: no damage - he just throws a tantrum (spec). */
     private void checkNailHit() {
         if (zote.isAngry() || !knight.isAttacking()) return;
         if (zote.getLastNailHitId() == knight.getAttackId()) return;
@@ -195,6 +197,18 @@ public class ZoteController {
         zote.setLastNailHitId(knight.getAttackId());
         zote.beginTantrum();
         promptProgress = 0f; // he is in no mood to be listened to
+    }
+
+    /**
+     * While Zote sweeps back and forth, anyone standing in his path
+     * is shoved aside: knockback plus the input-lockout stun that
+     * comes with it. Applied on every contact, not just the hit that
+     * triggered the tantrum. No damage is ever dealt (spec). The
+     * knockback lockout itself acts as the re-contact cooldown.
+     */
+    private void checkTantrumContact() {
+        if (knight.isInKnockback()) return; // still stunned from last shove
+        if (!zote.getBodyBox().overlaps(knight.getHurtBox())) return;
         float dir = knight.getX() < zote.getX() ? -1f : 1f;
         knight.applyKnockback(dir * HIT_KNOCKBACK_VX, HIT_KNOCKBACK_VY);
     }

@@ -14,8 +14,8 @@ public class Zote {
 
     public enum State { IDLE, TALK, ANGRY }
 
-    /** Source frames are 349x186; drawn at this scale (knight-sized). */
-    public static final float SCALE  = 0.55f;
+    /** Source frames are 349x186; rendered at native size (1:1). */
+    public static final float SCALE  = 1f;
     public static final float WIDTH  = 349f * SCALE;
     public static final float HEIGHT = 186f * SCALE;
 
@@ -26,7 +26,7 @@ public class Zote {
     // ---- Tantrum (spec: 4 back-and-forths, ends at initial position) ----
     public static final int   ANGRY_CYCLES    = 4;
     public static final float ANGRY_DURATION  = 3.6f;
-    public static final float ANGRY_AMPLITUDE = 70f;
+    public static final float ANGRY_AMPLITUDE = 120f;
 
     private final float initialX;
     private final float y;
