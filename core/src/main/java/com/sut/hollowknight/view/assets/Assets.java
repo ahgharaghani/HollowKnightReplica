@@ -1,6 +1,7 @@
 package com.sut.hollowknight.view.assets;
 
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
@@ -106,6 +107,9 @@ public class Assets {
         manager.load(ZoteAssets.FLEUR_TOP_ATLAS, TextureAtlas.class);
         manager.load(ZoteAssets.FLEUR_BOTTOM_ATLAS, TextureAtlas.class);
         manager.load(ZoteAssets.PROMPT_PNG, Texture.class);
+        for (String voice : ZoteAssets.VOICE_SFX) {
+            manager.load(voice, Sound.class);
+        }
     }
 
     public static boolean update() {

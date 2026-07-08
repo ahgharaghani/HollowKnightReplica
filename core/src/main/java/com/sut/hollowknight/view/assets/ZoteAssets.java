@@ -1,6 +1,7 @@
 package com.sut.hollowknight.view.assets;
 
 import com.badlogic.gdx.assets.AssetManager;
+import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -22,6 +23,12 @@ public final class ZoteAssets {
     public static final String FLEUR_BOTTOM_ATLAS = "ui/dialogue/Fleur Bottom.atlas";
     public static final String PROMPT_PNG         = "ui/dialogue/prompt_idle0000.png";
 
+    /** Zote's grunts (spec: Zote Voice SFX) - one plays at random. */
+    public static final String[] VOICE_SFX = {
+            "sfx/Zote_01.wav", "sfx/Zote_02.wav", "sfx/Zote_031.wav",
+            "sfx/Zote_032.wav", "sfx/Zote_04.wav", "sfx/Zote_05.wav",
+    };
+
     private final AssetManager manager;
 
     private final TextureRegion[] idleFrames;
@@ -31,9 +38,14 @@ public final class ZoteAssets {
     private final TextureRegion[] arrowDownFrames;
     private final TextureRegion[] fleurTopFrames;
     private final TextureRegion[] fleurBottomFrames;
+    private final Sound[] voices;
 
     public ZoteAssets(AssetManager manager) {
         this.manager      = manager;
+        voices = new Sound[VOICE_SFX.length];
+        for (int i = 0; i < VOICE_SFX.length; i++) {
+            voices[i] = manager.get(VOICE_SFX[i], Sound.class);
+        }
         idleFrames        = frames(IDLE_ATLAS,         "Idle");
         talkFrames        = frames(TALK_ATLAS,         "Talk");
         attackFrames      = frames(ATTACK_ATLAS,       "Attack");
@@ -44,6 +56,9 @@ public final class ZoteAssets {
     }
 
     /** Atlas file order is scrambled; sort regions by their frame index. */
+    /** Resolved once; the array is shared, never copied per call. */
+    public Sound[] getVoices() { return voices; }
+
     private TextureRegion[] frames(String atlasPath, String regionName) {
         Array<TextureAtlas.AtlasRegion> regions =
                 manager.get(atlasPath, TextureAtlas.class).findRegions(regionName);

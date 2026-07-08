@@ -248,6 +248,7 @@ public class GameScreen extends AbstractScreen {
                     GameSession.getActive().zotePreceptIndex);
         }
         ZoteAssets zoteAssets = new ZoteAssets(Assets.manager);
+        zoteController.setVoices(zoteAssets.getVoices());
         zoteRenderer = new ZoteRenderer(zoteAssets);
         zoteDialogue = new ZoteDialogueOverlay(zoteController, zote, zoteAssets);
     }

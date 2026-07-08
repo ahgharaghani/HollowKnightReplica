@@ -2,7 +2,10 @@ package com.sut.hollowknight.controller;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
+import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.math.MathUtils;
 import com.sut.hollowknight.model.GameSession;
+import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.npc.Zote;
@@ -66,6 +69,11 @@ public class ZoteController {
     // ---- Current conversation (reused holders, no per-frame garbage) ----
     private String[] lines = INTRO;
     private int lineIndex;
+
+    // ---- Voice SFX (spec: Zote Voice SFX) ----
+    /** Shared with ZoteAssets; sounds are owned by the AssetManager. */
+    private Sound[] voices;
+    private int lastVoiceIndex = -1; // avoid playing the same grunt twice
     private String[] words;      // current line, split once on line start
     private int visibleWords;
     private final StringBuilder visibleText = new StringBuilder(384);
@@ -142,6 +150,7 @@ public class ZoteController {
             lines = met ? currentPrecept() : INTRO;
             zote.setTalking(true);
             setPhase(Phase.BOX_OPENING);
+            playRandomGrunt(); // spec: grunt when the dialogue box opens
         }
     }
 
@@ -150,8 +159,29 @@ public class ZoteController {
         return preceptLine;
     }
 
+    public void setVoices(Sound[] voices) {
+        this.voices = voices;
+    }
+
+    /**
+     * Plays one of Zote's grunts at random (never the same one twice in
+     * a row), honouring the SFX volume/mute settings. No allocation.
+     */
+    private void playRandomGrunt() {
+        if (voices == null || voices.length == 0) return;
+        GameSettings settings = GameSettings.getInstance();
+        if (settings.isSfxMuted()) return;
+        int idx = MathUtils.random(voices.length - 1);
+        if (voices.length > 1 && idx == lastVoiceIndex) {
+            idx = (idx + 1) % voices.length; // re-roll deterministically
+        }
+        lastVoiceIndex = idx;
+        voices[idx].play(settings.getSfxVolume());
+    }
+
     private void beginLine(int index) {
         lineIndex = index;
+        if (index > 0) playRandomGrunt(); // spec: grunt on each line change
         words = lines[index].split(" ");
         visibleWords = 0;
         visibleText.setLength(0);
