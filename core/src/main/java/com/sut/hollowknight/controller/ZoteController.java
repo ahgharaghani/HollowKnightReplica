@@ -195,7 +195,8 @@ public class ZoteController {
         if (slash == null || !slash.overlaps(zote.getBodyBox())) return;
 
         zote.setLastNailHitId(knight.getAttackId());
-        zote.beginTantrum();
+        // He charges off in the opposite direction of the Knight first.
+        zote.beginTantrum(knight.getX() < zote.getX());
         promptProgress = 0f; // he is in no mood to be listened to
     }
 
@@ -211,6 +212,7 @@ public class ZoteController {
         if (!zote.getBodyBox().overlaps(knight.getHurtBox())) return;
         float dir = knight.getX() < zote.getX() ? -1f : 1f;
         knight.applyKnockback(dir * HIT_KNOCKBACK_VX, HIT_KNOCKBACK_VY);
+        zote.reverseSweep(); // after the shove he turns the other way
     }
 
     private boolean isKnightInRange() {

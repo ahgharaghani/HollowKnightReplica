@@ -2,14 +2,6 @@ package com.sut.hollowknight.model.npc;
 
 import com.sut.hollowknight.model.collision.CollisionRect;
 
-/**
- * Zote the Mighty - a harmless NPC (spec: NPC Interaction - Zote).
- *
- * <p>Pure model: position, facing, animation clock and the "tantrum"
- * sweep that plays when the Knight strikes him. The sweep follows a
- * sine curve, so he passes back and forth exactly {@link #ANGRY_CYCLES}
- * times and always settles precisely on his initial position.</p>
- */
 public class Zote {
 
     public enum State { IDLE, TALK, ANGRY }
@@ -19,14 +11,14 @@ public class Zote {
     public static final float WIDTH  = 349f * SCALE;
     public static final float HEIGHT = 186f * SCALE;
 
-    // The hittable body is much narrower than the padded art frame.
-    private static final float BODY_WIDTH  = WIDTH * 0.42f;
-    private static final float BODY_HEIGHT = HEIGHT * 0.96f;
+    private static final float BODY_WIDTH  = WIDTH * 0.24f;
+    private static final float BODY_HEIGHT = HEIGHT * 0.74f;
 
     // ---- Tantrum (spec: 4 back-and-forths, ends at initial position) ----
-    public static final int   ANGRY_CYCLES    = 4;
-    public static final float ANGRY_DURATION  = 3.6f;
+    public static final int   ANGRY_BOUNCES   = 4;
     public static final float ANGRY_AMPLITUDE = 120f;
+    /** Slow, deliberate pace (px/s). */
+    public static final float ANGRY_SPEED     = 110f;
 
     private final float initialX;
     private final float y;
@@ -34,8 +26,13 @@ public class Zote {
     private boolean facingRight;
     private State state = State.IDLE;
 
-    private float animTimer;   // drives the 12 FPS loops in the renderer
-    private float angryTimer;  // elapsed time of the current tantrum
+    private float animTimer;   // drives the animation loops in the renderer
+
+    // Tantrum sweep bookkeeping
+    private float sweepDir;      // -1 or +1: current travel direction
+    private float sweepTarget;   // x he is currently marching toward
+    private int   bouncesLeft;   // turn-arounds left before heading home
+    private boolean headingHome; // final leg back to initialX
 
     /** Dedup id so a single Knight swing lands at most one hit. */
     private int lastNailHitId = Integer.MIN_VALUE;
@@ -51,28 +48,66 @@ public class Zote {
 
     public void update(float delta) {
         animTimer += delta;
-        if (state == State.ANGRY) {
-            angryTimer += delta;
-            if (angryTimer >= ANGRY_DURATION) {
-                x = initialX;              // settle exactly where he began
-                state = State.IDLE;
-                animTimer = 0f;
+        if (state != State.ANGRY) return;
+
+        float step = ANGRY_SPEED * delta;
+        float remaining = sweepTarget - x;
+        if (Math.abs(remaining) <= step) {
+            x = sweepTarget; // arrived at this leg's end point
+            if (headingHome) {
+                settleDown();
             } else {
-                // x(t) = x0 + A*sin(2*pi*cycles*t/T): starts and ends at x0.
-                float phase = (float) (2.0 * Math.PI * ANGRY_CYCLES
-                        * (angryTimer / ANGRY_DURATION));
-                x = initialX + ANGRY_AMPLITUDE * (float) Math.sin(phase);
-                facingRight = Math.cos(phase) >= 0.0; // face travel direction
+                bounce();
             }
+        } else {
+            x += (remaining > 0f ? step : -step);
+            facingRight = remaining > 0f; // face the travel direction
         }
     }
 
-    /** The Knight struck him: rage (harmlessly), then settle back down. */
-    public void beginTantrum() {
+    /** Turn around at a sweep edge; head home once the bounces are spent. */
+    private void bounce() {
+        bouncesLeft--;
+        sweepDir = -sweepDir;
+        if (bouncesLeft <= 0) {
+            headingHome = true;
+            sweepTarget = initialX;
+            if (x == initialX) settleDown(); // already home - done
+        } else {
+            sweepTarget = initialX + sweepDir * ANGRY_AMPLITUDE;
+        }
+        facingRight = sweepTarget > x;
+    }
+
+    private void settleDown() {
+        x = initialX; // always settle exactly where he began
+        state = State.IDLE;
+        animTimer = 0f;
+    }
+
+    /**
+     * The Knight struck him: rage, harmlessly.
+     *
+     * @param moveRight true to charge rightward first - the controller
+     *                  passes the direction opposite the Knight.
+     */
+    public void beginTantrum(boolean moveRight) {
         if (state == State.ANGRY) return; // spec: hits mid-tantrum do nothing
         state = State.ANGRY;
-        angryTimer = 0f;
         animTimer = 0f; // restart the Attack loop on its first frame
+        headingHome = false;
+        bouncesLeft = ANGRY_BOUNCES;
+        sweepDir = moveRight ? 1f : -1f;
+        sweepTarget = initialX + sweepDir * ANGRY_AMPLITUDE;
+        facingRight = moveRight;
+    }
+
+    /** He shoved the Knight: turn and charge the other way (spec). */
+    public void reverseSweep() {
+        if (state != State.ANGRY || headingHome) return;
+        sweepDir = -sweepDir;
+        sweepTarget = initialX + sweepDir * ANGRY_AMPLITUDE;
+        facingRight = sweepTarget > x;
     }
 
     /** Body box for nail-hit checks (recomputed into the reusable rect). */

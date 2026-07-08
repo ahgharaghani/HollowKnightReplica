@@ -574,6 +574,10 @@ public class GameScreen extends AbstractScreen {
         float frameW = frame.getRegionWidth();
         float frameH = frame.getRegionHeight();
 
+        // Zote draws behind the Knight so slash effects stay visible.
+        zoteRenderer.draw(batch, zote);
+        zoteDialogue.drawPrompt(batch);
+
         // Flash while invincible: blink the sprite alpha ~10x/sec.
         boolean flashOff = knight.isInvincible()
             && ((int) (knight.getInvincibleTimer() * INVINCIBLE_FLASH_HZ) & 1) == 0;
@@ -633,10 +637,6 @@ public class GameScreen extends AbstractScreen {
                 batch.draw(effect, centerX - eW / 2f, drawY, +eW, eH);
             }
         }
-
-        // Zote the Mighty idles at his spawn; prompt hovers above him.
-        zoteRenderer.draw(batch, zote);
-        zoteDialogue.drawPrompt(batch);
 
         for (WingedSentryController sc : sentryControllers) {
             sentryRenderer.draw(batch, sc.getSentry());

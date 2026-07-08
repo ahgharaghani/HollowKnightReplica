@@ -29,7 +29,7 @@ public class ZoteDialogueOverlay {
 
     // ---- Prompt (world space) ----
     private static final float PROMPT_SCALE  = 1f; // native size (1:1)
-    private static final float PROMPT_LIFT   = 5f;   // gap above Zote's head
+    private static final float PROMPT_LIFT   = -58f;
     private static final float OVAL_MAX_DIST = 1.45f; // reaches the corners
     private static final float OVAL_FEATHER  = 0.28f; // soft oval border
 
@@ -129,7 +129,7 @@ public class ZoteDialogueOverlay {
         listenFont.setColor(0.94f, 0.94f, 0.96f, alpha);
         layout.setText(listenFont, "LISTEN");
         listenFont.draw(batch, layout, cx - layout.width / 2f,
-                by + h * 0.52f + layout.height / 2f);
+                by + h * 0.64f + layout.height / 2f);
     }
 
     // ------------------------------------------------------------------

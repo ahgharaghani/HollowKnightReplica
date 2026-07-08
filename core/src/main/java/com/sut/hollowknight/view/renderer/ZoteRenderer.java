@@ -14,6 +14,7 @@ import com.sut.hollowknight.view.assets.ZoteAssets;
 public class ZoteRenderer {
 
     public static final float FPS = 12f;
+    public static final float ATTACK_FPS = 8f;
 
     private final TextureRegion[] idle;
     private final TextureRegion[] talk;
@@ -27,8 +28,9 @@ public class ZoteRenderer {
 
     public void draw(SpriteBatch batch, Zote zote) {
         TextureRegion[] frames = select(zote.getState());
+        float fps = zote.getState() == Zote.State.ANGRY ? ATTACK_FPS : FPS;
         TextureRegion frame =
-                frames[(int) (zote.getAnimTimer() * FPS) % frames.length];
+                frames[(int) (zote.getAnimTimer() * fps) % frames.length];
         float w = Zote.WIDTH;
         float h = Zote.HEIGHT;
         // Source art faces left; mirror with a negative width to flip.
