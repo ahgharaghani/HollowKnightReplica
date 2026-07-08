@@ -820,6 +820,26 @@ public class Knight implements PhysicsBody {
         return dead && deathTimer <= 0f;
     }
 
+    /**
+     * Brings the knight back at the spawn point once the death fade has
+     * covered the screen (spec: death & respawn). Masks refill, every
+     * action/lockout state clears; soul is intentionally kept.
+     */
+    public void respawn(float x, float y) {
+        this.x = x;
+        this.y = y;
+        dead = false;
+        deathTimer = 0f;
+        hpMasks = maxMasks;
+        velocityX = 0f;
+        velocityY = 0f;
+        invincible = false;
+        invincibleTimer = 0f;
+        knockbackTimer = 0f;
+        cancelActions();
+        setState(State.IDLE);
+    }
+
     //  Bookkeeping
 
     /** Cancel every active action state — used when the knight is interrupted. */

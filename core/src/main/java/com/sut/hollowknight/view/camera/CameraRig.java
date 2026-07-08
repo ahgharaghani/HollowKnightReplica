@@ -31,6 +31,17 @@ public final class CameraRig {
         }
     }
 
+    /** Jump straight to the target (map-clamped) - used on respawn so
+     *  the camera does not glide across the map behind the fade. */
+    public void snapTo(float targetX, float targetY) {
+        float halfW = camera.viewportWidth  / 2f;
+        float halfH = camera.viewportHeight / 2f;
+        float camX = Math.max(halfW, Math.min(targetX, mapWidthPx  - halfW));
+        float camY = Math.max(halfH, Math.min(targetY, mapHeightPx - halfH));
+        camera.position.set(camX, camY, 0);
+        camera.update();
+    }
+
     public void follow(float targetX, float targetY, float delta) {
         float lerp = 1f - (float) Math.exp(-LERP_FACTOR * delta);
 

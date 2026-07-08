@@ -70,6 +70,11 @@ public class GameController {
     public void setPaused(boolean paused) { this.paused = paused; }
     public boolean isPaused()             { return paused; }
 
+    /** Camera jump used when the death fade teleports the knight. */
+    public void snapCameraToKnight() {
+        cameraRig.snapTo(knight.getX(), knight.getY());
+    }
+
     public void update(float delta) {
         if (paused) return;
 

@@ -149,6 +149,13 @@ public class GameScreen extends AbstractScreen {
     private ZoteDialogueOverlay zoteDialogue;
     private AchievementToastOverlay achievementToasts;
 
+    // ---- Death fade (spec: fade to black, reset at spawn point) ----
+    private static final float DEATH_FADE_OUT_DURATION = 1f;
+    private static final float DEATH_FADE_IN_DURATION  = 0.5f;
+    /** 0 = inactive, 1 = fading to black, 2 = fading back in. */
+    private int deathFadePhase;
+    private float deathFadeTimer;
+
     private List<EnemyController> enemyControllers;
 
     private HudRenderer hudRenderer;
@@ -460,6 +467,51 @@ public class GameScreen extends AbstractScreen {
         }
     }
 
+    /**
+     * Death flow (spec): the death animation plays out untouched; once it
+     * ends the screen fades to black over a second, the world resets at
+     * the spawn point behind full black, then the scene fades back in.
+     */
+    private void updateDeathFade(float delta) {
+        if (deathFadePhase == 0) {
+            if (controller.getKnight().deathAnimationFinished()) {
+                deathFadePhase = 1;
+                deathFadeTimer = 0f;
+            }
+            return;
+        }
+        deathFadeTimer += delta;
+        if (deathFadePhase == 1 && deathFadeTimer >= DEATH_FADE_OUT_DURATION) {
+            resetAtSpawnPoint(); // the swap happens while fully black
+            deathFadePhase = 2;
+            deathFadeTimer = 0f;
+        } else if (deathFadePhase == 2
+                && deathFadeTimer >= DEATH_FADE_IN_DURATION) {
+            deathFadePhase = 0;
+        }
+    }
+
+    /** Fresh run state: knight at the spawn point, enemies respawned. */
+    private void resetAtSpawnPoint() {
+        float[] spawn = findStartingPoint();
+        controller.getKnight().respawn(spawn[0], spawn[1]);
+        for (int i = 0; i < enemyControllers.size(); i++) {
+            enemyControllers.get(i).respawn();
+        }
+        controller.snapCameraToKnight();
+    }
+
+    /** Fullscreen black quad over everything, driven by the fade phase. */
+    private void drawDeathFade(float uiW, float uiH) {
+        if (deathFadePhase == 0) return;
+        float alpha = deathFadePhase == 1
+            ? Math.min(1f, deathFadeTimer / DEATH_FADE_OUT_DURATION)
+            : 1f - Math.min(1f, deathFadeTimer / DEATH_FADE_IN_DURATION);
+        batch.setColor(0f, 0f, 0f, alpha);
+        batch.draw(whiteTexture, 0f, 0f, uiW, uiH);
+        batch.setColor(Color.WHITE);
+    }
+
     private float[] findZoteSpawn() {
         for (MapLayer layer : tiledMap.getLayers()) {
             for (MapObject obj : layer.getObjects()) {
@@ -554,6 +606,7 @@ public class GameScreen extends AbstractScreen {
         controller.update(delta);
         zoteController.update(delta);
         checkAchievements();
+        updateDeathFade(delta);
         rainEffect.update(delta);
         glassRainEffect.update(delta);
 
@@ -618,7 +671,7 @@ public class GameScreen extends AbstractScreen {
         zoteDialogue.drawPrompt(batch);
 
         // Flash while invincible: blink the sprite alpha ~10x/sec.
-        boolean flashOff = knight.isInvincible()
+        boolean flashOff = !knight.isDead() && knight.isInvincible()
             && ((int) (knight.getInvincibleTimer() * INVINCIBLE_FLASH_HZ) & 1) == 0;
         // Sharp Shadow: the dash reads as a living shade - tint it void-dark.
         boolean shadowDash = knight.isDashing() && knight.hasCharm(Charm.SHARP_SHADOW);
@@ -736,6 +789,7 @@ public class GameScreen extends AbstractScreen {
         achievementToasts.draw(batch,
                 uiViewport.getWorldWidth(), uiViewport.getWorldHeight(),
                 Gdx.graphics.getDeltaTime());
+        drawDeathFade(uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
         batch.end();
 
         renderDebugBoxes();
