@@ -8,6 +8,7 @@ import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.map.BreakableWall;
 import com.sut.hollowknight.model.map.DarknessZone;
+import com.sut.hollowknight.model.map.RoomStateRegistry;
 import com.sut.hollowknight.view.effects.ParticleHook;
 
 import java.util.List;
@@ -19,8 +20,10 @@ import java.util.List;
  *   <li><b>Hit:</b> one hp per nail swing (same de-dupe as ZoteController),
  *       and the wall art shakes via its tile layer's render offset.</li>
  *   <li><b>Break:</b> the wall's cells open in the solid grid, its tiles
- *       are erased, linked darkness zones fade out, the camera kicks, and
- *       the particle hook fires (dust art plugs in later).</li>
+ *       are erased, linked darkness zones fade out, the camera kicks, the
+ *       particle hook fires (dust art plugs in later), and the break is
+ *       recorded in {@link RoomStateRegistry} so re-entering the room
+ *       never resurrects the wall.</li>
  * </ul>
  *
  * No allocations in {@link #update(float)} - index loops only.
@@ -32,6 +35,7 @@ public class BreakableWallsController {
     private static final float BREAK_CAMERA_SHAKE_AMPLITUDE = 6f;
     private static final float BREAK_CAMERA_SHAKE_DURATION  = 0.35f;
 
+    private final String mapPath;   // qualifies registry keys
     private final List<BreakableWall> walls;
     private final List<DarknessZone> darknessZones;
     private final TileMapCollider collider;
@@ -43,13 +47,15 @@ public class BreakableWallsController {
 
     private float time;   // drives the shake oscillation
 
-    public BreakableWallsController(List<BreakableWall> walls,
+    public BreakableWallsController(String mapPath,
+                                    List<BreakableWall> walls,
                                     List<DarknessZone> darknessZones,
                                     TileMapCollider collider,
                                     Knight knight,
                                     TiledMapTileLayer wallTileLayer,
                                     GameController gameController,
                                     ParticleHook particleHook) {
+        this.mapPath = mapPath;
         this.walls = walls;
         this.darknessZones = darknessZones;
         this.collider = collider;
@@ -57,6 +63,12 @@ public class BreakableWallsController {
         this.wallTileLayer = wallTileLayer;
         this.gameController = gameController;
         this.particleHook = particleHook != null ? particleHook : ParticleHook.NO_OP;
+
+        // Walls broken earlier this session arrive pre-broken: their art
+        // is erased right away, silently (no shake/particles/camera kick).
+        for (int i = 0; i < walls.size(); i++) {
+            if (walls.get(i).isBroken()) eraseWallTiles(walls.get(i));
+        }
     }
 
     /** Swap in a real dust emitter later without touching this class. */
@@ -112,22 +124,7 @@ public class BreakableWallsController {
             wall.getWidth(), wall.getHeight(), false);
 
         // 2. Erase the wall art from its tile layer.
-        if (wallTileLayer != null) {
-            int tw = wallTileLayer.getTileWidth();
-            int th = wallTileLayer.getTileHeight();
-            int colStart = (int) Math.floor(wall.getLeft()   / tw);
-            int colEnd   = (int) Math.ceil (wall.getRight()  / tw) - 1;
-            int rowStart = (int) Math.floor(wall.getBottom() / th);
-            int rowEnd   = (int) Math.ceil (wall.getTop()    / th) - 1;
-            for (int row = rowStart; row <= rowEnd; row++) {
-                if (row < 0 || row >= wallTileLayer.getHeight()) continue;
-                for (int col = colStart; col <= colEnd; col++) {
-                    if (col < 0 || col >= wallTileLayer.getWidth()) continue;
-                    wallTileLayer.setCell(col, row, null);
-                }
-            }
-            wallTileLayer.setOffsetX(0f);
-        }
+        eraseWallTiles(wall);
 
         // 3. Fade out every darkness zone this wall was hiding.
         for (int i = 0; i < darknessZones.size(); i++) {
@@ -136,13 +133,35 @@ public class BreakableWallsController {
             }
         }
 
-        // 4. Impact feedback now; dust particles plug in here later.
+        // 4. Remember forever (this session): re-entering the room must
+        //    not resurrect the wall or its darkness.
+        RoomStateRegistry.markWallBroken(mapPath + ":" + wall.getName());
+
+        // 5. Impact feedback now; dust particles plug in here later.
         gameController.shakeCamera(BREAK_CAMERA_SHAKE_AMPLITUDE,
             BREAK_CAMERA_SHAKE_DURATION);
         if (wall.hasDebris()) {
             particleHook.onWallBreak(wall.getCenterX(), wall.getCenterY(),
                 wall.getWidth(), wall.getHeight());
         }
+    }
+
+    private void eraseWallTiles(BreakableWall wall) {
+        if (wallTileLayer == null) return;
+        int tw = wallTileLayer.getTileWidth();
+        int th = wallTileLayer.getTileHeight();
+        int colStart = (int) Math.floor(wall.getLeft()   / tw);
+        int colEnd   = (int) Math.ceil (wall.getRight()  / tw) - 1;
+        int rowStart = (int) Math.floor(wall.getBottom() / th);
+        int rowEnd   = (int) Math.ceil (wall.getTop()    / th) - 1;
+        for (int row = rowStart; row <= rowEnd; row++) {
+            if (row < 0 || row >= wallTileLayer.getHeight()) continue;
+            for (int col = colStart; col <= colEnd; col++) {
+                if (col < 0 || col >= wallTileLayer.getWidth()) continue;
+                wallTileLayer.setCell(col, row, null);
+            }
+        }
+        wallTileLayer.setOffsetX(0f);
     }
 
     public List<BreakableWall> getWalls() { return walls; }

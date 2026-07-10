@@ -1,0 +1,10 @@
+breakable path.png
+size:1024,256
+filter:Linear,Linear
+repeat:none
+breakablePath
+index:0
+bounds:2,2,313,202
+breakablePath
+index:1
+bounds:317,2,313,202

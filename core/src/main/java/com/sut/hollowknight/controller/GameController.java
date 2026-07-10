@@ -80,7 +80,7 @@ public class GameController {
         cameraRig.shake(amplitude, duration);
     }
 
-    /** Widen camera clamp for rooms authored around negative coordinates. */
+    /** Widen camera clamp for rooms authored beyond the tile grid. */
     public void setCameraWorldBounds(float minX, float minY,
                                      float maxX, float maxY) {
         cameraRig.setWorldBounds(minX, minY, maxX, maxY);

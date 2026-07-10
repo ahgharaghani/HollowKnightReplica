@@ -43,10 +43,14 @@ import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.npc.Zote;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.map.BreakableWall;
+import com.sut.hollowknight.model.map.CharmPickup;
 import com.sut.hollowknight.model.map.DarknessZone;
+import com.sut.hollowknight.model.map.RoomStateRegistry;
 import com.sut.hollowknight.model.map.RoomTransition;
 import com.sut.hollowknight.controller.BreakableWallsController;
+import com.sut.hollowknight.controller.CharmPickupController;
 import com.sut.hollowknight.view.effects.ParticleHook;
+import com.sut.hollowknight.view.ui.CharmPickupOverlay;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
 import com.sut.hollowknight.model.enemy.HuskHornhead;
 import com.sut.hollowknight.model.enemy.Javelin;
@@ -165,20 +169,29 @@ public class GameScreen extends AbstractScreen {
     private float deathFadeTimer;
 
     // ---- Breakable walls, darkness zones & room transitions (spec) ----
-    private static final float ROOM_FADE_OUT_DURATION = 0.6f;
-    private static final float ROOM_FADE_IN_DURATION  = 0.6f;
+    /** Spec: 0.4s fade out, then 1s of full darkness - the room swap and
+     *  the actors' ground snap happen under it - then 0.4s fade in. */
+    private static final float ROOM_FADE_OUT_DURATION = 0.4f;
+    private static final float ROOM_DARKNESS_DURATION = 1f;
+    private static final float ROOM_FADE_IN_DURATION  = 0.4f;
     /** Map file this screen runs and the entry point we arrived through. */
     private final String mapPath;
     private final String entrySpawnName;   // null = fresh start
     private BreakableWallsController wallsController;
+    private CharmPickupController charmPickupController;
+    private CharmPickupOverlay charmPickupOverlay;
     private List<RoomTransition> roomTransitions;
     private List<DarknessZone> darknessZones;
+    private List<CharmPickup> charmPickups;
     /** "BreakableWalls" tile layer, drawn apart so hits can shake it. */
     private int[] breakableWallLayers = new int[0];
     private TiledMapTileLayer breakableWallLayer;
     /** Future particle emitter seam - NO_OP until one is plugged in. */
     private ParticleHook particleHook = ParticleHook.NO_OP;
-    /** 0 = inactive, 1 = fading out (exit), 2 = fading in (arrival). */
+    /** Spec: the secret room draws over pure black, no shader backdrop. */
+    private boolean blackBackground;
+    /** 0 = inactive, 1 = fading out (exit), 2 = fading in (arrival),
+     *  3 = darkness hold on arrival (screen stays fully black). */
     private int roomFadePhase;
     private float roomFadeTimer;
     private RoomTransition pendingTransition;
@@ -220,6 +233,11 @@ public class GameScreen extends AbstractScreen {
         super(game);
         this.mapPath = mapPath;
         this.entrySpawnName = spawnName;
+        if (spawnName == null) {
+            // Fresh start from the menu: broken walls, revealed darkness
+            // and collected pickups from the last run are forgotten.
+            RoomStateRegistry.clear();
+        }
 
         batch = new SpriteBatch();
         debugShapes = new ShapeRenderer();
@@ -242,8 +260,9 @@ public class GameScreen extends AbstractScreen {
 
         initMapFeatures(knight);
         if (entrySpawnName != null) {
-            // Arrived through a door: start under full black and fade in.
-            roomFadePhase = 2;
+            // Arrived through a door: hold full darkness first (spec: 1s),
+            // then fade the new room in.
+            roomFadePhase = 3;
             roomFadeTimer = 0f;
             controller.snapCameraToKnight();
         }
@@ -297,7 +316,8 @@ public class GameScreen extends AbstractScreen {
         // ---- Charm inventory (spec: Charms & Inventory System) ----
         if (GameSession.isActive()) {
             knight.getCharms().loadFromNames(GameSession.getActive().equippedCharms);
-            knight.getCharms().setVoidHeartAcquired(GameSession.getActive().bossDefeated);
+            knight.getCharms().setVoidHeartAcquired(GameSession.getActive().bossDefeated
+                || RoomStateRegistry.isVoidHeartCollected());
         }
         inventoryOverlay = new InventoryOverlay(
             knight, new InventoryAssets(Assets.manager),
@@ -318,6 +338,18 @@ public class GameScreen extends AbstractScreen {
         zoteController.setVoices(zoteAssets.getVoices());
         zoteRenderer = new ZoteRenderer(zoteAssets);
         zoteDialogue = new ZoteDialogueOverlay(zoteController, zote, zoteAssets);
+
+        // ---- World charm pickups (spec: Void Heart, COLLECT prompt) ----
+        // Same prompt art as Zote's LISTEN, caption swapped to COLLECT.
+        charmPickupOverlay = new CharmPickupOverlay(charmPickupController,
+            zoteAssets.getPrompt(), new InventoryAssets(Assets.manager));
+
+        if (entrySpawnName != null) {
+            // Spec: everyone stands on the ground before the reveal, even
+            // if the knight flew through the door mid-jump.
+            snapActorsToGround();
+            controller.snapCameraToKnight();
+        }
     }
 
     private void initWingedSentries(TileMapCollider collider, Knight knight) {
@@ -458,6 +490,15 @@ public class GameScreen extends AbstractScreen {
             breakableWallLayers = new int[0];
             breakableWallLayer = null;
         }
+
+        // Per-map presentation, authored as custom map properties in Tiled
+        // (spec: secret room renders 1.5x bigger over a pure black bg).
+        Float viewScale = tiledMap.getProperties().get("viewScale", Float.class);
+        worldCamera.zoom = (viewScale != null && viewScale > 0f)
+            ? 1f / viewScale : 1f;
+        worldCamera.update();
+        Boolean black = tiledMap.getProperties().get("blackBackground", Boolean.class);
+        blackBackground = black != null && black;
     }
 
     /**
@@ -603,10 +644,10 @@ public class GameScreen extends AbstractScreen {
     }
 
     // ================================================================
-    // Breakable walls, darkness zones & room transitions (spec)
+    // Breakable walls, darkness zones, pickups & room transitions (spec)
     // ================================================================
 
-    /** Parse the map's wall/darkness/transition object layers. */
+    /** Parse the map's wall/darkness/pickup/transition object layers. */
     private void initMapFeatures(Knight knight) {
         List<BreakableWall> walls = new ArrayList<>();
         MapLayer wallObjects = tiledMap.getLayers().get("BreakableWallColliders");
@@ -617,12 +658,18 @@ public class GameScreen extends AbstractScreen {
                 Rectangle r = ((RectangleMapObject) obj).getRectangle();
                 Integer hp     = obj.getProperties().get("hp", Integer.class);
                 Boolean debris = obj.getProperties().get("debris", Boolean.class);
-                walls.add(new BreakableWall(obj.getName(), r.x, r.y,
+                BreakableWall wall = new BreakableWall(obj.getName(), r.x, r.y,
                     r.width, r.height,
                     hp != null ? hp : 3,
-                    debris == null || debris));
-                // A standing wall blocks movement through the solid grid.
-                collider.setSolidRegion(r.x, r.y, r.width, r.height, true);
+                    debris == null || debris);
+                if (RoomStateRegistry.isWallBroken(mapPath + ":" + wall.getName())) {
+                    // Broken earlier this session: stays open, no solids.
+                    wall.markBrokenSilently();
+                } else {
+                    // A standing wall blocks movement via the solid grid.
+                    collider.setSolidRegion(r.x, r.y, r.width, r.height, true);
+                }
+                walls.add(wall);
             }
         }
 
@@ -635,8 +682,14 @@ public class GameScreen extends AbstractScreen {
                 Rectangle r = ((RectangleMapObject) obj).getRectangle();
                 String revealedBy = obj.getProperties().get("revealedBy", String.class);
                 Float fade        = obj.getProperties().get("fadeDuration", Float.class);
-                darknessZones.add(new DarknessZone(r.x, r.y, r.width, r.height,
-                    revealedBy, fade != null ? fade : 0.8f));
+                DarknessZone zone = new DarknessZone(r.x, r.y, r.width, r.height,
+                    revealedBy, fade != null ? fade : 0.8f);
+                if (revealedBy != null
+                        && RoomStateRegistry.isWallBroken(mapPath + ":" + revealedBy)) {
+                    // Its wall fell earlier this session: never re-darken.
+                    zone.revealInstantly();
+                }
+                darknessZones.add(zone);
             }
         }
 
@@ -658,12 +711,36 @@ public class GameScreen extends AbstractScreen {
             }
         }
 
-        wallsController = new BreakableWallsController(walls, darknessZones,
-            collider, knight, breakableWallLayer, controller, particleHook);
+        // World charm pickups (spec: Void Heart in the secret room).
+        charmPickups = new ArrayList<>();
+        MapLayer charmObjects = tiledMap.getLayers().get("Charms");
+        if (charmObjects != null) {
+            for (MapObject obj : charmObjects.getObjects()) {
+                Float ox = obj.getProperties().get("x", Float.class);
+                Float oy = obj.getProperties().get("y", Float.class);
+                if (ox == null || oy == null) continue;
+                Charm charm = CharmPickup.resolveCharm(obj.getName());
+                if (charm == null) {
+                    Gdx.app.error("GameScreen",
+                        "Unknown charm pickup '" + obj.getName() + "' in " + mapPath);
+                    continue;
+                }
+                if (RoomStateRegistry.isPickupCollected(mapPath + ":" + obj.getName())) {
+                    continue; // already taken this session
+                }
+                charmPickups.add(new CharmPickup(obj.getName(), charm, ox, oy));
+            }
+        }
 
-        // Rooms authored around negative coordinates (Tiled infinite maps)
-        // still frame correctly: widen the camera clamp to the union of the
-        // tile grid and every collision rectangle.
+        wallsController = new BreakableWallsController(mapPath, walls,
+            darknessZones, collider, knight, breakableWallLayer,
+            controller, particleHook);
+        charmPickupController =
+            new CharmPickupController(charmPickups, knight, mapPath);
+
+        // Rooms whose collision extends past the tile grid still frame
+        // correctly: widen the camera clamp to the union of the grid and
+        // every collision rectangle.
         float minX = 0f, minY = 0f, maxX = mapWidthPx, maxY = mapHeightPx;
         List<CollisionRect> rects = collider.getCollisionRects();
         for (int i = 0; i < rects.size(); i++) {
@@ -739,6 +816,10 @@ public class GameScreen extends AbstractScreen {
         roomFadeTimer += delta;
         if (roomFadePhase == 1 && roomFadeTimer >= ROOM_FADE_OUT_DURATION) {
             switchRoom(); // behind full black
+        } else if (roomFadePhase == 3
+                && roomFadeTimer >= ROOM_DARKNESS_DURATION) {
+            roomFadePhase = 2;   // darkness over: reveal the new room
+            roomFadeTimer = 0f;
         } else if (roomFadePhase == 2
                 && roomFadeTimer >= ROOM_FADE_IN_DURATION) {
             roomFadePhase = 0;
@@ -767,9 +848,14 @@ public class GameScreen extends AbstractScreen {
     /** Fullscreen black quad for the room transition fade. */
     private void drawRoomFade(float uiW, float uiH) {
         if (roomFadePhase == 0) return;
-        float alpha = roomFadePhase == 1
-            ? Math.min(1f, roomFadeTimer / ROOM_FADE_OUT_DURATION)
-            : 1f - Math.min(1f, roomFadeTimer / ROOM_FADE_IN_DURATION);
+        float alpha;
+        if (roomFadePhase == 1) {
+            alpha = Math.min(1f, roomFadeTimer / ROOM_FADE_OUT_DURATION);
+        } else if (roomFadePhase == 3) {
+            alpha = 1f;   // darkness hold: fully black
+        } else {
+            alpha = 1f - Math.min(1f, roomFadeTimer / ROOM_FADE_IN_DURATION);
+        }
         batch.setColor(0f, 0f, 0f, alpha);
         batch.draw(whiteTexture, 0f, 0f, uiW, uiH);
         batch.setColor(Color.WHITE);
@@ -785,6 +871,67 @@ public class GameScreen extends AbstractScreen {
                 zone.getWidth(), zone.getHeight());
         }
         batch.setColor(Color.WHITE);
+    }
+
+    /**
+     * Land every actor on the terrain below it (spec: during the 1s
+     * darkness the player and other actors snap to the ground, so nobody
+     * is caught mid-fall when the new room fades in). Enemies stand on
+     * authored spawn points already and keep their own placement.
+     */
+    private void snapActorsToGround() {
+        Knight knight = controller.getKnight();
+        float ground = findGroundY(knight.getX(), knight.getHalfWidth(),
+            knight.getTop());
+        if (ground != Float.NEGATIVE_INFINITY) {
+            knight.setPosition(knight.getX(), ground);
+            knight.setVelocityY(0f);
+            knight.setGrounded(true);
+        }
+        // Zote, unless he is parked off-world in this room.
+        if (zote != null && zote.getX() > -90000f) {
+            float zoteGround = findGroundY(zote.getX(), Zote.WIDTH * 0.12f,
+                zote.getY() + Zote.HEIGHT);
+            if (zoteGround != Float.NEGATIVE_INFINITY) {
+                zote.setPosition(zote.getX(), zoteGround);
+            }
+        }
+    }
+
+    /**
+     * Highest ground top at or below {@code fromY} under a body of
+     * {@code halfWidth} centred on {@code centerX}, checking both the
+     * solid tile grid and the Collision rectangles.
+     * @return the ground's top y, or {@code Float.NEGATIVE_INFINITY}.
+     */
+    private float findGroundY(float centerX, float halfWidth, float fromY) {
+        float best = Float.NEGATIVE_INFINITY;
+
+        List<CollisionRect> rects = collider.getCollisionRects();
+        for (int i = 0; i < rects.size(); i++) {
+            CollisionRect r = rects.get(i);
+            if (centerX + halfWidth <= r.getLeft()
+                || centerX - halfWidth >= r.getRight()) continue;
+            if (r.getTop() <= fromY + 1f && r.getTop() > best) {
+                best = r.getTop();
+            }
+        }
+
+        int tileHeight = collider.getTileHeight();
+        int colStart = collider.worldXToTile(centerX - halfWidth + 0.5f);
+        int colEnd   = collider.worldXToTile(centerX + halfWidth - 0.5f);
+        int rowStart = Math.min(collider.getRows() - 1,
+            collider.worldYToTile(fromY + 1f));
+        for (int col = colStart; col <= colEnd; col++) {
+            if (col < 0 || col >= collider.getCols()) continue;
+            for (int row = rowStart; row >= 0; row--) {
+                if (!collider.isSolid(col, row)) continue;
+                float top = (row + 1) * tileHeight;
+                if (top <= fromY + 1f && top > best) best = top;
+                break; // highest solid tile in this column found
+            }
+        }
+        return best;
     }
 
     private float[] findZoteSpawn() {
@@ -836,9 +983,9 @@ public class GameScreen extends AbstractScreen {
         // ---- Room transition fade (spec: Room Transitions) ----
         if (roomFadePhase != 0) {
             updateRoomFade(delta);
-            // The world freezes while fading out; the arrival fade-in
-            // plays over normal gameplay, like the original.
-            if (roomFadePhase == 1) return;
+            // The world freezes while fading out and through the darkness
+            // hold; the 0.4s arrival fade-in plays over live gameplay.
+            if (roomFadePhase == 1 || roomFadePhase == 3) return;
         }
 
         // ---- Inventory menu (spec: 'i' pauses the game at any moment
@@ -893,8 +1040,11 @@ public class GameScreen extends AbstractScreen {
         checkAchievements();
         updateDeathFade(delta);
         wallsController.update(delta);
+        charmPickupController.update(delta);
         checkRoomTransitions();
-        rainEffect.update(delta);
+        if (!blackBackground) { // indoor rooms have no rain
+            rainEffect.update(delta);
+        }
         glassRainEffect.update(delta);
 
         // Index-based loop: no Iterator allocation per frame.
@@ -926,15 +1076,25 @@ public class GameScreen extends AbstractScreen {
         screenMatrix.setToOrtho2D(
             0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         batch.setProjectionMatrix(screenMatrix);
-        batch.setShader(backgroundShader);
-        batch.begin();
-        backgroundShader.setUniformf("u_time", timeElapsed);
-        backgroundShader.setUniformf("u_resolution",
-            Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.draw(whiteTexture, 0, 0,
-            Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.end();
-        batch.setShader(null);
+        if (blackBackground) {
+            // Spec: the secret room draws over complete black.
+            batch.begin();
+            batch.setColor(Color.BLACK);
+            batch.draw(whiteTexture, 0, 0,
+                Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            batch.setColor(Color.WHITE);
+            batch.end();
+        } else {
+            batch.setShader(backgroundShader);
+            batch.begin();
+            backgroundShader.setUniformf("u_time", timeElapsed);
+            backgroundShader.setUniformf("u_resolution",
+                Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            batch.draw(whiteTexture, 0, 0,
+                Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
+            batch.end();
+            batch.setShader(null);
+        }
 
         // Glass Rain
         glassRainEffect.render(worldCamera);
@@ -960,6 +1120,8 @@ public class GameScreen extends AbstractScreen {
         // Zote draws behind the Knight so slash effects stay visible.
         zoteRenderer.draw(batch, zote);
         zoteDialogue.drawPrompt(batch);
+        // World charm pickups + their COLLECT prompt (Zote treatment).
+        charmPickupOverlay.draw(batch);
 
         // Flash while invincible: blink the sprite alpha ~10x/sec.
         boolean flashOff = !knight.isDead() && knight.isInvincible()
@@ -1064,12 +1226,14 @@ public class GameScreen extends AbstractScreen {
         mapRenderer.setView(worldCamera);
         mapRenderer.render(fgLayers);
 
-        // Rain Effect
+        // Rain Effect + darkness zones (world space)
         batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
-        rainEffect.render(batch, worldCamera);
-        // Darkness zones cover everything in the world - terrain, rain and
-        // foreground - until their wall crumbles (spec: hidden path).
+        if (!blackBackground) { // indoor rooms have no rain
+            rainEffect.render(batch, worldCamera);
+        }
+        // Darkness zones cover everything in the world - terrain, rain
+        // and foreground - until their wall crumbles (spec: hidden path).
         drawDarknessZones();
         batch.end();
 
@@ -1242,5 +1406,6 @@ public class GameScreen extends AbstractScreen {
             AchievementsRegistry.setUnlockListener(null);
         }
         achievementToasts.dispose();
+        charmPickupOverlay.dispose();
     }
 }

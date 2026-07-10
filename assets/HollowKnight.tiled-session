@@ -124,11 +124,20 @@
             "expandedGroupLayers": [
                 12
             ],
-            "scale": 0.5,
-            "selectedLayer": 6,
+            "expandedObjectLayers": [
+                22,
+                29,
+                6,
+                19,
+                28,
+                20,
+                31
+            ],
+            "scale": 1,
+            "selectedLayer": 20,
             "viewCenter": {
-                "x": 2329,
-                "y": 1620
+                "x": 266,
+                "y": 2117
             }
         },
         "CityOfTears.tmx#BG_far_0008_a": {
@@ -146,7 +155,14 @@
         "CityOfTears.tmx#antique_r_0009_a": {
             "scaleInDock": 1
         },
+        "CityOfTears.tmx#bath_break_wall": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
         "CityOfTears.tmx#msk_generic": {
+            "scaleInDock": 1
+        },
+        "CityOfTears.tmx#room_nailsmith_bg_dark": {
             "scaleInDock": 1
         },
         "CityOfTears.tmx#ruin house brick2": {
@@ -244,9 +260,49 @@
         "ruin_plat_float_06.tsx": {
             "scaleInDock": 1,
             "scaleInEditor": 1
+        },
+        "secretRoom.tmx": {
+            "expandedObjectLayers": [
+                10,
+                7,
+                9,
+                8
+            ],
+            "scale": 0.5,
+            "selectedLayer": 7,
+            "viewCenter": {
+                "x": 534,
+                "y": 470
+            }
+        },
+        "secretRoom.tmx#msk_generic": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#nailsmith_light": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#room_nailsmith_bg_dark": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#ruin house brick2": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#ruin_layered_0016_w": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#ruin_layered_0021_w": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#ruins_core_0005_a": {
+            "scaleInDock": 1
+        },
+        "secretRoom.tmx#ruins_floor_layered_0003_01": {
+            "scaleInDock": 1
         }
     },
+    "last.imagePath": "C:/Users/ahgha/IdeaProjects/HollowKnight/assets/environment/cityoftears",
     "last.objectTemplatePath": "C:/Users/ahgha/IdeaProjects/HollowKnight/assets",
+    "map.fixedSize": false,
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 8,
     "map.tileWidth": 8,
@@ -260,6 +316,7 @@
         "C:/Users/ahgha/Desktop/CityOfTears.tmx",
         "ruin_plat_float_06.tsx"
     ],
+    "resizeMap.removeObjects": true,
     "tileset.embedInMap": true,
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {

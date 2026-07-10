@@ -48,6 +48,14 @@ public class BreakableWall implements AABB {
         return broken;
     }
 
+    /** Restore a wall already broken earlier this session - no shake, no
+     *  particles, no camera kick (spec: state survives room re-entry). */
+    public void markBrokenSilently() {
+        hp = 0;
+        broken = true;
+        shakeTimer = 0f;
+    }
+
     public void tick(float delta) {
         if (shakeTimer > 0f) {
             shakeTimer -= delta;

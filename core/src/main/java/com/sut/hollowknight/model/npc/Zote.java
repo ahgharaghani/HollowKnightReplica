@@ -21,7 +21,7 @@ public class Zote {
     public static final float ANGRY_SPEED     = 110f;
 
     private final float initialX;
-    private final float y;
+    private float y;
     private float x;
     private boolean facingRight;
     private State state = State.IDLE;
@@ -123,6 +123,12 @@ public class Zote {
     public boolean isFacingRight()    { return facingRight; }
     public float   getAnimTimer()     { return animTimer; }
     public int     getLastNailHitId() { return lastNailHitId; }
+
+    /** Reposition Zote (used by the room-transition ground snap). */
+    public void setPosition(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
 
     public void setFacingRight(boolean right) { this.facingRight = right; }
     public void setLastNailHitId(int id)      { this.lastNailHitId = id; }

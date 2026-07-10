@@ -28,6 +28,12 @@ public class DarknessZone {
     /** Begin fading the darkness away (idempotent). */
     public void reveal() { revealed = true; }
 
+    /** Already revealed earlier this session: no fade on room re-entry. */
+    public void revealInstantly() {
+        revealed = true;
+        alpha = 0f;
+    }
+
     public void update(float delta) {
         if (!revealed || alpha <= 0f) return;
         alpha -= delta / fadeDuration;
@@ -37,6 +43,8 @@ public class DarknessZone {
     public boolean isRevealedBy(String wallName) {
         return revealedBy.equals(wallName);
     }
+
+    public String getRevealedBy() { return revealedBy; }
 
     public float getAlpha()  { return alpha; }
     public float getX()      { return x; }

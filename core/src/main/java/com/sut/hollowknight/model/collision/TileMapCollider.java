@@ -136,9 +136,8 @@ public class TileMapCollider {
     }
 
     public boolean isSolid(int tileX, int tileY) {
-        // Rect-only rooms may extend past the declared grid (infinite maps
-        // authored in negative space): out-of-grid is open there, but stays
-        // walled when a real tile grid exists.
+        // Rect-only rooms have no tile terrain: out-of-grid is open there,
+        // but stays walled when a real tile grid exists.
         if (tileX < 0 || tileX >= cols) return hasTileLayer;
         if (tileY < 0 || tileY >= rows) return false;
         return solid[tileY][tileX];

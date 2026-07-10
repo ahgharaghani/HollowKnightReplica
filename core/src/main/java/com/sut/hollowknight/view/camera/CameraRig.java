@@ -10,8 +10,8 @@ public final class CameraRig {
     private final OrthographicCamera camera;
 
     // World-space clamp bounds. Default to the map's 0-based pixel size;
-    // rooms authored around negative coordinates (Tiled infinite maps)
-    // widen these through setWorldBounds().
+    // rooms authored around negative coordinates widen these through
+    // setWorldBounds().
     private float minX;
     private float minY;
     private float maxX;
@@ -29,7 +29,7 @@ public final class CameraRig {
         this.maxY = mapHeightPx;
     }
 
-    /** Widen the clamp region (spec: rooms with content in negative space). */
+    /** Widen the clamp region (spec: rooms with content beyond the grid). */
     public void setWorldBounds(float minX, float minY, float maxX, float maxY) {
         this.minX = minX;
         this.minY = minY;
@@ -72,15 +72,17 @@ public final class CameraRig {
         camera.update();
     }
 
-    /** Rooms narrower than the viewport pin to their center instead. */
+    // Zoom-aware clamps (spec: secret room renders 1.5x bigger, i.e.
+    // zoom < 1 shrinks the visible world slice). Rooms narrower than the
+    // visible slice pin to their centre instead.
     private float clampX(float x) {
-        float halfW = camera.viewportWidth / 2f;
+        float halfW = camera.viewportWidth * camera.zoom / 2f;
         if (maxX - minX <= halfW * 2f) return (minX + maxX) / 2f;
         return Math.max(minX + halfW, Math.min(x, maxX - halfW));
     }
 
     private float clampY(float y) {
-        float halfH = camera.viewportHeight / 2f;
+        float halfH = camera.viewportHeight * camera.zoom / 2f;
         if (maxY - minY <= halfH * 2f) return (minY + maxY) / 2f;
         return Math.max(minY + halfH, Math.min(y, maxY - halfH));
     }
