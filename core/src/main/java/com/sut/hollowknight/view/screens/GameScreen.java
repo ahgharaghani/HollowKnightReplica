@@ -20,6 +20,9 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.renderers.OrthogonalTiledMapRenderer;
 import com.badlogic.gdx.math.Matrix4;
 import com.badlogic.gdx.utils.IntArray;
+import com.badlogic.gdx.maps.objects.RectangleMapObject;
+import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
+import com.badlogic.gdx.math.Rectangle;
 import com.sut.hollowknight.controller.CheatController;
 import com.sut.hollowknight.controller.ZoteController;
 import com.sut.hollowknight.controller.CombatSystem;
@@ -39,6 +42,11 @@ import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.model.npc.Zote;
 import com.sut.hollowknight.model.collision.TileMapCollider;
+import com.sut.hollowknight.model.map.BreakableWall;
+import com.sut.hollowknight.model.map.DarknessZone;
+import com.sut.hollowknight.model.map.RoomTransition;
+import com.sut.hollowknight.controller.BreakableWallsController;
+import com.sut.hollowknight.view.effects.ParticleHook;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
 import com.sut.hollowknight.model.enemy.HuskHornhead;
 import com.sut.hollowknight.model.enemy.Javelin;
@@ -156,6 +164,25 @@ public class GameScreen extends AbstractScreen {
     private int deathFadePhase;
     private float deathFadeTimer;
 
+    // ---- Breakable walls, darkness zones & room transitions (spec) ----
+    private static final float ROOM_FADE_OUT_DURATION = 0.6f;
+    private static final float ROOM_FADE_IN_DURATION  = 0.6f;
+    /** Map file this screen runs and the entry point we arrived through. */
+    private final String mapPath;
+    private final String entrySpawnName;   // null = fresh start
+    private BreakableWallsController wallsController;
+    private List<RoomTransition> roomTransitions;
+    private List<DarknessZone> darknessZones;
+    /** "BreakableWalls" tile layer, drawn apart so hits can shake it. */
+    private int[] breakableWallLayers = new int[0];
+    private TiledMapTileLayer breakableWallLayer;
+    /** Future particle emitter seam - NO_OP until one is plugged in. */
+    private ParticleHook particleHook = ParticleHook.NO_OP;
+    /** 0 = inactive, 1 = fading out (exit), 2 = fading in (arrival). */
+    private int roomFadePhase;
+    private float roomFadeTimer;
+    private RoomTransition pendingTransition;
+
     private List<EnemyController> enemyControllers;
 
     private HudRenderer hudRenderer;
@@ -179,7 +206,20 @@ public class GameScreen extends AbstractScreen {
     private boolean f3WasDown = false;
 
     public GameScreen(Game game) {
+        this(game, "CityOfTears.tmx", null, -1, -1);
+    }
+
+    /**
+     * Room-transition entry (spec: Room Transitions): load {@code mapPath},
+     * spawn at the point object named {@code spawnName}, and carry the
+     * knight's masks/soul across so crossing a door never heals or hurts.
+     * Negative carried values mean "fresh start defaults".
+     */
+    public GameScreen(Game game, String mapPath, String spawnName,
+                      int carriedMasks, int carriedSoul) {
         super(game);
+        this.mapPath = mapPath;
+        this.entrySpawnName = spawnName;
 
         batch = new SpriteBatch();
         debugShapes = new ShapeRenderer();
@@ -193,11 +233,20 @@ public class GameScreen extends AbstractScreen {
             "SafeSpots"
         );
 
-        float[] spawn = findStartingPoint();
+        float[] spawn = findSpawnPoint(entrySpawnName);
         Knight knight = new Knight(spawn[0], spawn[1]);
+        knight.restoreVitals(carriedMasks, carriedSoul);
 
         controller = new GameController(knight, collider,
             worldCamera, mapWidthPx, mapHeightPx);
+
+        initMapFeatures(knight);
+        if (entrySpawnName != null) {
+            // Arrived through a door: start under full black and fade in.
+            roomFadePhase = 2;
+            roomFadeTimer = 0f;
+            controller.snapCameraToKnight();
+        }
 
         knightAnimator = new KnightAnimator();
 
@@ -377,7 +426,7 @@ public class GameScreen extends AbstractScreen {
     }
 
     private void loadMap() {
-        tiledMap = Assets.manager.get("CityOfTears.tmx", TiledMap.class);
+        tiledMap = Assets.manager.get(mapPath, TiledMap.class);
         mapRenderer = new OrthogonalTiledMapRenderer(tiledMap, batch);
 
         MapProperties props = tiledMap.getProperties();
@@ -388,9 +437,48 @@ public class GameScreen extends AbstractScreen {
         mapWidthPx  = mapW * tileW;
         mapHeightPx = mapH * tileH;
 
-        bgLayers       = resolveLayerIndices(BG_LAYER_NAMES);
-        gameplayLayers = resolveLayerIndices(GAMEPLAY_LAYER_NAMES);
-        fgLayers       = resolveLayerIndices(FG_LAYER_NAMES);
+        if (tiledMap.getLayers().get("Gameplay") != null) {
+            bgLayers       = resolveLayerIndices(BG_LAYER_NAMES);
+            gameplayLayers = resolveLayerIndices(GAMEPLAY_LAYER_NAMES);
+            fgLayers       = resolveLayerIndices(FG_LAYER_NAMES);
+        } else {
+            // Rooms that do not follow the CityOfTears layer names
+            // (e.g. secretRoom.tmx) get a generic split instead.
+            classifyLayersGenerically();
+        }
+
+        // The breakable-wall tile layer renders separately so a per-layer
+        // offset can shake it (spec: Breakable Walls).
+        int wallLayerIndex = tiledMap.getLayers().getIndex("BreakableWalls");
+        if (wallLayerIndex >= 0) {
+            breakableWallLayers = new int[]{ wallLayerIndex };
+            breakableWallLayer =
+                (TiledMapTileLayer) tiledMap.getLayers().get(wallLayerIndex);
+        } else {
+            breakableWallLayers = new int[0];
+            breakableWallLayer = null;
+        }
+    }
+
+    /**
+     * Fallback layer routing for rooms without the CityOfTears layer names:
+     * tile layers whose name starts with "Fore" draw in front of the
+     * knight, every other tile layer draws behind.
+     */
+    private void classifyLayersGenerically() {
+        IntArray bg = new IntArray();
+        IntArray fg = new IntArray();
+        for (int i = 0; i < tiledMap.getLayers().getCount(); i++) {
+            MapLayer layer = tiledMap.getLayers().get(i);
+            if (!(layer instanceof TiledMapTileLayer)) continue;
+            String name = layer.getName() == null ? "" : layer.getName();
+            if (name.startsWith("BreakableWalls")) continue; // drawn apart
+            if (name.startsWith("Fore")) fg.add(i);
+            else                         bg.add(i);
+        }
+        bgLayers       = bg.toArray();
+        gameplayLayers = new int[0];
+        fgLayers       = fg.toArray();
     }
 
     private int[] resolveLayerIndices(String[] names) {
@@ -493,7 +581,9 @@ public class GameScreen extends AbstractScreen {
 
     /** Fresh run state: knight at the spawn point, enemies respawned. */
     private void resetAtSpawnPoint() {
-        float[] spawn = findStartingPoint();
+        // In side rooms (no "Starting Point") death returns the knight to
+        // the door we came in through.
+        float[] spawn = findSpawnPoint(entrySpawnName);
         controller.getKnight().respawn(spawn[0], spawn[1]);
         for (int i = 0; i < enemyControllers.size(); i++) {
             enemyControllers.get(i).respawn();
@@ -512,6 +602,191 @@ public class GameScreen extends AbstractScreen {
         batch.setColor(Color.WHITE);
     }
 
+    // ================================================================
+    // Breakable walls, darkness zones & room transitions (spec)
+    // ================================================================
+
+    /** Parse the map's wall/darkness/transition object layers. */
+    private void initMapFeatures(Knight knight) {
+        List<BreakableWall> walls = new ArrayList<>();
+        MapLayer wallObjects = tiledMap.getLayers().get("BreakableWallColliders");
+        if (wallObjects != null) {
+            for (MapObject obj : wallObjects.getObjects()) {
+                if (!(obj instanceof RectangleMapObject)) continue;
+                // TmxMapLoader already flips object rects to y-up world space.
+                Rectangle r = ((RectangleMapObject) obj).getRectangle();
+                Integer hp     = obj.getProperties().get("hp", Integer.class);
+                Boolean debris = obj.getProperties().get("debris", Boolean.class);
+                walls.add(new BreakableWall(obj.getName(), r.x, r.y,
+                    r.width, r.height,
+                    hp != null ? hp : 3,
+                    debris == null || debris));
+                // A standing wall blocks movement through the solid grid.
+                collider.setSolidRegion(r.x, r.y, r.width, r.height, true);
+            }
+        }
+
+        darknessZones = new ArrayList<>();
+        MapLayer darkObjects = tiledMap.getLayers().get("DarknessZone");
+        if (darkObjects == null) darkObjects = tiledMap.getLayers().get("DarknessZones");
+        if (darkObjects != null) {
+            for (MapObject obj : darkObjects.getObjects()) {
+                if (!(obj instanceof RectangleMapObject)) continue;
+                Rectangle r = ((RectangleMapObject) obj).getRectangle();
+                String revealedBy = obj.getProperties().get("revealedBy", String.class);
+                Float fade        = obj.getProperties().get("fadeDuration", Float.class);
+                darknessZones.add(new DarknessZone(r.x, r.y, r.width, r.height,
+                    revealedBy, fade != null ? fade : 0.8f));
+            }
+        }
+
+        roomTransitions = new ArrayList<>();
+        MapLayer transitionObjects = tiledMap.getLayers().get("Transitions");
+        if (transitionObjects != null) {
+            for (MapObject obj : transitionObjects.getObjects()) {
+                if (!(obj instanceof RectangleMapObject)) continue;
+                Rectangle r = ((RectangleMapObject) obj).getRectangle();
+                String targetMap   = obj.getProperties().get("targetMap", String.class);
+                String targetSpawn = obj.getProperties().get("targetSpawn", String.class);
+                if (targetMap == null) {
+                    Gdx.app.error("GameScreen",
+                        "Transition without targetMap skipped in " + mapPath);
+                    continue;
+                }
+                roomTransitions.add(new RoomTransition(r.x, r.y,
+                    r.width, r.height, targetMap, targetSpawn));
+            }
+        }
+
+        wallsController = new BreakableWallsController(walls, darknessZones,
+            collider, knight, breakableWallLayer, controller, particleHook);
+
+        // Rooms authored around negative coordinates (Tiled infinite maps)
+        // still frame correctly: widen the camera clamp to the union of the
+        // tile grid and every collision rectangle.
+        float minX = 0f, minY = 0f, maxX = mapWidthPx, maxY = mapHeightPx;
+        List<CollisionRect> rects = collider.getCollisionRects();
+        for (int i = 0; i < rects.size(); i++) {
+            CollisionRect rect = rects.get(i);
+            if (rect.getLeft()   < minX) minX = rect.getLeft();
+            if (rect.getBottom() < minY) minY = rect.getBottom();
+            if (rect.getRight()  > maxX) maxX = rect.getRight();
+            if (rect.getTop()    > maxY) maxY = rect.getTop();
+        }
+        controller.setCameraWorldBounds(minX, minY, maxX, maxY);
+    }
+
+    /** Plug in a real dust emitter later without touching game code. */
+    public void setParticleHook(ParticleHook hook) {
+        particleHook = hook != null ? hook : ParticleHook.NO_OP;
+        if (wallsController != null) wallsController.setParticleHook(particleHook);
+    }
+
+    /**
+     * Resolve the arrival point: the named spawn object first, then any
+     * point in a "Spawn" layer, then the map's "Starting Point".
+     */
+    private float[] findSpawnPoint(String spawnName) {
+        if (spawnName != null) {
+            float[] named = findNamedPoint(spawnName);
+            if (named != null) return named;
+            Gdx.app.error("GameScreen", "Spawn '" + spawnName
+                + "' not found in " + mapPath + "; trying the Spawn layer");
+            MapLayer spawnLayer = tiledMap.getLayers().get("Spawn");
+            if (spawnLayer != null) {
+                for (MapObject obj : spawnLayer.getObjects()) {
+                    Float ox = obj.getProperties().get("x", Float.class);
+                    Float oy = obj.getProperties().get("y", Float.class);
+                    if (ox != null && oy != null) return new float[]{ ox, oy };
+                }
+            }
+        }
+        return findStartingPoint();
+    }
+
+    /** Find a point object by name anywhere in the map (null if absent). */
+    private float[] findNamedPoint(String name) {
+        for (MapLayer layer : tiledMap.getLayers()) {
+            for (MapObject obj : layer.getObjects()) {
+                if (name.equals(obj.getName())) {
+                    Float ox = obj.getProperties().get("x", Float.class);
+                    Float oy = obj.getProperties().get("y", Float.class);
+                    if (ox != null && oy != null) return new float[]{ ox, oy };
+                }
+            }
+        }
+        return null;
+    }
+
+    /** Begin the original-game style exit fade once per trigger overlap. */
+    private void checkRoomTransitions() {
+        if (roomFadePhase != 0 || deathFadePhase != 0) return;
+        Knight knight = controller.getKnight();
+        if (knight.isDead()) return;
+        CollisionRect hurtBox = knight.getHurtBox();
+        for (int i = 0; i < roomTransitions.size(); i++) {
+            RoomTransition t = roomTransitions.get(i);
+            if (AABB.overlaps(hurtBox, t)) {
+                pendingTransition = t;
+                roomFadePhase = 1;
+                roomFadeTimer = 0f;
+                return;
+            }
+        }
+    }
+
+    private void updateRoomFade(float delta) {
+        roomFadeTimer += delta;
+        if (roomFadePhase == 1 && roomFadeTimer >= ROOM_FADE_OUT_DURATION) {
+            switchRoom(); // behind full black
+        } else if (roomFadePhase == 2
+                && roomFadeTimer >= ROOM_FADE_IN_DURATION) {
+            roomFadePhase = 0;
+        }
+    }
+
+    /** Swap to the destination room while the screen is fully black. */
+    private void switchRoom() {
+        RoomTransition t = pendingTransition;
+        pendingTransition = null;
+        roomFadePhase = 0;   // this screen is done; the next one fades in
+
+        Knight knight = controller.getKnight();
+        if (GameSession.isActive()) {
+            GameSession.getActive().currentRoom = t.getTargetMap();
+        }
+        game.setScreen(new GameScreen(game, t.getTargetMap(),
+            t.getTargetSpawn(), knight.getHpMasks(), knight.getSoulAmount()));
+        // Dispose after the frame unwinds (same pattern as saveAndQuit).
+        final GameScreen self = this;
+        Gdx.app.postRunnable(new Runnable() {
+            @Override public void run() { self.dispose(); }
+        });
+    }
+
+    /** Fullscreen black quad for the room transition fade. */
+    private void drawRoomFade(float uiW, float uiH) {
+        if (roomFadePhase == 0) return;
+        float alpha = roomFadePhase == 1
+            ? Math.min(1f, roomFadeTimer / ROOM_FADE_OUT_DURATION)
+            : 1f - Math.min(1f, roomFadeTimer / ROOM_FADE_IN_DURATION);
+        batch.setColor(0f, 0f, 0f, alpha);
+        batch.draw(whiteTexture, 0f, 0f, uiW, uiH);
+        batch.setColor(Color.WHITE);
+    }
+
+    /** World-space black overlays hiding unrevealed areas (spec). */
+    private void drawDarknessZones() {
+        for (int i = 0; i < darknessZones.size(); i++) {
+            DarknessZone zone = darknessZones.get(i);
+            if (zone.getAlpha() <= 0f) continue;
+            batch.setColor(0f, 0f, 0f, zone.getAlpha());
+            batch.draw(whiteTexture, zone.getX(), zone.getY(),
+                zone.getWidth(), zone.getHeight());
+        }
+        batch.setColor(Color.WHITE);
+    }
+
     private float[] findZoteSpawn() {
         for (MapLayer layer : tiledMap.getLayers()) {
             for (MapObject obj : layer.getObjects()) {
@@ -524,8 +799,10 @@ public class GameScreen extends AbstractScreen {
                 }
             }
         }
-        Gdx.app.log("GameScreen", "ZoteSpawn not found; using Starting Point");
-        return findStartingPoint();
+        // Maps without a marker (e.g. secretRoom): park Zote far off-world
+        // so all his systems stay inert without null checks anywhere.
+        Gdx.app.log("GameScreen", "ZoteSpawn not found; parking Zote off-world");
+        return new float[]{ -100000f, -100000f };
     }
 
     private void initShader() {
@@ -556,6 +833,14 @@ public class GameScreen extends AbstractScreen {
 
     @Override
     public void updateLogic(float delta) {
+        // ---- Room transition fade (spec: Room Transitions) ----
+        if (roomFadePhase != 0) {
+            updateRoomFade(delta);
+            // The world freezes while fading out; the arrival fade-in
+            // plays over normal gameplay, like the original.
+            if (roomFadePhase == 1) return;
+        }
+
         // ---- Inventory menu (spec: 'i' pauses the game at any moment
         //      outside animation-lock frames and opens the charm menu) ----
         if (inventoryOverlay.isShown()) {
@@ -607,6 +892,8 @@ public class GameScreen extends AbstractScreen {
         zoteController.update(delta);
         checkAchievements();
         updateDeathFade(delta);
+        wallsController.update(delta);
+        checkRoomTransitions();
         rainEffect.update(delta);
         glassRainEffect.update(delta);
 
@@ -656,6 +943,10 @@ public class GameScreen extends AbstractScreen {
         mapRenderer.setView(worldCamera);
         mapRenderer.render(bgLayers);
         mapRenderer.render(gameplayLayers);
+        if (breakableWallLayers.length > 0) {
+            // Rendered apart so hits can shake it via the layer offset.
+            mapRenderer.render(breakableWallLayers);
+        }
 
         // Draw Knight, Sentries, and Javelins
         batch.setProjectionMatrix(worldCamera.combined);
@@ -777,6 +1068,9 @@ public class GameScreen extends AbstractScreen {
         batch.setProjectionMatrix(worldCamera.combined);
         batch.begin();
         rainEffect.render(batch, worldCamera);
+        // Darkness zones cover everything in the world - terrain, rain and
+        // foreground - until their wall crumbles (spec: hidden path).
+        drawDarknessZones();
         batch.end();
 
         // HUD (health masks + soul orb) in screen space
@@ -790,6 +1084,7 @@ public class GameScreen extends AbstractScreen {
                 uiViewport.getWorldWidth(), uiViewport.getWorldHeight(),
                 Gdx.graphics.getDeltaTime());
         drawDeathFade(uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
+        drawRoomFade(uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
         batch.end();
 
         renderDebugBoxes();
@@ -941,7 +1236,11 @@ public class GameScreen extends AbstractScreen {
         pauseOverlay.dispose();
         inventoryOverlay.dispose();
         zoteDialogue.dispose();
-        AchievementsRegistry.setUnlockListener(null);
+        // A room transition installs the next screen's toast listener
+        // before this dispose runs - only clear it if it is still ours.
+        if (AchievementsRegistry.getUnlockListener() == achievementToasts) {
+            AchievementsRegistry.setUnlockListener(null);
+        }
         achievementToasts.dispose();
     }
 }

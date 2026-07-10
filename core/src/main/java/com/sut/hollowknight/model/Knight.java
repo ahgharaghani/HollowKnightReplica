@@ -413,6 +413,14 @@ public class Knight implements PhysicsBody {
         hpMasks = Math.min(hpMasks + masks, maxMasks);
     }
 
+    /** Restore vitals carried across a room transition (spec: Room
+     *  Transitions) - crossing a door must never heal or hurt the knight.
+     *  Negative arguments mean "keep fresh-start defaults". */
+    public void restoreVitals(int masks, int soul) {
+        if (masks >= 0) hpMasks    = Math.max(1, Math.min(masks, maxMasks));
+        if (soul  >= 0) soulAmount = Math.max(0, Math.min(soul, 99));
+    }
+
     public void addSoul(int amount) {
         soulAmount = Math.min(soulAmount + amount, 99);
     }

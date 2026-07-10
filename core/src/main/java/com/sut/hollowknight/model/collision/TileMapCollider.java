@@ -20,6 +20,7 @@ public class TileMapCollider {
     private final int tileWidth;
     private final int tileHeight;
     private final float mapHeightPx;
+    private final boolean hasTileLayer;
 
     private final List<CollisionRect> collisionRects;
     private final List<CollisionRect> damagingRects;
@@ -36,18 +37,33 @@ public class TileMapCollider {
 
     public TileMapCollider(TiledMap map, String tileLayerName, String objectLayerName,
                            String damagingLayerName, String safeSpotsLayerName) {
-        TiledMapTileLayer layer = (TiledMapTileLayer) map.getLayers().get(tileLayerName);
-        this.cols = layer.getWidth();
-        this.rows = layer.getHeight();
-        this.tileWidth  = (int) layer.getTileWidth();
-        this.tileHeight = (int) layer.getTileHeight();
+        // Rooms without a solid tile layer (e.g. secretRoom.tmx) rely on
+        // Collision rectangles alone; grid dimensions then come from the
+        // map's own properties.
+        TiledMapTileLayer layer = tileLayerName == null
+            ? null
+            : (TiledMapTileLayer) map.getLayers().get(tileLayerName);
+        hasTileLayer = layer != null;
+        if (layer != null) {
+            this.cols = layer.getWidth();
+            this.rows = layer.getHeight();
+            this.tileWidth  = (int) layer.getTileWidth();
+            this.tileHeight = (int) layer.getTileHeight();
+        } else {
+            this.cols = map.getProperties().get("width", Integer.class);
+            this.rows = map.getProperties().get("height", Integer.class);
+            this.tileWidth  = map.getProperties().get("tilewidth", Integer.class);
+            this.tileHeight = map.getProperties().get("tileheight", Integer.class);
+        }
         this.mapHeightPx = rows * tileHeight;
 
         solid = new boolean[rows][cols];
-        for (int row = 0; row < rows; row++) {
-            for (int col = 0; col < cols; col++) {
-                solid[row][col] = layer.getCell(col, row) != null
-                    && layer.getCell(col, row).getTile() != null;
+        if (layer != null) {
+            for (int row = 0; row < rows; row++) {
+                for (int col = 0; col < cols; col++) {
+                    solid[row][col] = layer.getCell(col, row) != null
+                        && layer.getCell(col, row).getTile() != null;
+                }
             }
         }
 
@@ -120,9 +136,30 @@ public class TileMapCollider {
     }
 
     public boolean isSolid(int tileX, int tileY) {
-        if (tileX < 0 || tileX >= cols) return true;
+        // Rect-only rooms may extend past the declared grid (infinite maps
+        // authored in negative space): out-of-grid is open there, but stays
+        // walled when a real tile grid exists.
+        if (tileX < 0 || tileX >= cols) return hasTileLayer;
         if (tileY < 0 || tileY >= rows) return false;
         return solid[tileY][tileX];
+    }
+
+    /**
+     * Mark or clear a world-space rectangle in the solid grid (spec:
+     * Breakable Walls). A standing wall claims its cells at load; the
+     * moment it crumbles the same region is released to open the passage.
+     */
+    public void setSolidRegion(float x, float y, float width, float height,
+                               boolean value) {
+        int colStart = Math.max(0, (int) Math.floor(x / tileWidth));
+        int colEnd   = Math.min(cols - 1, (int) Math.ceil((x + width) / tileWidth) - 1);
+        int rowStart = Math.max(0, (int) Math.floor(y / tileHeight));
+        int rowEnd   = Math.min(rows - 1, (int) Math.ceil((y + height) / tileHeight) - 1);
+        for (int row = rowStart; row <= rowEnd; row++) {
+            for (int col = colStart; col <= colEnd; col++) {
+                solid[row][col] = value;
+            }
+        }
     }
 
     public int worldXToTile(float wx) {

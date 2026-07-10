@@ -75,6 +75,17 @@ public class GameController {
         cameraRig.snapTo(knight.getX(), knight.getY());
     }
 
+    /** External camera kick (e.g. a breakable wall crumbling). */
+    public void shakeCamera(float amplitude, float duration) {
+        cameraRig.shake(amplitude, duration);
+    }
+
+    /** Widen camera clamp for rooms authored around negative coordinates. */
+    public void setCameraWorldBounds(float minX, float minY,
+                                     float maxX, float maxY) {
+        cameraRig.setWorldBounds(minX, minY, maxX, maxY);
+    }
+
     public void update(float delta) {
         if (paused) return;
 

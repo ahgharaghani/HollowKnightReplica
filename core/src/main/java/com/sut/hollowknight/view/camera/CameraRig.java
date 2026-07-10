@@ -8,8 +8,14 @@ public final class CameraRig {
     private static final float LERP_FACTOR = 4f;
 
     private final OrthographicCamera camera;
-    private final float mapWidthPx;
-    private final float mapHeightPx;
+
+    // World-space clamp bounds. Default to the map's 0-based pixel size;
+    // rooms authored around negative coordinates (Tiled infinite maps)
+    // widen these through setWorldBounds().
+    private float minX;
+    private float minY;
+    private float maxX;
+    private float maxY;
 
     private float shakeTimer;
     private float shakeDuration;
@@ -17,10 +23,19 @@ public final class CameraRig {
 
     public CameraRig(OrthographicCamera camera, float mapWidthPx, float mapHeightPx) {
         this.camera = camera;
-        this.mapWidthPx = mapWidthPx;
-        this.mapHeightPx = mapHeightPx;
+        this.minX = 0f;
+        this.minY = 0f;
+        this.maxX = mapWidthPx;
+        this.maxY = mapHeightPx;
     }
 
+    /** Widen the clamp region (spec: rooms with content in negative space). */
+    public void setWorldBounds(float minX, float minY, float maxX, float maxY) {
+        this.minX = minX;
+        this.minY = minY;
+        this.maxX = maxX;
+        this.maxY = maxY;
+    }
 
     // shake requests with higher amplitude override weaker ones
     public void shake(float amplitude, float duration) {
@@ -31,27 +46,18 @@ public final class CameraRig {
         }
     }
 
-    /** Jump straight to the target (map-clamped) - used on respawn so
-     *  the camera does not glide across the map behind the fade. */
+    /** Jump straight to the target (bounds-clamped) - used on respawn and
+     *  room transitions so the camera does not glide behind the fade. */
     public void snapTo(float targetX, float targetY) {
-        float halfW = camera.viewportWidth  / 2f;
-        float halfH = camera.viewportHeight / 2f;
-        float camX = Math.max(halfW, Math.min(targetX, mapWidthPx  - halfW));
-        float camY = Math.max(halfH, Math.min(targetY, mapHeightPx - halfH));
-        camera.position.set(camX, camY, 0);
+        camera.position.set(clampX(targetX), clampY(targetY), 0);
         camera.update();
     }
 
     public void follow(float targetX, float targetY, float delta) {
         float lerp = 1f - (float) Math.exp(-LERP_FACTOR * delta);
 
-        float camX = camera.position.x + (targetX - camera.position.x) * lerp;
-        float camY = camera.position.y + (targetY - camera.position.y) * lerp;
-
-        float halfW = camera.viewportWidth  / 2f;
-        float halfH = camera.viewportHeight / 2f;
-        camX = Math.max(halfW, Math.min(camX, mapWidthPx  - halfW));
-        camY = Math.max(halfH, Math.min(camY, mapHeightPx - halfH));
+        float camX = clampX(camera.position.x + (targetX - camera.position.x) * lerp);
+        float camY = clampY(camera.position.y + (targetY - camera.position.y) * lerp);
 
         if (shakeTimer > 0f) {
             shakeTimer -= delta;
@@ -64,5 +70,18 @@ public final class CameraRig {
 
         camera.position.set(camX, camY, 0);
         camera.update();
+    }
+
+    /** Rooms narrower than the viewport pin to their center instead. */
+    private float clampX(float x) {
+        float halfW = camera.viewportWidth / 2f;
+        if (maxX - minX <= halfW * 2f) return (minX + maxX) / 2f;
+        return Math.max(minX + halfW, Math.min(x, maxX - halfW));
+    }
+
+    private float clampY(float y) {
+        float halfH = camera.viewportHeight / 2f;
+        if (maxY - minY <= halfH * 2f) return (minY + maxY) / 2f;
+        return Math.max(minY + halfH, Math.min(y, maxY - halfH));
     }
 }

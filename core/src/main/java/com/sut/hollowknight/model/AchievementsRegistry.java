@@ -58,6 +58,10 @@ public final class AchievementsRegistry {
     /** The view registers here; pass null to unregister. */
     public static void setUnlockListener(UnlockListener l) { listener = l; }
 
+    /** Current listener - GameScreen.dispose() checks it before clearing,
+     *  so a room transition's fresh listener survives the old screen. */
+    public static UnlockListener getUnlockListener() { return listener; }
+
     // ---- Hooks for game logic (spec: expose unlock functions) ----
 
     /** Call when the game is finished; also grades the speedrun. */
