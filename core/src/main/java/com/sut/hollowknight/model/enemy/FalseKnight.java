@@ -83,7 +83,12 @@ public class FalseKnight implements AABB {
 
     // ---- Mace strike hitboxes ----
     /** Ground slam in front of the armor. */
-    public static final float STRIKE_REACH  = 480f;
+    // Measured from the Attack impact frame: the mace ball lands with
+    // its front edge at canvas x 958 = (958-489)*1.1 = 516 world px
+    // ahead of the anchor. The box starts at the armor front edge
+    // (getRight() - 20 = anchor + 244), so reach = 516 - 244 = ~270.
+    // The old 480 overshot the ball by ~200px of empty air.
+    public static final float STRIKE_REACH  = 270f;
     public static final float STRIKE_HEIGHT = 300f;
     /** Power slam impact box, centered on the landing point. */
     public static final float POWER_STRIKE_HALF_W = 300f;
@@ -92,6 +97,15 @@ public class FalseKnight implements AABB {
     // ---- Defensive leap trigger: heavy hits in a short window (spec) ----
     public static final float DAMAGE_WINDOW      = 1.4f;
     public static final int   DAMAGE_WINDOW_HITS = 3;
+
+    // ---- Anti-pogo counter ----
+    // Down-slash bounces arrive ~0.5s apart, so 3 hits inside 2.5s
+    // means the knight is camped on our head, not just passing by.
+    public static final float POGO_WINDOW      = 2.5f;
+    public static final int   POGO_WINDOW_HITS = 3;
+    // Anti-air leap: apex = vy^2/(2g) = 312px (vs 190px normally).
+    // Ceiling-safe: floor 160 + body 380 + 312 = 852 < 888 ceiling.
+    public static final float ANTI_AIR_VY = 1000f;
 
     // ---- Head (maggot) hitbox while the armor is open / dying ----
     // The Stun Opened art bakes the head in at canvas (688, 499): the
@@ -270,6 +284,29 @@ public class FalseKnight implements AABB {
             damageWindowTimer -= delta;
             if (damageWindowTimer <= 0f) recentHits = 0;
         }
+        if (pogoWindowTimer > 0f) {
+            pogoWindowTimer -= delta;
+            if (pogoWindowTimer <= 0f) pogoHits = 0;
+        }
+    }
+
+    // ---- Anti-pogo tracking (mirrors the heavy-fire window) ----
+
+    private int   pogoHits;
+    private float pogoWindowTimer;
+
+    /** Call for every nail hit that came from a down-slash (dirY < 0). */
+    public void registerPogoHit() {
+        if (pogoWindowTimer <= 0f) pogoHits = 0; // window expired: restart
+        pogoHits++;
+        pogoWindowTimer = POGO_WINDOW;
+    }
+
+    public boolean isPogoLocked() { return pogoHits >= POGO_WINDOW_HITS; }
+
+    public void clearPogoWindow() {
+        pogoHits = 0;
+        pogoWindowTimer = 0f;
     }
 
     // ---- Hit flash / stun-hit flinch / death head clock ----

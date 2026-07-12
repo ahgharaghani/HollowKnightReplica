@@ -20,12 +20,18 @@ public class GameData {
     public float   posX;
     public float   posY;
     public String  currentRoom;
+    /** Spawn-point object name inside currentRoom the hero last spawned at
+     *  (null = the map's default "Starting Point"). */
+    public String  lastSpawnName;
     public boolean bossDefeated;
     public int     deathCount;
     public int     enemyKillCount;
 
     // ---- Achievements (list of unlocked IDs) ----
     public List<String> unlockedAchievementIds = new ArrayList<>();
+
+    // ---- Rooms cleared of every enemy at least once (True Hunter) ----
+    public List<String> clearedRooms = new ArrayList<>();
 
     // ---- Equipped charms (list of charm names) ----
     public List<String> equippedCharms = new ArrayList<>();
@@ -48,7 +54,8 @@ public class GameData {
         d.soulAmount        = 0;
         d.posX              = 0;
         d.posY              = 0;
-        d.currentRoom       = "forgotten_crossroads_start";
+        d.currentRoom       = "CityOfTears.tmx"; // the build's actual start map
+        d.lastSpawnName     = null;              // null = "Starting Point"
         d.bossDefeated      = false;
         d.deathCount        = 0;
         d.enemyKillCount    = 0;

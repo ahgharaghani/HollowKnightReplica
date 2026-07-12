@@ -1,5 +1,7 @@
 package com.sut.hollowknight.controller;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
@@ -45,17 +47,11 @@ public class PauseController {
      * and exit to the main menu.
      */
     public void saveAndQuit(GameScreen gameScreen) {
-        GameData data = GameSession.getActive();
-        if (data != null) {
-            Knight knight = gameScreen.getKnight();
-            data.hpMasks    = knight.getHpMasks();
-            data.maxMasks   = knight.getMaxMasks();
-            data.soulAmount = knight.getSoulAmount();
-            data.posX       = knight.getX();
-            data.posY       = knight.getY();
-            data.empty      = false;
-            SaveSlotRegistry.saveGameData(data);
-        }
+        // The full flush lives in GameScreen.persistSession() - one place
+        // that saves vitals, position, current map + spawn point, charms
+        // and boss/room state. The old inline flush here silently dropped
+        // the room, spawn and charms, which is why loads misplaced the hero.
+        gameScreen.persistSession();
         GameSession.end();
         game.setScreen(new MainMenuScreen(game));
         // The click that got us here was dispatched by the GameScreen's own
@@ -66,8 +62,6 @@ public class PauseController {
     }
 
     public String getCheatCodesText() {
-        return "Ctrl+B  Boss Arena Teleport   |   Ctrl+F  Noclip / Spectator\n" +
-               "Ctrl+H  Emergency Heal (arm)  |   Ctrl+S  Refill Soul\n" +
-               "Ctrl+G  God Mode              |   Ctrl+K  Kill All Enemies";
+        return UiText.CHEAT_CODES_BODY.get();
     }
 }

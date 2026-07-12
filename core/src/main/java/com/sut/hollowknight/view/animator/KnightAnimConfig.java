@@ -33,10 +33,10 @@ public final class KnightAnimConfig {
     public static float DASH_FPS              = 25f;
     /** Dash after-image / dust effect. */
     public static float DASH_EFFECT_FPS       = 20f;
-    /** Downward dash (mid-air only). */
-    public static float DASH_DOWN_FPS         = 20f;
-    /** Landing animation after a downward dash hits the ground. */
-    public static float DASH_DOWN_LAND_FPS    = 20f;
+    /** Sharp Shadow dash body (Shadow Dash art). */
+    public static float SHADOW_DASH_FPS       = 25f;
+    /** Sharp Shadow dash trail (Shadow Dash Burst art). */
+    public static float SHADOW_DASH_TRAIL_FPS = 20f;
 
     /** Death sequence — plays once, then the knight stays on the last frame. */
     public static float DEATH_FPS             = 20f;

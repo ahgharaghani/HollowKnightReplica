@@ -1,5 +1,7 @@
 package com.sut.hollowknight.model;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 /**
  * Represents a Hollow Knight save slot.
  *
@@ -41,7 +43,7 @@ public class SaveSlot {
     /** Returns a short summary line shown under the slot title. */
     public String getSummary() {
         if (empty) {
-            return "— Empty Slot —";
+            return UiText.EMPTY_SLOT.get();
         }
         int hours = playTimeMinutes / 60;
         int mins  = playTimeMinutes % 60;

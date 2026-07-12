@@ -10,6 +10,7 @@ import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.npc.Zote;
 import com.sut.hollowknight.model.npc.ZotePrecepts;
+import com.sut.hollowknight.model.enums.UiText;
 
 /**
  * Drives the Zote NPC (spec: NPC Interaction - Zote): the proximity
@@ -47,17 +48,12 @@ public class ZoteController {
     private static final float HIT_KNOCKBACK_VX = 260f;
     private static final float HIT_KNOCKBACK_VY = 130f;
 
-    /** First-meeting dialogue: three consecutive pages (spec). */
-    private static final String[] INTRO = {
-        "You there! Why are you skulking about in the shadows?\n"
-            + "Yes, your eyes do not deceive you. I am Zote the Mighty, "
-            + "a knight of great renown. Tremble before me!",
-        "While you were hiding here in your dingy little village, I "
-            + "ventured into the dark pit below us and slew a great beast. "
-            + "It had sharp mandibles and atrocious manners.",
-        "Yes, yes. All glory to me. But I don't have time for your "
-            + "adulation! I must rest and prepare for my next journey down.",
-    };
+    /** First-meeting dialogue is resolved only when a conversation starts,
+     *  never frozen in a static English array. */
+    private static String[] introLines() {
+        return new String[] { UiText.ZOTE_INTRO_1.get(), UiText.ZOTE_INTRO_2.get(),
+            UiText.ZOTE_INTRO_3.get() };
+    }
 
     private final Zote zote;
     private final Knight knight;
@@ -67,7 +63,7 @@ public class ZoteController {
     private float promptProgress; // 0 = hidden, 1 = fully revealed
 
     // ---- Current conversation (reused holders, no per-frame garbage) ----
-    private String[] lines = INTRO;
+    private String[] lines = introLines();
     private int lineIndex;
 
     // ---- Voice SFX (spec: Zote Voice SFX) ----
@@ -147,7 +143,7 @@ public class ZoteController {
         promptProgress -= PROMPT_SPEED * delta;
         if (promptProgress <= 0f) {
             promptProgress = 0f;
-            lines = met ? currentPrecept() : INTRO;
+            lines = met ? currentPrecept() : introLines();
             zote.setTalking(true);
             setPhase(Phase.BOX_OPENING);
             playRandomGrunt(); // spec: grunt when the dialogue box opens
@@ -157,6 +153,18 @@ public class ZoteController {
     private String[] currentPrecept() {
         preceptLine[0] = ZotePrecepts.get(preceptIndex);
         return preceptLine;
+    }
+
+    /**
+     * Called when returning from Settings to a live GameScreen. Re-resolves
+     * the current Zote page in the new language; an in-progress typewriter
+     * starts that page cleanly rather than mixing two languages.
+     */
+    public void refreshLocalizedText() {
+        if (phase == Phase.INACTIVE || phase == Phase.PROMPT_HIDING
+                || phase == Phase.BOX_OPENING || phase == Phase.BOX_CLOSING) return;
+        lines = met ? currentPrecept() : introLines();
+        beginLine(lineIndex);
     }
 
     public void setVoices(Sound[] voices) {

@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.glutils.ShaderProgram;
 import com.badlogic.gdx.utils.Align;
 import com.sut.hollowknight.controller.ZoteController;
 import com.sut.hollowknight.model.npc.Zote;
+import com.sut.hollowknight.model.enums.UiText;
 import com.sut.hollowknight.view.MenuUi;
 import com.sut.hollowknight.view.assets.ZoteAssets;
 
@@ -127,7 +128,7 @@ public class ZoteDialogueOverlay {
         // LISTEN fades in with the reveal, centred on the prompt.
         float alpha = Math.min(1f, p * 1.2f);
         listenFont.setColor(0.94f, 0.94f, 0.96f, alpha);
-        layout.setText(listenFont, "LISTEN");
+        layout.setText(listenFont, UiText.LISTEN.get());
         listenFont.draw(batch, layout, cx - layout.width / 2f,
                 by + h * 0.64f + layout.height / 2f);
     }

@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.ui;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
@@ -32,6 +34,12 @@ public class PauseOverlay extends Table {
     private final BitmapFont trajanFont;
     private final BitmapFont perpetuaFont;
     private final Texture dimTexture;
+    // Stored so refreshText() can rebuild the actor tree without replacing
+    // the overlay instance that GameScreen already owns.
+    private final String cheatCodesText;
+    private final Runnable onContinue;
+    private final Runnable onSettings;
+    private final Runnable onSaveQuit;
 
     /**
      * @param cheatCodesText spec requires the pause menu to list cheat codes
@@ -45,6 +53,10 @@ public class PauseOverlay extends Table {
                         final Runnable onSaveQuit) {
         setFillParent(true);
         setVisible(false);
+        this.cheatCodesText = cheatCodesText;
+        this.onContinue = onContinue;
+        this.onSettings = onSettings;
+        this.onSaveQuit = onSaveQuit;
 
         // Dim the frozen world behind the menu ("like most games do").
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
@@ -61,27 +73,35 @@ public class PauseOverlay extends Table {
         MenuUi.registerHeadingStyle(skin, trajanFont);
         MenuUi.registerBodyStyle(skin, perpetuaFont);
 
-        Label title = new Label("PAUSED", new Label.LabelStyle(titleFont, Color.WHITE));
+        buildContent();
+    }
+
+    /**
+     * Rebuild only the text-bearing Scene2D children after a language switch.
+     * The texture, fonts and callbacks stay owned by this overlay, so a paused
+     * GameScreen keeps its exact state and does not leak resources.
+     */
+    public void refreshText() {
+        clearChildren();
+        buildContent();
+    }
+
+    private void buildContent() {
+        Label title = new Label(UiText.PAUSED.get(), new Label.LabelStyle(titleFont, Color.WHITE));
         add(title).padBottom(40).row();
 
-        TextButton btnContinue = new AnimatedPointerButton("Continue", skin, "headingBtn");
-        TextButton btnSettings = new AnimatedPointerButton("Settings", skin, "headingBtn");
-        TextButton btnSaveQuit = new AnimatedPointerButton("Save and Quit", skin, "headingBtn");
+        TextButton btnContinue = new AnimatedPointerButton(UiText.CONTINUE.get(), skin, "headingBtn");
+        TextButton btnSettings = new AnimatedPointerButton(UiText.SETTINGS.get(), skin, "headingBtn");
+        TextButton btnSaveQuit = new AnimatedPointerButton(UiText.SAVE_AND_QUIT.get(), skin, "headingBtn");
 
         btnContinue.addListener(new ClickListener() {
-            @Override public void clicked(InputEvent event, float x, float y) {
-                onContinue.run();
-            }
+            @Override public void clicked(InputEvent event, float x, float y) { onContinue.run(); }
         });
         btnSettings.addListener(new ClickListener() {
-            @Override public void clicked(InputEvent event, float x, float y) {
-                onSettings.run();
-            }
+            @Override public void clicked(InputEvent event, float x, float y) { onSettings.run(); }
         });
         btnSaveQuit.addListener(new ClickListener() {
-            @Override public void clicked(InputEvent event, float x, float y) {
-                onSaveQuit.run();
-            }
+            @Override public void clicked(InputEvent event, float x, float y) { onSaveQuit.run(); }
         });
 
         defaults().pad(8);
@@ -89,14 +109,15 @@ public class PauseOverlay extends Table {
         add(btnSettings).width(420).height(60).row();
         add(btnSaveQuit).width(420).height(60).row();
 
-        // Cheat code reference (spec: 10 pts).
-        Label cheatsTitle = new Label("Cheat Codes",
+        Label cheatsTitle = new Label(UiText.CHEAT_CODES.get(),
             new Label.LabelStyle(perpetuaFont, MenuUi.ACCENT));
-        Label cheats = new Label(cheatCodesText,
+        // Resolve at rebuild time, not once in GameScreen's constructor.
+        Label cheats = new Label(UiText.CHEAT_CODES_BODY.get(),
             new Label.LabelStyle(perpetuaFont, MenuUi.TEXT_DIM));
         cheats.setAlignment(Align.center);
         add(cheatsTitle).padTop(36).row();
         add(cheats).row();
+
     }
 
     /** Must be called from the owning screen's dispose(). */

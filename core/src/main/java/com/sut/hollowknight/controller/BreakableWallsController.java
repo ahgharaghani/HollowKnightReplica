@@ -10,6 +10,7 @@ import com.sut.hollowknight.model.map.BreakableWall;
 import com.sut.hollowknight.model.map.DarknessZone;
 import com.sut.hollowknight.model.map.RoomStateRegistry;
 import com.sut.hollowknight.view.effects.ParticleHook;
+import com.sut.hollowknight.view.assets.Sfx;
 
 import java.util.List;
 
@@ -115,10 +116,13 @@ public class BreakableWallsController {
         wall.setLastNailHitId(knight.getAttackId());
         boolean brokeNow = wall.hit();
         particleHook.onWallHit(wall.getCenterX(), wall.getCenterY());
+        Sfx.playRandom(Sfx.wallHit); // stone clink (spec bonus: Stone Breaking SFX)
         if (brokeNow) breakWall(wall);
     }
 
     private void breakWall(BreakableWall wall) {
+        Sfx.play(Sfx.wallBreak); // the crumble itself
+
         // 1. Open the passage: release the solid cells claimed at load.
         collider.setSolidRegion(wall.getX(), wall.getY(),
             wall.getWidth(), wall.getHeight(), false);

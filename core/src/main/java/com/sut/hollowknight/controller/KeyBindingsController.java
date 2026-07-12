@@ -1,5 +1,7 @@
 package com.sut.hollowknight.controller;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Input;
 import com.sut.hollowknight.model.GameSettings;
@@ -12,23 +14,24 @@ import java.util.List;
 public class KeyBindingsController {
 
     public enum BindingAction {
-        UP("Up"),
-        DOWN("Down"),
-        LEFT("Left"),
-        RIGHT("Right"),
-        JUMP("Jump"),
-        ATTACK("Attack"),
-        DASH("Dash"),
-        FOCUS_CAST("Focus / Cast"),
-        INVENTORY("Inventory"),
-        QUICK_MAP("Quick Map"),
-        SUPER_DASH("Super Dash"),
-        DREAM_NAIL("Dream Nail"),
-        QUICK_CAST("Quick Cast");
+        UP(UiText.ACTION_UP),
+        DOWN(UiText.ACTION_DOWN),
+        LEFT(UiText.ACTION_LEFT),
+        RIGHT(UiText.ACTION_RIGHT),
+        JUMP(UiText.ACTION_JUMP),
+        ATTACK(UiText.ACTION_ATTACK),
+        DASH(UiText.ACTION_DASH),
+        FOCUS_CAST(UiText.ACTION_FOCUS_CAST),
+        INVENTORY(UiText.ACTION_INVENTORY),
+        QUICK_MAP(UiText.ACTION_QUICK_MAP),
+        SUPER_DASH(UiText.ACTION_SUPER_DASH),
+        DREAM_NAIL(UiText.ACTION_DREAM_NAIL),
+        QUICK_CAST(UiText.ACTION_QUICK_CAST);
 
-        public final String label;
+        /** Localised label - call label.get() at build time. */
+        public final UiText label;
 
-        BindingAction(String label) {
+        BindingAction(UiText label) {
             this.label = label;
         }
     }

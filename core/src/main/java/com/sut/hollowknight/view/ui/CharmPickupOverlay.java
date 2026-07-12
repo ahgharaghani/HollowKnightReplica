@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.ui;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
@@ -96,7 +98,7 @@ public class CharmPickupOverlay {
             // COLLECT fades in with the reveal, centred on the prompt.
             float alpha = Math.min(1f, p * 1.2f);
             collectFont.setColor(0.94f, 0.94f, 0.96f, alpha);
-            layout.setText(collectFont, "COLLECT");
+            layout.setText(collectFont, UiText.COLLECT.get());
             collectFont.draw(batch, layout, cx - layout.width / 2f,
                     by + h * 0.64f + layout.height / 2f);
         }

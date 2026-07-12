@@ -9,6 +9,7 @@ import com.sut.hollowknight.model.collision.CollisionRect;
 import com.sut.hollowknight.model.collision.TileMapCollider;
 import com.sut.hollowknight.model.enemy.FalseKnight;
 import com.sut.hollowknight.model.enemy.FalseKnightShockwave;
+import com.sut.hollowknight.view.assets.Sfx;
 
 /**
  * Drives the False Knight boss (spec: Boss Fight).
@@ -215,6 +216,7 @@ public class FalseKnightController implements EnemyController {
         switch (move) {
             case MACE_SLAM:
                 boss.setState(FalseKnight.State.ATTACK_ANTIC);
+                Sfx.playRandom(Sfx.fkVoice); // wind-up roar
                 break;
             case CHARGE:
                 boss.setState(FalseKnight.State.RAGE);
@@ -245,6 +247,8 @@ public class FalseKnightController implements EnemyController {
             boss.setState(FalseKnight.State.ATTACK);
             boss.setStrike(true, false);
             gameController.shakeCamera(SHAKE_MACE_AMP, SHAKE_MACE_DUR);
+            Sfx.play(Sfx.fkSwing);
+            Sfx.play(Sfx.fkStrikeGround); // mace meets the arena floor
         }
     }
 
@@ -271,6 +275,8 @@ public class FalseKnightController implements EnemyController {
             // The target is the knight's horizontal position at launch (spec).
             chargeTargetX = knight.getX();
             boss.setState(FalseKnight.State.RUN);
+            Sfx.play(Sfx.fkRoll);
+            Sfx.playRandom(Sfx.fkVoice);
         }
     }
 
@@ -305,17 +311,29 @@ public class FalseKnightController implements EnemyController {
         }
     }
 
+    /** One-shot: the next LEAP_ATTACK takes off with ANTI_AIR_VY. */
+    private boolean antiAirLeap;
+
     private void launchJump() {
         float dx = knight.getX() - boss.getX();
+        // Consume the anti-air flag no matter which move launches, so a
+        // stun/death between trigger and takeoff can't leak the boost
+        // into an unrelated later leap.
+        boolean antiAir = antiAirLeap;
+        antiAirLeap = false;
         switch (jumpMove) {
             case LEAP_ATTACK: {
                 // Solve vx so the arc lands on the knight: vx = dx / airtime.
-                float airtime = 2f * FalseKnight.LEAP_VY / FalseKnight.GRAVITY;
+                // The anti-air variant swaps in a higher takeoff velocity;
+                // the same airtime formula keeps the arc aimed at the knight.
+                float vy = antiAir ? FalseKnight.ANTI_AIR_VY : FalseKnight.LEAP_VY;
+                float airtime = 2f * vy / FalseKnight.GRAVITY;
                 float vx = MathUtils.clamp(dx / airtime,
                     -FalseKnight.LEAP_VX_MAX, FalseKnight.LEAP_VX_MAX);
                 boss.setVelocityX(vx * boss.getMoveMult());
-                boss.setVelocityY(FalseKnight.LEAP_VY);
+                boss.setVelocityY(vy);
                 boss.setState(FalseKnight.State.JUMP);
+                Sfx.play(Sfx.fkJump);
                 break;
             }
             case LEAP_BACK: {
@@ -324,6 +342,7 @@ public class FalseKnightController implements EnemyController {
                 boss.setVelocityX(away * FalseKnight.LEAP_BACK_VX);
                 boss.setVelocityY(FalseKnight.LEAP_BACK_VY);
                 boss.setState(FalseKnight.State.JUMP);
+                Sfx.play(Sfx.fkJump);
                 break;
             }
             default: { // POWER_SLAM
@@ -333,6 +352,8 @@ public class FalseKnightController implements EnemyController {
                 boss.setVelocityX(vx);
                 boss.setVelocityY(FalseKnight.POWER_JUMP_VY);
                 boss.setState(FalseKnight.State.POWER_JUMP);
+                Sfx.play(Sfx.fkJump);
+                Sfx.playRandom(Sfx.fkVoice); // the big one gets a roar
                 break;
             }
         }
@@ -357,6 +378,9 @@ public class FalseKnightController implements EnemyController {
         }
     }
 
+    /** Audio-only: the very first landing uses the heavier one-shot. */
+    private boolean landedOnce;
+
     private void landFromJump() {
         boss.setVelocityX(0f);
         boss.setVelocityY(0f);
@@ -367,9 +391,13 @@ public class FalseKnightController implements EnemyController {
             gameController.shakeCamera(SHAKE_POWER_AMP, SHAKE_POWER_DUR);
             float waveDir = knight.getX() >= boss.getX() ? 1f : -1f;
             shockwave.spawn(boss.getX(), boss.getY(), waveDir);
+            Sfx.play(Sfx.fkStrikeGround);
+            Sfx.play(Sfx.fkLand);
         } else {
             boss.setState(FalseKnight.State.LAND);
             gameController.shakeCamera(SHAKE_LAND_AMP, SHAKE_LAND_DUR);
+            Sfx.play(landedOnce ? Sfx.fkLand : Sfx.fkLandFirst);
+            landedOnce = true;
         }
     }
 
@@ -428,6 +456,7 @@ public class FalseKnightController implements EnemyController {
         shockwave.deactivate();
         // "Immediately stops and falls" (spec) - even out of mid-air arcs.
         boss.setState(FalseKnight.State.STUN_FALL);
+        Sfx.play(Sfx.fkArmourFinal); // the armor bursts open
     }
 
     private void updateStunFall(float delta) {
@@ -440,6 +469,7 @@ public class FalseKnightController implements EnemyController {
             boss.setVelocityY(0f);
             gameController.shakeCamera(SHAKE_STUN_AMP, SHAKE_STUN_DUR);
             boss.setState(FalseKnight.State.STUN_GROUND);
+            Sfx.play(Sfx.fkLand);
         }
     }
 
@@ -480,6 +510,7 @@ public class FalseKnightController implements EnemyController {
         boss.setVelocityY(Math.max(boss.getVelocityY(), 0f));
         shockwave.deactivate();
         boss.setState(FalseKnight.State.DEATH_FALL);
+        Sfx.play(Sfx.bossFinalHit);
         // Falsehood/Completion achievements & the gate watch this flag.
         if (GameSession.isActive()) {
             GameSession.getActive().bossDefeated = true;
@@ -498,6 +529,7 @@ public class FalseKnightController implements EnemyController {
                 boss.setVelocityY(0f);
                 gameController.shakeCamera(SHAKE_DEATH_AMP, SHAKE_DEATH_DUR);
                 boss.setState(FalseKnight.State.DEATH_LAND);
+                Sfx.play(Sfx.bossExplode);
             }
         } else if (boss.getState() == FalseKnight.State.DEATH_LAND) {
             if (boss.getStateTime() >= FalseKnight.DEATH_LAND_DURATION) {
@@ -566,9 +598,15 @@ public class FalseKnightController implements EnemyController {
             // unstunned - the stun rewards a safe window, not bonus DPS.
             boss.takeDamage(damageAmount * FalseKnight.STUN_DAMAGE_MULT);
             boss.startStunHit();
+            Sfx.play(Sfx.fkHeadDamage);
         } else {
             boss.takeDamage(damageAmount);
             boss.registerHit(); // feeds the defensive-leap damage window
+            Sfx.play(Sfx.fkArmour); // nail clank - armor, not flesh
+            // Down-slash from above = pogo. Track it separately so the
+            // boss can answer with an anti-air leap instead of the
+            // (useless against an airborne knight) defensive back-hop.
+            if (dirY < 0f) boss.registerPogoHit();
         }
         boss.startHitFlash();
         // Massive armor: no recoil - the boss never gets stun-locked.
@@ -579,6 +617,20 @@ public class FalseKnightController implements EnemyController {
         }
         if (boss.shouldStun()) {
             beginStun();
+            return;
+        }
+        // Pogo-locked: the knight is bouncing on our head. Counter with
+        // a HIGHER leap that carries the armor up into the knight's
+        // bounce apex (contact damage does the rest). Checked before
+        // the defensive leap - pogo hits feed both windows, and a
+        // back-hop would never reach an attacker directly above.
+        if (!boss.isStunnedState() && boss.isPogoLocked() && isInterruptible()) {
+            boss.clearPogoWindow();
+            boss.clearDamageWindow(); // don't chain straight into a back-leap
+            antiAirLeap = true;
+            jumpMove = FalseKnight.Move.LEAP_ATTACK;
+            lastMove = FalseKnight.Move.LEAP_ATTACK;
+            boss.setState(FalseKnight.State.JUMP_ANTIC);
             return;
         }
         // Heavy hits in a short window force the Defensive Leap (spec).

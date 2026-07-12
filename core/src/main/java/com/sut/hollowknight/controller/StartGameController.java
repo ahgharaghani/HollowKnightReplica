@@ -62,8 +62,15 @@ public class StartGameController {
         Gdx.app.log("StartGameController",
             "Loaded slot " + slotIndex + ": " + data.knightName +
             " | " + data.lastArea + " | HP=" + data.hpMasks);
-        // TODO: pass GameData to GameScreen so it can initialise the world
-        game.setScreen(new GameScreen(game));
+        // Resume where the run left off (spec: save the last environment):
+        // the saved map plus the spawn point the hero last spawned at. A
+        // null/legacy room falls back to the build's starting map, and a
+        // null spawn name resolves to that map's "Starting Point" object.
+        String room = data.currentRoom;
+        if (room == null || !room.endsWith(".tmx")) room = "CityOfTears.tmx";
+        int masks = data.hpMasks > 0 ? data.hpMasks : -1; // -1 = fresh defaults
+        game.setScreen(new GameScreen(game, room, data.lastSpawnName,
+            masks, data.soulAmount));
     }
 
     public void backToMainMenu() {

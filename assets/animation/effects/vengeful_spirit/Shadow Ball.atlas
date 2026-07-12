@@ -1,0 +1,21 @@
+Shadow Ball.png
+size:1024,512
+repeat:none
+Ball Lv2
+index:0
+bounds:2,320,504,157
+Ball Lv2
+index:5
+bounds:2,161,504,157
+Ball Lv2
+index:2
+bounds:508,320,504,157
+Ball Lv2
+index:4
+bounds:2,2,504,157
+Ball Lv2
+index:1
+bounds:508,161,504,157
+Ball Lv2
+index:3
+bounds:508,2,504,157

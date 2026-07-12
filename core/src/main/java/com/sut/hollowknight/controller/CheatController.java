@@ -3,8 +3,11 @@ package com.sut.hollowknight.controller;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.sut.hollowknight.controller.enemy.EnemyController;
+import com.sut.hollowknight.model.AchievementsRegistry;
+import com.sut.hollowknight.model.GameSession;
 import com.sut.hollowknight.model.Knight;
 import com.sut.hollowknight.model.collision.AABB;
+import com.sut.hollowknight.model.db.GameDatabase;
 
 import java.util.List;
 
@@ -18,6 +21,7 @@ import java.util.List;
  *   Ctrl+S  refill the Soul vessel
  *   Ctrl+G  toggle God Mode
  *   Ctrl+K  insta-kill every living enemy (bonus cheat)
+ *   Ctrl+X  clear all achievements (debug helper, spec: save functionality)
  *
  * Polls raw keys via Gdx.input (deliberately NOT PlayerInput: cheats must not
  * be rebindable). No allocations per frame.
@@ -68,6 +72,25 @@ public class CheatController {
         if (Gdx.input.isKeyJustPressed(Input.Keys.K)) {
             instaKillAll();
         }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.X)) {
+            clearAchievements();
+        }
+    }
+
+    /**
+     * Debug helper: relocks the in-memory registry, empties the active
+     * session's unlock list and wipes the persisted unlocks in every save
+     * slot, so achievement flows can be re-tested without touching the DB
+     * by hand. (X, not A: A is the default move-left bind, and Ctrl+A while
+     * walking would wipe unlocks by accident.)
+     */
+    private void clearAchievements() {
+        AchievementsRegistry.getInstance().resetAll();
+        if (GameSession.isActive()) {
+            GameSession.getActive().unlockedAchievementIds.clear();
+        }
+        GameDatabase.clearAllAchievements();
+        Gdx.app.log(TAG, "Achievements cleared (memory + all save slots)");
     }
 
     private void teleportToBossArena() {

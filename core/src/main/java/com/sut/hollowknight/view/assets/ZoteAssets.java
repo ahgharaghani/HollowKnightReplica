@@ -25,7 +25,8 @@ public final class ZoteAssets {
 
     /** Zote's grunts (spec: Zote Voice SFX) - one plays at random. */
     public static final String[] VOICE_SFX = {
-            "sfx/Zote_01.wav", "sfx/Zote_02.wav", "sfx/Zote_031.wav",
+            "sfx/Zote_01.wav", "sfx/Zote_02.wav",
+        "sfx/Zote_03.wav", "sfx/Zote_031.wav",
             "sfx/Zote_032.wav", "sfx/Zote_04.wav", "sfx/Zote_05.wav",
     };
 

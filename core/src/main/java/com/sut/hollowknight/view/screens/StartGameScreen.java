@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.screens;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -44,7 +46,7 @@ public class StartGameScreen extends AbstractMenuScreen {
         uiStage.addActor(root);
 
         Label.LabelStyle titleStyle = new Label.LabelStyle(trajanFont, Color.WHITE);
-        Label title = new Label("Start Game", titleStyle);
+        Label title = new Label(UiText.START_GAME.get(), titleStyle);
         root.add(title).padBottom(50).row();
 
         // --- Save slots ---
@@ -55,8 +57,8 @@ public class StartGameScreen extends AbstractMenuScreen {
         root.add(slotTable).padBottom(40).row();
 
         // --- New Game + Back ---
-        TextButton btnNew = new TextButton("New Game", skin, "headingBtn");
-        TextButton btnBack = new TextButton("Back", skin, "headingBtn");
+        TextButton btnNew = new TextButton(UiText.NEW_GAME.get(), skin, "headingBtn");
+        TextButton btnBack = new TextButton(UiText.BACK.get(), skin, "headingBtn");
 
         btnNew.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
@@ -84,7 +86,7 @@ public class StartGameScreen extends AbstractMenuScreen {
         Label.LabelStyle slotSummaryStyle =
             new Label.LabelStyle(perpetuaFont, slot.isEmpty() ? MenuUi.TEXT_DIM : MenuUi.ACCENT);
 
-        Label titleLabel = new Label(String.format("Slot %d", slot.getIndex()), slotTitleStyle);
+        Label titleLabel = new Label(UiText.SLOT_TITLE.format(slot.getIndex()), slotTitleStyle);
         Label summaryLabel = new Label(slot.getSummary(), slotSummaryStyle);
         summaryLabel.setFontScale(0.9f);
 

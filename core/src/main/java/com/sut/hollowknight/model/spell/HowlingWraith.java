@@ -40,10 +40,14 @@ public class HowlingWraith {
     /** Reusable rect so the per-frame combat loop never allocates. */
     private final CollisionRect damageBox = new CollisionRect(0, 0, DMG_WIDTH, DMG_HEIGHT);
 
-    public HowlingWraith(float anchorX, float anchorY, boolean facingRight) {
+    /** Cast with Void Heart equipped - the view swaps to the shadow art set. */
+    private final boolean shadow;
+
+    public HowlingWraith(float anchorX, float anchorY, boolean facingRight, boolean shadow) {
         this.anchorX = anchorX;
         this.anchorY = anchorY;
         this.facingRight = facingRight;
+        this.shadow = shadow;
     }
 
     public void addAge(float delta) {
@@ -76,5 +80,6 @@ public class HowlingWraith {
     public float getAnchorX()      { return anchorX; }
     public float getAnchorY()      { return anchorY; }
     public boolean isFacingRight() { return facingRight; }
+    public boolean isShadow()      { return shadow; }
     public float getAge()          { return age; }
 }

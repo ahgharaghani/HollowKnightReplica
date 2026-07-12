@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.utils.Array;
 import com.sut.hollowknight.model.Knight;
+import com.sut.hollowknight.model.charms.Charm;
 import com.sut.hollowknight.view.assets.Assets;
 
 import java.util.Comparator;
@@ -44,8 +45,8 @@ public class KnightAnimator {
 
     // ---- Dash family ----
     private Animation<TextureRegion> dashAnim;
-    private Animation<TextureRegion> dashDownAnim;
-    private Animation<TextureRegion> dashDownLandAnim;
+    /** Sharp Shadow body variant - same 349x186 canvas as the regular Dash. */
+    private Animation<TextureRegion> shadowDashAnim;
 
     // ---- Wall family ----
     private Animation<TextureRegion> wallSlideAnim;
@@ -57,6 +58,8 @@ public class KnightAnimator {
     private Animation<TextureRegion> downSlashEffectAnim;
     private Animation<TextureRegion> upSlashEffectAnim;
     private Animation<TextureRegion> dashEffectAnim;
+    /** Sharp Shadow trail variant (Shadow Dash Burst art). */
+    private Animation<TextureRegion> shadowDashTrailAnim;
 
     public KnightAnimator() {
         loadAnimations();
@@ -204,12 +207,17 @@ public class KnightAnimator {
 
         dashAnim         = loadAtlas("animation/knight/Dash.atlas",           "Dash",
             KnightAnimConfig.DASH_FPS,         Animation.PlayMode.NORMAL);
-        dashDownAnim     = loadAtlas("animation/knight/Dash Down.atlas",      "Dash Down",
-            KnightAnimConfig.DASH_DOWN_FPS,    Animation.PlayMode.NORMAL);
-        dashDownLandAnim = loadAtlas("animation/knight/Dash Down Land.atlas", "Dash Down Land",
-            KnightAnimConfig.DASH_DOWN_LAND_FPS, Animation.PlayMode.NORMAL);
         dashEffectAnim   = loadAtlas("animation/knight/Dash Effect.atlas",    "Dash Effect",
             KnightAnimConfig.DASH_EFFECT_FPS,  Animation.PlayMode.NORMAL);
+
+        // Sharp Shadow variants - swapped in by getBodyAnimation /
+        // getCurrentEffectFrame while the charm is equipped. Their atlases
+        // ship with scrambled region order, which loadAtlas normalizes by
+        // sorting on the region index.
+        shadowDashAnim      = loadAtlas("animation/knight/Shadow Dash.atlas", "Shadow Dash",
+            KnightAnimConfig.SHADOW_DASH_FPS,       Animation.PlayMode.NORMAL);
+        shadowDashTrailAnim = loadAtlas("animation/knight/Shadow Dash Burst.atlas", "Shadow Dash Burst",
+            KnightAnimConfig.SHADOW_DASH_TRAIL_FPS, Animation.PlayMode.NORMAL);
 
         // wall family
 
@@ -262,9 +270,12 @@ public class KnightAnimator {
         Array<TextureAtlas.AtlasRegion> frames = atlas.findRegions(regionPrefix);
         if (frames.size == 0) {
             frames = atlas.getRegions();
-            frames.sort(Comparator.comparingInt(r -> r.index));
         }
         if (frames.size == 0) return null;
+        // Some atlases (e.g. the Shadow Dash pair) store their regions in
+        // scrambled file order with index tags - always normalize to index
+        // order. This is a stable no-op for atlases already in order.
+        frames.sort(Comparator.comparingInt(r -> r.index));
 
         return new Animation<>(KnightAnimConfig.frameDuration(fps), frames, mode);
     }
@@ -422,9 +433,13 @@ public class KnightAnimator {
             case WALL_SLASH:        return wallSlashAnim != null ? wallSlashAnim : slashAnim;
 
             // Dash family
-            case DASH:              return dashAnim != null ? dashAnim : idleAnim;
-            case DASH_DOWN:         return dashDownAnim != null ? dashDownAnim : idleAnim;
-            case DASH_DOWN_LAND:    return dashDownLandAnim != null ? dashDownLandAnim : landAnim;
+            case DASH: {
+                // Sharp Shadow: the dash body swaps to the void (shadow) art.
+                if (knight.hasCharm(Charm.SHARP_SHADOW) && shadowDashAnim != null) {
+                    return shadowDashAnim;
+                }
+                return dashAnim != null ? dashAnim : idleAnim;
+            }
 
             // Wall family
             case WALL_SLIDE:        return wallSlideAnim != null ? wallSlideAnim : fallAnim;
@@ -460,7 +475,12 @@ public class KnightAnimator {
             case SLASH_ALT:    return frameOf(slashAltEffectAnim, knight);
             case DOWN_SLASH:   return frameOf(downSlashEffectAnim,knight);
             case UP_SLASH:     return frameOf(upSlashEffectAnim,  knight);
-            case DASH:         return frameOf(dashEffectAnim,     knight);
+            case DASH:
+                // Sharp Shadow: the trail swaps to the Shadow Dash Burst art.
+                if (knight.hasCharm(Charm.SHARP_SHADOW) && shadowDashTrailAnim != null) {
+                    return frameOf(shadowDashTrailAnim, knight);
+                }
+                return frameOf(dashEffectAnim, knight);
             default:           return null;
         }
     }
@@ -491,8 +511,8 @@ public class KnightAnimator {
     public Animation<TextureRegion> getUpSlashAnim()         { return upSlashAnim; }
     public Animation<TextureRegion> getWallSlashAnim()       { return wallSlashAnim; }
     public Animation<TextureRegion> getDashAnim()            { return dashAnim; }
-    public Animation<TextureRegion> getDashDownAnim()        { return dashDownAnim; }
-    public Animation<TextureRegion> getDashDownLandAnim()    { return dashDownLandAnim; }
+    public Animation<TextureRegion> getShadowDashAnim()      { return shadowDashAnim; }
+    public Animation<TextureRegion> getShadowDashTrailAnim() { return shadowDashTrailAnim; }
     public Animation<TextureRegion> getWallSlideAnim()       { return wallSlideAnim; }
     public Animation<TextureRegion> getWallJumpAnim()        { return wallJumpAnim; }
 }

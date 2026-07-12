@@ -28,6 +28,8 @@ import com.sut.hollowknight.controller.ZoteController;
 import com.sut.hollowknight.controller.CombatSystem;
 import com.sut.hollowknight.controller.GameController;
 import com.sut.hollowknight.controller.PauseController;
+import com.sut.hollowknight.controller.SfxDirector;
+import com.sut.hollowknight.view.assets.Sfx;
 import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
 import com.sut.hollowknight.controller.enemy.HuskHornheadController;
@@ -36,7 +38,9 @@ import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
 import com.sut.hollowknight.model.Knight;
+import com.sut.hollowknight.model.GameData;
 import com.sut.hollowknight.model.GameSession;
+import com.sut.hollowknight.model.SaveSlotRegistry;
 import com.sut.hollowknight.model.AchievementsRegistry;
 import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.charms.Charm;
@@ -50,6 +54,9 @@ import com.sut.hollowknight.model.map.RoomTransition;
 import com.sut.hollowknight.controller.BreakableWallsController;
 import com.sut.hollowknight.controller.CharmPickupController;
 import com.sut.hollowknight.view.effects.ParticleHook;
+import com.sut.hollowknight.view.effects.CrystalShardsEffect;
+import com.sut.hollowknight.view.effects.DirtParticleEffect;
+import com.sut.hollowknight.view.effects.RainParticleEffect;
 import com.sut.hollowknight.view.ui.CharmPickupOverlay;
 import com.sut.hollowknight.model.enemy.CrystalGuardian;
 import com.sut.hollowknight.model.enemy.HuskHornhead;
@@ -100,6 +107,22 @@ public class GameScreen extends AbstractScreen {
     private KnightAnimator knightAnimator;
     private RainEffect rainEffect;
     private GlassRainEffect glassRainEffect;
+
+    // ---- Run stats + victory flow (spec: End Screen) ----
+    /** Every map in the build - True Hunter requires clearing ALL of them. */
+    private static final List<String> ALL_ROOMS = java.util.Arrays.asList(
+        "CityOfTears.tmx", "CrystalPeaks.tmx", "secretRoom.tmx", "BossFightArena.tmx");
+    /** Alive-state snapshot per enemy controller - detects kill edges. */
+    private boolean[] enemyWasAlive;
+    /** bossDefeated as loaded - victory only triggers on the rising edge. */
+    private boolean bossDefeatedAtStart;
+    /** Cheap guard so the all-rooms scan stops once True Hunter fired. */
+    private boolean trueHunterDone;
+    /** Grace period after the boss falls so its death animation plays out. */
+    private static final float VICTORY_DELAY         = 3.5f;
+    private static final float VICTORY_FADE_DURATION = 1.2f;
+    private int   victoryPhase;   // 0 off, 1 grace, 2 fade, 3 switched
+    private float victoryTimer;
 
     private TiledMap tiledMap;
     private OrthogonalTiledMapRenderer mapRenderer;
@@ -201,6 +224,12 @@ public class GameScreen extends AbstractScreen {
     private TiledMapTileLayer breakableWallLayer;
     /** Future particle emitter seam - NO_OP until one is plugged in. */
     private ParticleHook particleHook = ParticleHook.NO_OP;
+    /** Dirt specks from breakable walls - the emitter behind the seam. */
+    private DirtParticleEffect dirtParticles;
+    /** World-pinned ambient shard drift - Crystal Peaks only, null elsewhere. */
+    private CrystalShardsEffect crystalShards;
+    /** Near-layer particle rain (Rain.p) - City of Tears only, null elsewhere. */
+    private RainParticleEffect cityRain;
     /** Spec: the secret room draws over pure black, no shader backdrop. */
     private boolean blackBackground;
     /** 0 = inactive, 1 = fading out (exit), 2 = fading in (arrival),
@@ -303,9 +332,42 @@ public class GameScreen extends AbstractScreen {
         }
         combat = new CombatSystem(knight, enemyControllers);
 
+        // Kill counting is edge-based (alive -> dead), so already-dead
+        // respawn-suppressed enemies never re-count after a room reload.
+        enemyWasAlive = new boolean[enemyControllers.size()];
+        for (int i = 0; i < enemyControllers.size(); i++) {
+            enemyWasAlive[i] = enemyControllers.get(i).isAlive();
+        }
+        bossDefeatedAtStart = GameSession.isActive()
+            && GameSession.getActive().bossDefeated;
+
         float[] bossArena = findBossArena();
         cheatController = new CheatController(knight, enemyControllers,
             bossArena[0], bossArena[1]);
+
+        // Sound bank + hero SFX edge-watcher (spec: Audio SFX). init() is
+        // idempotent, so re-entering the screen after a room switch is free.
+        Sfx.init();
+        sfxDirector = new SfxDirector(knight);
+
+        // Dirt debris for breakable walls, plugged into the ParticleHook
+        // seam (the walls controller already fires onWallHit/onWallBreak).
+        dirtParticles = new DirtParticleEffect();
+        setParticleHook(dirtParticles);
+
+        // Ambient crystal shards, world-pinned to the ROOM bounds (the map
+        // is already loaded here, so mapWidthPx/mapHeightPx are valid).
+        // Only the mines get the drift; other rooms keep the field null.
+        if ("CrystalPeaks.tmx".equals(mapPath)) {
+            crystalShards = new CrystalShardsEffect(mapWidthPx, mapHeightPx);
+        }
+
+        // Editor-authored near-layer rain drops for the city. Camera-pinned;
+        // spawn box is fitted to the live view in update() - see the class
+        // javadoc for why the .p's ribbon spawn box is overridden.
+        if ("CityOfTears.tmx".equals(mapPath)) {
+            cityRain = new RainParticleEffect();
+        }
 
         spiritRenderer = new VengefulSpiritRenderer(new VengefulSpiritAssets(Assets.manager));
         wraithRenderer = new HowlingWraithRenderer(new HowlingWraithAssets(Assets.manager));
@@ -324,6 +386,12 @@ public class GameScreen extends AbstractScreen {
         uiStage.addActor(pauseOverlay);
 
         // ---- Achievements (spec: Achievements) ----
+        // The registry is a JVM-wide singleton, and the Achievements screen
+        // seeds it with the union of EVERY slot's unlocks. Without a reset,
+        // unlock() sees those foreign unlocks and silently no-ops for this
+        // run - the root cause of Charmed (Void Heart) and True Hunter
+        // never firing. Relock everything, then sync only this session.
+        AchievementsRegistry.getInstance().resetAll();
         if (GameSession.isActive()) {
             AchievementsRegistry.getInstance()
                 .syncFrom(GameSession.getActive().unlockedAchievementIds);
@@ -559,6 +627,13 @@ public class GameScreen extends AbstractScreen {
     private void initFalseKnight(TileMapCollider collider, Knight knight) {
         float[] p = findNamedPoint("FalseKnightSpawn");
         if (p == null) return; // not a boss map
+        // Save persistence (spec): once felled, the False Knight STAYS dead.
+        // With no boss controller the gate logic below never seals the arena.
+        if (GameSession.isActive() && GameSession.getActive().bossDefeated) {
+            Gdx.app.log("GameScreen",
+                "False Knight already defeated - not respawning");
+            return;
+        }
         falseKnightRenderer =
             new FalseKnightRenderer(new FalseKnightAssets(Assets.manager));
         FalseKnight boss = new FalseKnight(p[0], p[1]);
@@ -707,24 +782,131 @@ public class GameScreen extends AbstractScreen {
      * frame is a cheap no-op once earned. No allocations here.
      */
     private void checkAchievements() {
+        if (!GameSession.isActive()) return;
+        GameData data = GameSession.getActive();
         AchievementsRegistry reg = AchievementsRegistry.getInstance();
 
         // Falsehood + Completion (+ Speedrun under 10 min): the False
         // Knight is this build's final boss, so beating him finishes
         // the game. Boss logic only has to set bossDefeated = true.
-        if (GameSession.isActive() && GameSession.getActive().bossDefeated) {
+        if (data.bossDefeated) {
             reg.onFalseKnightDefeated();
-            reg.onGameFinished(GameSession.getActive().playTimeSeconds);
+            reg.onGameFinished(data.playTimeSeconds);
         }
 
-        // True Hunter: every enemy in the level dead at once.
+        // True Hunter (fixed): "kill all the enemies" now means all of them
+        // in the whole game, not just the current room. A room is marked
+        // cleared (persisted per slot) once nothing in it is alive - rooms
+        // with no enemies clear on entry - and the achievement fires only
+        // when every map in the build has been cleared. Previously it
+        // unlocked after clearing any single room's handful of enemies.
         boolean anyAlive = false;
         for (int i = 0; i < enemyControllers.size(); i++) {
             if (enemyControllers.get(i).isAlive()) { anyAlive = true; break; }
         }
-        if (!anyAlive && !enemyControllers.isEmpty()) {
-            reg.onAllEnemiesKilled();
+        if (!anyAlive && !data.clearedRooms.contains(mapPath)) {
+            data.clearedRooms.add(mapPath);
         }
+        if (!trueHunterDone) {
+            boolean allCleared = true;
+            for (int i = 0; i < ALL_ROOMS.size(); i++) {
+                // ArrayList.contains is an index scan - no iterator garbage.
+                if (!data.clearedRooms.contains(ALL_ROOMS.get(i))) {
+                    allCleared = false;
+                    break;
+                }
+            }
+            if (allCleared) {
+                reg.onAllEnemiesKilled();
+                trueHunterDone = true;
+            }
+        }
+    }
+
+    /** Counts alive -> dead transitions into the run's kill tally (no alloc). */
+    private void trackEnemyKills() {
+        if (!GameSession.isActive()) return;
+        GameData data = GameSession.getActive();
+        for (int i = 0; i < enemyControllers.size(); i++) {
+            boolean alive = enemyControllers.get(i).isAlive();
+            if (enemyWasAlive[i] && !alive) {
+                data.enemyKillCount++;
+            }
+            enemyWasAlive[i] = alive;
+        }
+    }
+
+    /**
+     * End-of-game flow (spec: End Screen). Triggers on the rising edge of
+     * bossDefeated (a loaded, already-won save must not re-trigger): the
+     * save is flushed immediately so the kill is durable even on a force
+     * quit, Void Heart is granted, the boss death animation gets a short
+     * grace period, then the screen fades to black and hands over to the
+     * End Screen with this run's stats.
+     */
+    private void updateVictory(float delta) {
+        if (victoryPhase == 3) return;
+        if (victoryPhase == 0) {
+            if (!bossDefeatedAtStart && GameSession.isActive()
+                && GameSession.getActive().bossDefeated) {
+                victoryPhase = 1;
+                victoryTimer = 0f;
+                // Void Heart is acquired the moment the usurper falls - this
+                // also fires the Charmed achievement toast via CharmLoadout.
+                controller.getKnight().getCharms().setVoidHeartAcquired(true);
+                persistSession();
+                sfxDirector.stopLoops();
+                Sfx.play(Sfx.bossDefeat); // victory sting over the fade
+            }
+            return;
+        }
+        victoryTimer += delta;
+        if (victoryPhase == 1 && victoryTimer >= VICTORY_DELAY) {
+            victoryPhase = 2;
+            victoryTimer = 0f;
+        } else if (victoryPhase == 2 && victoryTimer >= VICTORY_FADE_DURATION) {
+            victoryPhase = 3;
+            game.setScreen(new EndScreen(game));
+            // Dispose after the frame unwinds (same pattern as switchRoom).
+            final GameScreen self = this;
+            Gdx.app.postRunnable(new Runnable() {
+                @Override public void run() { self.dispose(); }
+            });
+        }
+    }
+
+    /** Fullscreen black fade for the victory hand-off to the End Screen. */
+    private void drawVictoryFade(float uiW, float uiH) {
+        if (victoryPhase < 2) return;
+        float alpha = victoryPhase == 3
+            ? 1f : Math.min(1f, victoryTimer / VICTORY_FADE_DURATION);
+        batch.setColor(0f, 0f, 0f, alpha);
+        batch.draw(whiteTexture, 0f, 0f, uiW, uiH);
+        batch.setColor(Color.WHITE);
+    }
+
+    /**
+     * The ONE place the live run is flushed into the active slot and
+     * persisted: vitals, position, current map + entry spawn point, charms
+     * and counters (spec: save functionality). Save-and-quit, deaths and
+     * the boss kill all funnel through here.
+     */
+    public void persistSession() {
+        if (!GameSession.isActive()) return;
+        GameData data = GameSession.getActive();
+        Knight knight = controller.getKnight();
+        // A dead knight loads back at full health - never persist 0 masks.
+        data.hpMasks    = knight.isDead() ? knight.getMaxMasks() : knight.getHpMasks();
+        data.maxMasks   = knight.getMaxMasks();
+        data.soulAmount = knight.getSoulAmount();
+        data.posX       = knight.getX();
+        data.posY       = knight.getY();
+        data.currentRoom   = mapPath;
+        data.lastSpawnName = entrySpawnName;
+        data.lastArea      = mapPath.replace(".tmx", "");
+        data.equippedCharms = knight.getCharms().toNames();
+        data.empty = false;
+        SaveSlotRegistry.saveGameData(data);
     }
 
     /**
@@ -737,6 +919,12 @@ public class GameScreen extends AbstractScreen {
             if (controller.getKnight().deathAnimationFinished()) {
                 deathFadePhase = 1;
                 deathFadeTimer = 0f;
+                // Run stats: exactly one death per death animation (spec:
+                // End Screen), persisted so a force-quit can't shed it.
+                if (GameSession.isActive()) {
+                    GameSession.getActive().deathCount++;
+                    persistSession();
+                }
             }
             return;
         }
@@ -960,14 +1148,22 @@ public class GameScreen extends AbstractScreen {
     }
 
     /** Swap to the destination room while the screen is fully black. */
+    /** Fires hero sounds off model-state edges; owns the SFX loops. */
+    private SfxDirector sfxDirector;
+
     private void switchRoom() {
+        sfxDirector.shutdown(); // one-way: this screen never loops again
         RoomTransition t = pendingTransition;
         pendingTransition = null;
         roomFadePhase = 0;   // this screen is done; the next one fades in
 
         Knight knight = controller.getKnight();
         if (GameSession.isActive()) {
-            GameSession.getActive().currentRoom = t.getTargetMap();
+            // The load flow spawns at (currentRoom, lastSpawnName) - exactly
+            // the door the hero is about to arrive through (spec: spawn at
+            // the point they last spawned at).
+            GameSession.getActive().currentRoom   = t.getTargetMap();
+            GameSession.getActive().lastSpawnName = t.getTargetSpawn();
         }
         game.setScreen(new GameScreen(game, t.getTargetMap(),
             t.getTargetSpawn(), knight.getHpMasks(), knight.getSoulAmount()));
@@ -1111,6 +1307,16 @@ public class GameScreen extends AbstractScreen {
     public Knight getKnight()             { return controller.getKnight(); }
     public GameController getController() { return controller; }
 
+    /**
+     * The pause Settings screen returns to this SAME live GameScreen. Refresh
+     * persistent overlays here, because they were constructed before the
+     * language switch and therefore will not be recreated by navigation.
+     */
+    public void refreshLocalizedUi() {
+        pauseOverlay.refreshText();
+        zoteController.refreshLocalizedText();
+    }
+
     @Override
     public void updateLogic(float delta) {
         // ---- Room transition fade (spec: Room Transitions) ----
@@ -1141,6 +1347,7 @@ public class GameScreen extends AbstractScreen {
                 && canOpenInventory()) {
             controller.setPaused(true);
             inventoryOverlay.open();
+            sfxDirector.stopLoops();
             uiStage.act(delta);
             return;
         }
@@ -1156,6 +1363,15 @@ public class GameScreen extends AbstractScreen {
             boolean nowPaused = !controller.isPaused();
             controller.setPaused(nowPaused);
             pauseOverlay.setVisible(nowPaused);
+            if (nowPaused) sfxDirector.stopLoops();
+        }
+
+        // SFX mute toggle (spec: sound on/off with a default key). M flips
+        // the persisted flag; running loops are killed immediately.
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            GameSettings audio = GameSettings.getInstance();
+            audio.setSfxMuted(!audio.isSfxMuted());
+            if (audio.isSfxMuted()) sfxDirector.stopLoops();
         }
         if (controller.isPaused()) {
             // World stays frozen; only the overlay widgets animate.
@@ -1179,6 +1395,9 @@ public class GameScreen extends AbstractScreen {
             rainEffect.update(delta);
         }
         glassRainEffect.update(delta);
+        dirtParticles.update(delta);
+        if (crystalShards != null) crystalShards.update(delta);
+        if (cityRain != null) cityRain.update(worldCamera, delta);
 
         // Index-based loop: no Iterator allocation per frame.
         for (int i = 0; i < enemyControllers.size(); i++) {
@@ -1190,6 +1409,15 @@ public class GameScreen extends AbstractScreen {
         combat.resolve(delta);
         combat.resolveSpiritHits(controller.getSpirits());
         combat.resolveWraithHits(controller.getWraiths());
+
+        // Run stats: count kills on the alive -> dead edge (spec: End Screen).
+        trackEnemyKills();
+        // Victory flow: boss felled -> grace -> fade -> End Screen.
+        updateVictory(delta);
+
+        // Hero SFX edges are evaluated last so this frame's damage, soul
+        // gain and heals (resolved just above) are all visible as deltas.
+        sfxDirector.update(delta);
     }
 
     /** Spec: the inventory cannot open during animation-lock frames. */
@@ -1292,10 +1520,9 @@ public class GameScreen extends AbstractScreen {
         // Flash while invincible: blink the sprite alpha ~10x/sec.
         boolean flashOff = !knight.isDead() && knight.isInvincible()
             && ((int) (knight.getInvincibleTimer() * INVINCIBLE_FLASH_HZ) & 1) == 0;
-        // Sharp Shadow: the dash reads as a living shade - tint it void-dark.
-        boolean shadowDash = knight.isDashing() && knight.hasCharm(Charm.SHARP_SHADOW);
+        // Sharp Shadow now renders the dedicated Shadow Dash art (swapped
+        // in by KnightAnimator), so the old void tint hack is gone.
         if (flashOff) batch.setColor(1f, 1f, 1f, 0.3f);
-        else if (shadowDash) batch.setColor(0.30f, 0.22f, 0.42f, 1f);
 
         if (knight.isFacingRight()) {
             batch.draw(frame,
@@ -1309,7 +1536,7 @@ public class GameScreen extends AbstractScreen {
                 +frameW, frameH);
         }
 
-        if (flashOff || shadowDash) batch.setColor(Color.WHITE);
+        if (flashOff) batch.setColor(Color.WHITE);
 
         // Effect overlays (slash arcs, dash dust).
         TextureRegion effect = knightAnimator.getCurrentEffectFrame(knight);
@@ -1350,9 +1577,8 @@ public class GameScreen extends AbstractScreen {
         }
 
         // Vengeful Spirit fireballs (index-based: no Iterator allocation).
-        // Void Heart: the knight's spells surge with void - tint them dark.
-        boolean voidSpells = knight.hasCharm(Charm.VOID_HEART);
-        if (voidSpells) batch.setColor(0.42f, 0.28f, 0.58f, 1f);
+        // Void Heart spells now carry a per-projectile shadow flag and render
+        // the dedicated Shadow Ball / Blast / Scream art - no tint needed.
         List<VengefulSpiritController> spirits = controller.getSpirits();
         for (int i = 0; i < spirits.size(); i++) {
             spiritRenderer.draw(batch, spirits.get(i).getSpirit());
@@ -1363,7 +1589,6 @@ public class GameScreen extends AbstractScreen {
         for (int i = 0; i < wraiths.size(); i++) {
             wraithRenderer.draw(batch, wraiths.get(i).getWraith());
         }
-        if (voidSpells) batch.setColor(Color.WHITE);
 
         batch.end();
 
@@ -1377,6 +1602,14 @@ public class GameScreen extends AbstractScreen {
         if (!blackBackground) { // indoor rooms have no rain
             rainEffect.render(batch, worldCamera);
         }
+        // Foreground drop layer over the distant shader sheet. Additive
+        // blending is restored by ParticleEffect after this draw.
+        if (cityRain != null) cityRain.render(batch);
+        // World-pinned shard field: stationary in room space, the camera
+        // pans across it. Drawn under darkness zones so hidden-path areas
+        // stay hidden.
+        if (crystalShards != null) crystalShards.render(batch);
+        dirtParticles.render(batch);
         // Darkness zones cover everything in the world - terrain, rain
         // and foreground - until their wall crumbles (spec: hidden path).
         drawDarknessZones();
@@ -1394,6 +1627,7 @@ public class GameScreen extends AbstractScreen {
                 Gdx.graphics.getDeltaTime());
         drawDeathFade(uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
         drawRoomFade(uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
+        drawVictoryFade(uiViewport.getWorldWidth(), uiViewport.getWorldHeight());
         batch.end();
 
         renderDebugBoxes();
@@ -1548,10 +1782,14 @@ public class GameScreen extends AbstractScreen {
     @Override
     public void dispose() {
         super.dispose();
+        sfxDirector.shutdown(); // safety net for every teardown path
         batch.dispose();
         backgroundShader.dispose();
         whiteTexture.dispose();
         rainEffect.dispose();
+        if (cityRain != null) cityRain.dispose();
+        dirtParticles.dispose();
+        if (crystalShards != null) crystalShards.dispose();
         debugShapes.dispose();
         sentryRenderer.dispose();
         tiktikRenderer.dispose();

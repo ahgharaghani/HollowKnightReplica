@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.ui;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
@@ -194,14 +196,14 @@ public final class InventoryOverlay extends Group {
         Label.LabelStyle textStyle    = new Label.LabelStyle(textFont, MenuUi.TEXT_LIGHT);
         Label.LabelStyle hintStyle    = new Label.LabelStyle(hintFont, MenuUi.TEXT_DIM);
 
-        Label title = new Label("Charms", titleStyle);
+        Label title = new Label(UiText.CHARMS.get(), titleStyle);
         title.setBounds(0f, stageH - 128f, stageW, 60f);
         title.setAlignment(Align.center);
         content.addActor(title);
 
         float leftX = stageW * 0.08f;
 
-        Label equippedHeader = new Label("Equipped", sectionStyle);
+        Label equippedHeader = new Label(UiText.EQUIPPED.get(), sectionStyle);
         equippedHeader.setPosition(leftX, stageH * 0.845f);
         content.addActor(equippedHeader);
 
@@ -230,7 +232,7 @@ public final class InventoryOverlay extends Group {
             content.addActor(icon);
         }
 
-        Label notchesHeader = new Label("Notches", sectionStyle);
+        Label notchesHeader = new Label(UiText.NOTCHES.get(), sectionStyle);
         notchesHeader.setPosition(leftX, stageH * 0.655f);
         content.addActor(notchesHeader);
 
@@ -291,7 +293,7 @@ public final class InventoryOverlay extends Group {
         nameLabel.setAlignment(Align.center);
         content.addActor(nameLabel);
 
-        costHeader = new Label("Cost", sectionStyle);
+        costHeader = new Label(UiText.COST.get(), sectionStyle);
         costHeader.setBounds(panelX, stageH * 0.755f, panelW * 0.42f, 42f);
         costHeader.setAlignment(Align.right);
         costHeader.setVisible(false);
@@ -320,7 +322,7 @@ public final class InventoryOverlay extends Group {
         content.addActor(descriptionLabel);
 
         Label hint = new Label(
-            "Click a charm to equip or unequip   -   Esc / I to close", hintStyle);
+            UiText.INVENTORY_HINT.get(), hintStyle);
         hint.setBounds(0f, 30f, stageW, 24f);
         hint.setAlignment(Align.center);
         content.addActor(hint);

@@ -1,5 +1,7 @@
 package com.sut.hollowknight.model.charms;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 /**
  * The eight collectible charms of the game (spec: "Charms & Inventory System").
  *
@@ -12,73 +14,61 @@ package com.sut.hollowknight.model.charms;
 public enum Charm {
 
     SOUL_CATCHER(
-        "Soul Catcher",
+        UiText.CHARM_SOUL_CATCHER_NAME,
         "ui/charms/Soul Catcher - _0001_charm_more_soul.png",
-        "Used by shamans to draw more SOUL from the world.\n\n"
-            + "While the bearer is striking enemies with their nail, they "
-            + "will absorb a greater amount of SOUL."),
+        UiText.CHARM_SOUL_CATCHER_DESC),
 
     DASHMASTER(
-        "Dashmaster",
+        UiText.CHARM_DASHMASTER_NAME,
         "ui/charms/Dashmaster - _0011_charm_generic_03.png",
-        "Bears the likeness of an eccentric bug known only as 'The "
-            + "Dashmaster'.\n\nThe bearer will be able to dash more often "
-            + "as well as dash downwards. Perfect for those who want to "
-            + "move around as quickly as possible."),
+        UiText.CHARM_DASHMASTER_DESC),
 
     UNBREAKABLE_STRENGTH(
-        "Unbreakable Strength",
+        UiText.CHARM_UNBREAKABLE_STRENGTH_NAME,
         "ui/charms/Unbreakable Strength_0002_charm_glass_attack_up_full.png",
-        "Strengthens the bearer, increasing the damage they deal to "
-            + "enemies with their nail.\n\nThis charm is unbreakable."),
+        UiText.CHARM_UNBREAKABLE_STRENGTH_DESC),
 
     QUICK_SLASH(
-        "Quick Slash",
+        UiText.CHARM_QUICK_SLASH_NAME,
         "ui/charms/Quick Slash - _0003_charm_nail_slash_speed_up.png",
-        "Found embedded in the greatest of the Kingsmoulds. Its blade is "
-            + "still sharp with ancient technology.\n\nAllows the bearer to "
-            + "slash much more rapidly with their nail."),
+        UiText.CHARM_QUICK_SLASH_DESC),
 
     QUICK_FOCUS(
-        "Quick Focus",
+        UiText.CHARM_QUICK_FOCUS_NAME,
         "ui/charms/Quick Focus - _0005_charm_fast_focus.png",
-        "A charm containing a crystal lens.\n\nIncreases the speed of "
-            + "focusing SOUL, allowing the bearer to heal damage faster."),
+        UiText.CHARM_QUICK_FOCUS_DESC),
 
     HEAVY_BLOW(
-        "Heavy Blow",
+        UiText.CHARM_HEAVY_BLOW_NAME,
         "ui/charms/Heavy Blow - _0008_charm_nail_damage_up.png",
-        "Formed from the shell of a fallen warrior.\n\nIncreases the "
-            + "force of the bearer's nail, causing enemies to recoil "
-            + "further when hit."),
+        UiText.CHARM_HEAVY_BLOW_DESC),
 
     SHARP_SHADOW(
-        "Sharp Shadow",
+        UiText.CHARM_SHARP_SHADOW_NAME,
         "ui/charms/Sharp Shadow - charm_shade_impact.png",
-        "Contains the essence of a shadow creature.\n\nWhen using Shadow "
-            + "Dash, the bearer's body will sharpen and damage enemies."),
+        UiText.CHARM_SHARP_SHADOW_DESC),
 
     VOID_HEART(
-        "Void Heart",
+        UiText.CHARM_VOID_HEART_NAME,
         "ui/charms/Void Heart - charm_black.png",
-        "An emptiness that was hidden within, now unconstrained.\n\n"
-            + "Unifies the void under the bearer's will.");
+        UiText.CHARM_VOID_HEART_DESC);
 
     /** Spec rule: every charm costs exactly one notch. */
     private static final int NOTCH_COST = 1;
 
-    private final String displayName;
+    private final UiText displayName;
     private final String iconPath;
-    private final String description;
+    private final UiText description;
 
-    Charm(String displayName, String iconPath, String description) {
+    Charm(UiText displayName, String iconPath, UiText description) {
         this.displayName = displayName;
         this.iconPath    = iconPath;
         this.description = description;
     }
 
-    public String getDisplayName() { return displayName; }
+    /** Localised - resolved against the CURRENT language on every call. */
+    public String getDisplayName() { return displayName.get(); }
     public String getIconPath()    { return iconPath; }
-    public String getDescription() { return description; }
+    public String getDescription() { return description.get(); }
     public int    getNotchCost()   { return NOTCH_COST; }
 }

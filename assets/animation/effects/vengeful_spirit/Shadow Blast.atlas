@@ -1,0 +1,33 @@
+Shadow Blast.png
+size:2048,512
+repeat:none
+Blast Lv2_fireball_lvl_02_blast_effect0000
+index:0
+bounds:1542,25,306,289
+Blast Lv2_fireball_lvl_02_blast_effect0001
+index:1
+bounds:1234,25,306,289
+Blast Lv2_fireball_lvl_02_blast_effect0002
+index:2
+bounds:926,25,306,289
+Blast Lv2_fireball_lvl_02_blast_effect0003
+index:3
+bounds:618,25,306,289
+Blast Lv2_fireball_lvl_02_blast_effect0004
+index:4
+bounds:310,25,306,289
+Blast Lv2_fireball_lvl_02_blast_effect0005
+index:5
+bounds:2,25,306,289
+Blast Lv2_fireball_lvl_02_blast_effect0006
+index:6
+bounds:2,2,4,8
+Blast Lv2_fireball_lvl_02_blast_effect0007
+index:7
+bounds:13,16,5,7
+Blast Lv2_fireball_lvl_02_blast_effect0008
+index:8
+bounds:2,12,9,11
+Blast Lv2_fireball_lvl_02_blast_effect0009
+index:9
+bounds:1850,308,8,6

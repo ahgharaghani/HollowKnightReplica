@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.screens;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -91,7 +93,7 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
         root.top().padTop(60).padLeft(120).padRight(120).padBottom(60);
         uiStage.addActor(root);
 
-        root.add(makeFlourishedHeader("KEYBOARD", trajanFont))
+        root.add(makeFlourishedHeader(UiText.KEYBOARD_TITLE.get(), trajanFont))
             .colspan(4)
             .padBottom(50)
             .row();
@@ -138,7 +140,7 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
         root.add(inventoryRow).colspan(4).padBottom(40).row();
 
         // RESET DEFAULTS
-        TextButton btnReset = new AnimatedPointerButton("RESET DEFAULTS", skin, "bodyBtn");
+        TextButton btnReset = new AnimatedPointerButton(UiText.RESET_DEFAULTS.get(), skin, "bodyBtn");
         btnReset.getLabel().setAlignment(Align.center);
         btnReset.addListener(new ClickListener() {
             @Override
@@ -152,7 +154,7 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
         // BACK
         Table backRow = new Table();
         backRow.add(makeFlourishRule()).padRight(24).size(120, 2);
-        TextButton btnBack = new AnimatedPointerButton("BACK", skin, "headingBtn");
+        TextButton btnBack = new AnimatedPointerButton(UiText.BACK_CAPS.get(), skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {
@@ -175,7 +177,7 @@ public class KeyBindingsScreen extends AbstractMenuScreen {
                                BindingAction action,
                                Label.LabelStyle rowLabelStyle,
                                boolean leftSide) {
-        grid.add(makeActionLabel(action.label, rowLabelStyle))
+        grid.add(makeActionLabel(action.label.get(), rowLabelStyle))
             .width(220).left().padRight(20);
         KeyBindingButton btn = makeKeycapButtonFor(action);
         buttons.put(action, btn);

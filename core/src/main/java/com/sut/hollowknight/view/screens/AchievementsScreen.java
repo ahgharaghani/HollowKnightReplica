@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.screens;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -66,7 +68,7 @@ public class AchievementsScreen extends AbstractMenuScreen {
         root.top().padTop(42);
         uiStage.addActor(root);
 
-        Label title = new Label("Achievements",
+        Label title = new Label(UiText.ACHIEVEMENTS.get(),
             new Label.LabelStyle(trajanFont, MenuUi.TEXT_LIGHT));
         root.add(title).padBottom(6).row();
 
@@ -99,7 +101,7 @@ public class AchievementsScreen extends AbstractMenuScreen {
         scrollPane.setScrollingDisabled(true, false);  // vertical only
         root.add(scrollPane).width(880).height(540).padBottom(22).row();
 
-        TextButton btnBack = new TextButton("Back", skin, "headingBtn");
+        TextButton btnBack = new TextButton(UiText.BACK.get(), skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override
             public void clicked(InputEvent event, float x, float y) {

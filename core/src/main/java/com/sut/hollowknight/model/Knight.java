@@ -117,8 +117,6 @@ public class Knight implements PhysicsBody {
 
         // Dash family
         DASH,
-        DASH_DOWN,
-        DASH_DOWN_LAND,
 
         // Wall / jump family
         WALL_SLIDE,
@@ -182,16 +180,10 @@ public class Knight implements PhysicsBody {
     public static final float DASHMASTER_COOLDOWN_SCALE = 0.5f;
     /** Sharp Shadow charm: the dash carries the bearer 20% further. */
     public static final float SHARP_SHADOW_DASH_SCALE   = 1.2f;
-    public static final float DASH_DOWN_SPEED   = 1100f;
-    public static final float DASH_DOWN_DURATION = 0.35f;
-    public static final float DASH_DOWN_LAND_DURATION = 0.30f;
 
     private boolean dashing;
-    private boolean dashingDown;
     private float   dashTimer;           // counts down DASH_DURATION
     private float   dashCooldownTimer;   // counts down DASH_COOLDOWN
-    private float   dashDownTimer;       // counts down DASH_DOWN_DURATION
-    private float   dashDownLandTimer;   // counts down DASH_DOWN_LAND_DURATION
     private int     dashDirection;       // -1 or +1
 
     // ---- Double jump ----
@@ -296,10 +288,7 @@ public class Knight implements PhysicsBody {
     public boolean isDead()                  { return dead; }
     public float   getDeathTimer()           { return deathTimer; }
     public boolean isDashing()               { return dashing; }
-    public boolean isDashingDown()           { return dashingDown; }
     public float   getDashTimer()            { return dashTimer; }
-    public float   getDashDownTimer()        { return dashDownTimer; }
-    public float   getDashDownLandTimer()    { return dashDownLandTimer; }
     public int     getDashDirection()        { return dashDirection; }
     public boolean isDashOnCooldown()        { return dashCooldownTimer > 0f; }
     public boolean isAttacking()             { return attackTimer > 0f; }
@@ -690,7 +679,6 @@ public class Knight implements PhysicsBody {
     public void beginDash(int direction) {
         if (dashCooldownTimer > 0f) return;
         dashing = true;
-        dashingDown = false;
         dashDirection = direction;
         dashTimer = hasCharm(Charm.SHARP_SHADOW)
             ? DASH_DURATION * SHARP_SHADOW_DASH_SCALE : DASH_DURATION;
@@ -699,26 +687,6 @@ public class Knight implements PhysicsBody {
         velocityX = direction * DASH_SPEED;
         facingRight = (direction > 0);
         setState(State.DASH);
-    }
-
-    public void beginDashDown() {
-        if (dashCooldownTimer > 0f) return;
-        dashing = false;
-        dashingDown = true;
-        dashDirection = 0;
-        dashDownTimer = DASH_DOWN_DURATION;
-        dashCooldownTimer = charmDashCooldown();
-        velocityX = 0f;
-        velocityY = -DASH_DOWN_SPEED;
-        setState(State.DASH_DOWN);
-    }
-
-    public void beginDashDownLand() {
-        dashingDown = false;
-        dashDownLandTimer = DASH_DOWN_LAND_DURATION;
-        velocityY = 0f;
-        velocityX = 0f;
-        setState(State.DASH_DOWN_LAND);
     }
 
     public void tickDash(float delta) {
@@ -735,27 +703,11 @@ public class Knight implements PhysicsBody {
                 velocityX *= 0.4f;
             }
         }
-        if (dashDownTimer > 0f) {
-            dashDownTimer -= delta;
-            if (dashDownTimer <= 0f) {
-                dashDownTimer = 0f;
-                // The dash-down only ends when the knight hits the ground;
-                // while airborne, we keep the high downward velocity.
-            }
-        }
-        if (dashDownLandTimer > 0f) {
-            dashDownLandTimer -= delta;
-            if (dashDownLandTimer <= 0f) {
-                dashDownLandTimer = 0f;
-            }
-        }
     }
 
     public void cancelDash() {
         dashing = false;
-        dashingDown = false;
         dashTimer = 0f;
-        dashDownTimer = 0f;
     }
 
     //  Wall helpers
@@ -806,9 +758,7 @@ public class Knight implements PhysicsBody {
         doubleJumpAvailable = true;
         dashCooldownTimer = 0f;
         dashing = false;
-        dashingDown = false;
         dashTimer = 0f;
-        dashDownTimer = 0f;
         pogoedThisAttack = true;
     }
 
@@ -862,7 +812,6 @@ public class Knight implements PhysicsBody {
         cancelDash();
         wallJumpTimer = 0f;
         wallJumpLockTimer = 0f;
-        dashDownLandTimer = 0f;
         focusing = false;
         focusTimer = 0f;
         focusEndTimer = 0f;

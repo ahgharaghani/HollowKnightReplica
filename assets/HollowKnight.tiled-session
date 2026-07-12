@@ -1,5 +1,5 @@
 {
-    "activeFile": "CityOfTears.tmx",
+    "activeFile": "CrystalPeaks.tmx",
     "expandedProjectPaths": [
         "ui",
         "."
@@ -14,16 +14,16 @@
                 16
             ],
             "expandedObjectLayers": [
-                22,
-                21,
                 20,
-                9
+                21,
+                9,
+                22
             ],
-            "scale": 1,
-            "selectedLayer": 19,
+            "scale": 0.5,
+            "selectedLayer": 18,
             "viewCenter": {
-                "x": 2083,
-                "y": 667
+                "x": 1120,
+                "y": 601
             }
         },
         "BossFightArena.tmx#Mines_Layered_0000_Layer-7": {
@@ -455,19 +455,19 @@
                 12
             ],
             "expandedObjectLayers": [
-                22,
-                29,
-                6,
-                19,
-                28,
                 20,
-                31
+                19,
+                31,
+                6,
+                28,
+                29,
+                22
             ],
             "scale": 1,
             "selectedLayer": 20,
             "viewCenter": {
-                "x": 288,
-                "y": 4459
+                "x": 1870,
+                "y": 2458.5
             }
         },
         "CityOfTears.tmx#BG_far_0008_a": {
@@ -593,11 +593,11 @@
                 21,
                 20
             ],
-            "scale": 0.33,
+            "scale": 0.25,
             "selectedLayer": 11,
             "viewCenter": {
-                "x": 1324.242424242424,
-                "y": 2736.363636363636
+                "x": 1032,
+                "y": 1392
             }
         },
         "CrystalPeaks.tmx#1821-1@2x": {
@@ -731,15 +731,15 @@
         "secretRoom.tmx": {
             "expandedObjectLayers": [
                 10,
-                7,
                 9,
+                7,
                 8
             ],
             "scale": 0.5,
             "selectedLayer": 6,
             "viewCenter": {
-                "x": 534,
-                "y": 470
+                "x": 640,
+                "y": 513
             }
         },
         "secretRoom.tmx#msk_generic": {
@@ -774,14 +774,20 @@
     "map.tileHeight": 4,
     "map.tileWidth": 4,
     "openFiles": [
-        "CityOfTears.tmx"
+        "CityOfTears.tmx",
+        "secretRoom.tmx",
+        "BossFightArena.tmx",
+        "CrystalPeaks.tmx"
     ],
     "project": "HollowKnight.tiled-project",
     "property.type": "string",
     "recentFiles": [
+        "CityOfTears.tmx",
+        "secretRoom.tmx",
+        "BossFightArena.tmx",
+        "CrystalPeaks.tmx",
         "C:/Users/ahgha/Desktop/CrystalPeaks.tmx",
         "C:/Users/ahgha/Downloads/CrystalPeaks.tmx",
-        "CityOfTears.tmx",
         "C:/Users/ahgha/Desktop/CityOfTears.tmx",
         "ruin_plat_float_06.tsx"
     ],

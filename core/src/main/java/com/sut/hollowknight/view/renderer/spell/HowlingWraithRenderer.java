@@ -24,6 +24,13 @@ public class HowlingWraithRenderer {
     private static final float BASE_DRAW_WIDTH  = 250f;
     private static final float BASE_DRAW_HEIGHT = BASE_DRAW_WIDTH * 134f / 350f;
 
+    // Shadow plume canvas is 357x292; shadow base canvas is 408x174. Drawn at
+    // the same widths as the fire set so the spell reads identically in play.
+    private static final float SHADOW_SCREAM_DRAW_WIDTH  = 300f;
+    private static final float SHADOW_SCREAM_DRAW_HEIGHT = SHADOW_SCREAM_DRAW_WIDTH * 292f / 357f;
+    private static final float SHADOW_BASE_DRAW_WIDTH  = 250f;
+    private static final float SHADOW_BASE_DRAW_HEIGHT = SHADOW_BASE_DRAW_WIDTH * 174f / 408f;
+
     public HowlingWraithRenderer(HowlingWraithAssets assets) {
         this.assets = assets;
     }
@@ -32,21 +39,26 @@ public class HowlingWraithRenderer {
         if (wraith.isDone()) return;
 
         float age = wraith.getAge();
+        boolean shadow = wraith.isShadow();
 
-        // Ground shockwave under the feet (8 frames @ 15 FPS).
-        Animation<TextureRegion> baseAnim = assets.getScreamBaseAnim();
+        // Ground shockwave under the feet (both sets run at 15 FPS).
+        Animation<TextureRegion> baseAnim = shadow
+            ? assets.getShadowScreamBaseAnim() : assets.getScreamBaseAnim();
+        float baseW = shadow ? SHADOW_BASE_DRAW_WIDTH  : BASE_DRAW_WIDTH;
+        float baseH = shadow ? SHADOW_BASE_DRAW_HEIGHT : BASE_DRAW_HEIGHT;
         if (!baseAnim.isAnimationFinished(age)) {
             drawFlipped(batch, baseAnim.getKeyFrame(age, false), wraith,
-                wraith.getAnchorY() - BASE_DRAW_HEIGHT / 2f,
-                BASE_DRAW_WIDTH, BASE_DRAW_HEIGHT);
+                wraith.getAnchorY() - baseH / 2f, baseW, baseH);
         }
 
-        // Rising plume (13 frames @ 20 FPS), bottom anchored at the feet.
-        Animation<TextureRegion> screamAnim = assets.getScreamAnim();
+        // Rising plume (both sets run at 20 FPS), bottom anchored at the feet.
+        Animation<TextureRegion> screamAnim = shadow
+            ? assets.getShadowScreamAnim() : assets.getScreamAnim();
+        float plumeW = shadow ? SHADOW_SCREAM_DRAW_WIDTH  : SCREAM_DRAW_WIDTH;
+        float plumeH = shadow ? SHADOW_SCREAM_DRAW_HEIGHT : SCREAM_DRAW_HEIGHT;
         if (!screamAnim.isAnimationFinished(age)) {
             drawFlipped(batch, screamAnim.getKeyFrame(age, false), wraith,
-                wraith.getAnchorY(),
-                SCREAM_DRAW_WIDTH, SCREAM_DRAW_HEIGHT);
+                wraith.getAnchorY(), plumeW, plumeH);
         }
     }
 

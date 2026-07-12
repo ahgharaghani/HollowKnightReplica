@@ -1,5 +1,6 @@
 package com.sut.hollowknight.view.renderer.spell;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.Animation;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
@@ -17,6 +18,12 @@ public class VengefulSpiritRenderer {
     // Ball art canvas is 317x143;
     private static final float BALL_DRAW_WIDTH  = 317f;
     private static final float BALL_DRAW_HEIGHT = 143;
+
+    // Shadow ball canvas is 504x157: the void core sits at the LEADING edge
+    // with a long wispy tail behind it, so it is drawn leading-edge-aligned
+    // with the regular ball to keep the core on the 110x46 hurtbox.
+    private static final float SHADOW_BALL_DRAW_WIDTH  = 504f;
+    private static final float SHADOW_BALL_DRAW_HEIGHT = 157f;
 
     // Wall impact art canvas is 259x204.
     private static final float WALL_DRAW_WIDTH  = 259f;
@@ -39,11 +46,20 @@ public class VengefulSpiritRenderer {
         drawBlast(batch, spirit);
 
         if (spirit.getState() == VengefulSpirit.State.FLYING) {
-            drawBall(batch, spirit, assets.getBallFrame(spirit.getStateTime()));
+            if (spirit.isShadow()) {
+                drawShadowBall(batch, spirit, assets.getShadowBallFrame(spirit.getStateTime()));
+            } else {
+                drawBall(batch, spirit, assets.getBallFrame(spirit.getStateTime()));
+            }
         } else { // IMPACT
+            // The shadow set has no dedicated dissipation art, so the fire
+            // set's Ball End / wall burst is reused with a void-dark tint.
+            boolean tint = spirit.isShadow();
+            if (tint) batch.setColor(0.35f, 0.25f, 0.48f, 1f);
             Animation<TextureRegion> end = assets.getBallEndAnim();
             drawBall(batch, spirit, end.getKeyFrame(spirit.getStateTime(), false));
             drawWallImpact(batch, spirit);
+            if (tint) batch.setColor(Color.WHITE);
         }
     }
 
@@ -57,6 +73,26 @@ public class VengefulSpiritRenderer {
             batch.draw(frame, drawX, drawY, BALL_DRAW_WIDTH, BALL_DRAW_HEIGHT);
         } else {
             batch.draw(frame, drawX + BALL_DRAW_WIDTH, drawY, -BALL_DRAW_WIDTH, BALL_DRAW_HEIGHT);
+        }
+    }
+
+    /**
+     * Shadow ball: drawn so its leading edge lines up with where the regular
+     * ball's leading edge would be - the core stays glued to the hurtbox and
+     * the extra canvas width becomes the tail trailing behind the shot.
+     */
+    private void drawShadowBall(SpriteBatch batch, VengefulSpirit spirit, TextureRegion frame) {
+        if (frame == null) return;
+        float leadEdge = BALL_DRAW_WIDTH / 2f; // core front, relative to center
+        float drawY = spirit.getY() - SHADOW_BALL_DRAW_HEIGHT / 2f;
+        if (spirit.isFacingRight()) {
+            float drawX = spirit.getX() + leadEdge - SHADOW_BALL_DRAW_WIDTH;
+            batch.draw(frame, drawX, drawY, SHADOW_BALL_DRAW_WIDTH, SHADOW_BALL_DRAW_HEIGHT);
+        } else {
+            // Mirrored: leading edge on the left, tail extending right.
+            float drawX = spirit.getX() - leadEdge;
+            batch.draw(frame, drawX + SHADOW_BALL_DRAW_WIDTH, drawY,
+                -SHADOW_BALL_DRAW_WIDTH, SHADOW_BALL_DRAW_HEIGHT);
         }
     }
 
@@ -79,7 +115,9 @@ public class VengefulSpiritRenderer {
 
     /** The burst showing the ball emerging from the knight (8 frames @ 24 FPS). */
     private void drawBlast(SpriteBatch batch, VengefulSpirit spirit) {
-        Animation<TextureRegion> blast = assets.getBlastAnim();
+        // Shadow Blast shares the regular Blast 306x289 canvas: same draw.
+        Animation<TextureRegion> blast = spirit.isShadow()
+            ? assets.getShadowBlastAnim() : assets.getBlastAnim();
         if (blast == null || blast.isAnimationFinished(spirit.getAge())) return;
 
         TextureRegion frame = blast.getKeyFrame(spirit.getAge(), false);

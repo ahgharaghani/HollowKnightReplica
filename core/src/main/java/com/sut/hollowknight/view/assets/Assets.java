@@ -47,8 +47,8 @@ public class Assets {
         manager.load("animation/knight/Slash Effect Alt.atlas", TextureAtlas.class);
         manager.load("animation/knight/Dash.atlas",             TextureAtlas.class);
         manager.load("animation/knight/Dash Effect.atlas",      TextureAtlas.class);
-        manager.load("animation/knight/Dash Down.atlas",        TextureAtlas.class);
-        manager.load("animation/knight/Dash Down Land.atlas",   TextureAtlas.class);
+        manager.load("animation/knight/Shadow Dash.atlas",       TextureAtlas.class);
+        manager.load("animation/knight/Shadow Dash Burst.atlas",  TextureAtlas.class);
         manager.load("animation/knight/Death.atlas",            TextureAtlas.class);
         manager.load("animation/knight/Double Jump.atlas",      TextureAtlas.class);
         manager.load("animation/knight/Down Slash.atlas",       TextureAtlas.class);

@@ -1,5 +1,9 @@
 package com.sut.hollowknight.model;
 
+import com.sut.hollowknight.model.enums.UiText;
+
+import com.sut.hollowknight.model.db.GameDatabase;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,20 +37,20 @@ public final class AchievementsRegistry {
     private final List<Achievement> achievements = new ArrayList<>();
 
     private AchievementsRegistry() {
-        achievements.add(new Achievement(COMPLETION, "Completion",
-            "Finish the game.",
+        achievements.add(new Achievement(COMPLETION,
+            UiText.ACH_COMPLETION_TITLE, UiText.ACH_COMPLETION_DESC,
             "ui/achievement/achievement__0000_100_complete.png"));
-        achievements.add(new Achievement(SPEEDRUN, "Speedrun",
-            "Finish the game in under 10 minutes.",
+        achievements.add(new Achievement(SPEEDRUN,
+            UiText.ACH_SPEEDRUN_TITLE, UiText.ACH_SPEEDRUN_DESC,
             "ui/achievement/achievement_ultra_fast_finish.png"));
-        achievements.add(new Achievement(TRUE_HUNTER, "True Hunter",
-            "Kill all the enemies.",
+        achievements.add(new Achievement(TRUE_HUNTER,
+            UiText.ACH_TRUE_HUNTER_TITLE, UiText.ACH_TRUE_HUNTER_DESC,
             "ui/achievement/achievement_Hunter_Marks.png"));
-        achievements.add(new Achievement(FALSEHOOD, "Falsehood",
-            "Defeat the False Knight.",
+        achievements.add(new Achievement(FALSEHOOD,
+            UiText.ACH_FALSEHOOD_TITLE, UiText.ACH_FALSEHOOD_DESC,
             "ui/achievement/achievement__0031_false_knight_dream.png"));
-        achievements.add(new Achievement(CHARMED, "Charmed",
-            "Acquire Void Heart.",
+        achievements.add(new Achievement(CHARMED,
+            UiText.ACH_CHARMED_TITLE, UiText.ACH_CHARMED_DESC,
             "ui/achievement/achievement__0033_charm_01.png"));
     }
 
@@ -87,13 +91,34 @@ public final class AchievementsRegistry {
         Achievement a = find(id);
         if (a == null || a.isUnlocked()) return false;
         a.unlock();
-        // Write-through: the existing save flow persists this list as-is.
-        if (GameSession.isActive()
-                && !GameSession.getActive().unlockedAchievementIds.contains(id)) {
-            GameSession.getActive().unlockedAchievementIds.add(id);
+        // Write-through: session list AND database, immediately. Persisting
+        // here (not only on "Save and Quit") means an unlock can never be
+        // lost to a crash or a plain window close (spec: save achievements).
+        if (GameSession.isActive()) {
+            if (!GameSession.getActive().unlockedAchievementIds.contains(id)) {
+                GameSession.getActive().unlockedAchievementIds.add(id);
+            }
+            GameDatabase.saveAchievements(
+                GameSession.getActive().slotIndex,
+                GameSession.getActive().unlockedAchievementIds);
         }
         if (listener != null) listener.onAchievementUnlocked(a);
         return true;
+    }
+
+    /**
+     * Relocks every achievement. The registry is a JVM-wide singleton, so
+     * every screen that seeds it for one save slot (GameScreen) MUST call
+     * this before syncFrom() - otherwise unlocks leaked from other slots
+     * (e.g. the Achievements screen syncs the union of ALL slots) make
+     * unlock() a silent no-op: no toast, no persist. That leak is exactly
+     * why Charmed (Void Heart) and True Hunter appeared to never fire.
+     * Also backs the debug "clear achievements" cheat.
+     */
+    public void resetAll() {
+        for (int i = 0; i < achievements.size(); i++) {
+            achievements.get(i).relock();
+        }
     }
 
     /** Marks saved unlocks without toasts (loading persisted state). */

@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.screens;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
@@ -66,9 +68,9 @@ public class GuideScreen extends AbstractMenuScreen {
         uiStage.addActor(menuRoot);
 
         Label.LabelStyle titleStyle = new Label.LabelStyle(trajanFont, Color.WHITE);
-        menuRoot.add(new Label("Guide", titleStyle)).padBottom(60).row();
+        menuRoot.add(new Label(UiText.GUIDE.get(), titleStyle)).padBottom(60).row();
 
-        TextButton btnKeys = new AnimatedPointerButton("Key Bindings", skin, "headingBtn");
+        TextButton btnKeys = new AnimatedPointerButton(UiText.KEY_BINDINGS.get(), skin, "headingBtn");
         btnKeys.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
                 openKeyBindingsSection();
@@ -76,23 +78,23 @@ public class GuideScreen extends AbstractMenuScreen {
         });
         menuRoot.add(btnKeys).width(420).height(60).padBottom(24).row();
 
-        TextButton btnAbilities = new AnimatedPointerButton("Abilities", skin, "headingBtn");
+        TextButton btnAbilities = new AnimatedPointerButton(UiText.ABILITIES.get(), skin, "headingBtn");
         btnAbilities.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                openTextSection("Abilities", controller.getAbilitiesText());
+                openTextSection(UiText.ABILITIES.get(), controller.getAbilitiesText());
             }
         });
         menuRoot.add(btnAbilities).width(420).height(60).padBottom(24).row();
 
-        TextButton btnCheats = new AnimatedPointerButton("Cheat Codes", skin, "headingBtn");
+        TextButton btnCheats = new AnimatedPointerButton(UiText.CHEAT_CODES.get(), skin, "headingBtn");
         btnCheats.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                openTextSection("Cheat Codes", controller.getCheatCodesText());
+                openTextSection(UiText.CHEAT_CODES.get(), controller.getCheatCodesText());
             }
         });
         menuRoot.add(btnCheats).width(420).height(60).padBottom(24).row();
 
-        TextButton btnBack = new AnimatedPointerButton("Back to Main Menu", skin, "headingBtn");
+        TextButton btnBack = new AnimatedPointerButton(UiText.BACK_TO_MAIN_MENU.get(), skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
                 controller.backToMainMenu();
@@ -134,7 +136,7 @@ public class GuideScreen extends AbstractMenuScreen {
 
     /** Append the BACK row and finish the section. */
     private void endSection() {
-        TextButton btnBack = new AnimatedPointerButton("Back", skin, "headingBtn");
+        TextButton btnBack = new AnimatedPointerButton(UiText.BACK.get(), skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
                 sectionRoot.setVisible(false);
@@ -157,7 +159,7 @@ public class GuideScreen extends AbstractMenuScreen {
 
     /** Key Bindings: live bindings drawn with the real keycap art. */
     private void openKeyBindingsSection() {
-        beginSection("Key Bindings");
+        beginSection(UiText.KEY_BINDINGS.get());
 
         Table grid = new Table();
         grid.defaults().pad(4);
@@ -166,12 +168,12 @@ public class GuideScreen extends AbstractMenuScreen {
         BindingAction[] actions = BindingAction.values();
         boolean left = true;
         for (BindingAction action : actions) {
-            addKeycapRow(grid, rowStyle, action.label, bindings.getKey(action), left);
+            addKeycapRow(grid, rowStyle, action.label.get(), bindings.getKey(action), left);
             if (!left) grid.row();
             left = !left;
         }
         // Odd action count: Pause fills the dangling right-hand cell.
-        addKeycapRow(grid, rowStyle, "Pause", Input.Keys.ESCAPE, left);
+        addKeycapRow(grid, rowStyle, UiText.ACTION_PAUSE.get(), Input.Keys.ESCAPE, left);
         if (left) grid.row();
 
         sectionRoot.add(grid).row();

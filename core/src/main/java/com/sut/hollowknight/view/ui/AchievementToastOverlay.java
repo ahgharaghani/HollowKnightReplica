@@ -45,18 +45,26 @@ public class AchievementToastOverlay
 
     private enum Phase { SLIDE_IN, HOLD, SLIDE_OUT }
 
-    private final ArrayDeque<Achievement> queue = new ArrayDeque<>();
-    private Achievement current;
-    private Phase phase = Phase.SLIDE_IN;
-    private float timer;
+    // STATIC on purpose: the victory frame unlocks several achievements
+    // at once (Falsehood, Completion, Speedrun, Charmed) but the
+    // GameScreen only lives another VICTORY_DELAY + fade ~4.7s - less
+    // than ONE toast's 4.8s lifecycle. With per-instance state the queue
+    // died with the screen and Charmed (Void Heart) was never shown.
+    // Shared state lets the next screen's overlay (EndScreen) resume the
+    // queue exactly where the old screen left off; render resources
+    // (panel, fonts) stay per-instance and are disposed as before.
+    private static final ArrayDeque<Achievement> queue = new ArrayDeque<>();
+    private static Achievement current;
+    private static Phase phase = Phase.SLIDE_IN;
+    private static float timer;
 
     private final Texture panel;
     private final BitmapFont titleFont;
     private final BitmapFont descFont;
     private final GlyphLayout layout = new GlyphLayout(); // reused, no GC
 
-    /** Loaded lazily so the (not yet shipped) wav is simply optional. */
-    private Sound sound;
+    /** Loaded lazily; shared - the toast chime outlives any one screen. */
+    private static Sound sound;
 
     public AchievementToastOverlay() {
         panel = buildPanel();

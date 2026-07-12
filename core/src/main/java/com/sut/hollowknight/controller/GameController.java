@@ -169,7 +169,7 @@ public class GameController {
         }
 
         // --- Dashing: ignore normal horizontal input; the dash owns velocity ---
-        if (knight.isDashing() || knight.isDashingDown()) {
+        if (knight.isDashing()) {
             if (input.isJumpJustPressed() && knight.isDashing()) {
                 if (knight.isGrounded() || coyoteTimer > 0f) {
                     knight.cancelDash();
@@ -236,16 +236,14 @@ public class GameController {
         }
 
         // --- Dash ---
+        // (Dash-down was removed from the move set; a dash is always the
+        // horizontal burst, aimed by held direction or current facing.)
         if (input.isDashJustPressed() && !knight.isDashOnCooldown()) {
-            if (input.isMoveDownPressed() && !knight.isGrounded()) {
-                knight.beginDashDown();
-            } else {
-                int dir = 0;
-                if (left && !right)       dir = -1;
-                else if (right && !left)  dir = +1;
-                else                       dir = (knight.isFacingRight() ? +1 : -1);
-                knight.beginDash(dir);
-            }
+            int dir = 0;
+            if (left && !right)       dir = -1;
+            else if (right && !left)  dir = +1;
+            else                       dir = (knight.isFacingRight() ? +1 : -1);
+            knight.beginDash(dir);
         }
 
         wasJumpHeld = jumpHeld;
@@ -327,7 +325,6 @@ public class GameController {
             && pressingIntoWall
             && knight.getVelocityY() <= 0f
             && !knight.isDashing()
-            && !knight.isDashingDown()
             && !knight.isAttacking()
             && !knight.isInKnockback()
             && !knight.isFocusing()
@@ -349,9 +346,6 @@ public class GameController {
             knight.setVelocityY(0f);
         } else if (knight.isDashing()) {
             knight.setVelocityX(knight.getDashDirection() * Knight.DASH_SPEED);
-        } else if (knight.isDashingDown()) {
-            knight.setVelocityX(0f);
-            knight.setVelocityY(-Knight.DASH_DOWN_SPEED);
         } else if (knight.isWallJumpLocked()) {
             // Wall-jump lock
         } else if (!knight.isInKnockback()) {
@@ -376,7 +370,6 @@ public class GameController {
 
         if (!knight.isInKnockback()
             && !knight.isDashing()
-            && !knight.isDashingDown()
             && !knight.isWallSliding()
             && !knight.isAttacking()
             && !knight.isFocusing()
@@ -395,16 +388,7 @@ public class GameController {
             grounded = true;
         }
 
-        if (knight.isDashingDown() && grounded) {
-            knight.beginDashDownLand();
-        } else if (knight.getState() == Knight.State.DASH_DOWN_LAND
-            && knight.getDashDownLandTimer() <= 0f) {
-            // Animation finished
-            knight.setState(Knight.State.IDLE);
-        }
-
         if (!knight.isInKnockback()
-            && !knight.isDashingDown()
             && !wasGrounded && grounded) {
             knight.setState(Knight.State.LAND);
             landTimer = LAND_DURATION;
@@ -528,16 +512,6 @@ public class GameController {
             }
             return;
         }
-        if (knight.isDashingDown()) {
-            if (knight.getState() != Knight.State.DASH_DOWN) {
-                knight.setState(Knight.State.DASH_DOWN);
-            }
-            return;
-        }
-        if (knight.getState() == Knight.State.DASH_DOWN_LAND) {
-            // Wait for the land animation to finish; let applyPhysics clear it.
-            return;
-        }
         if (knight.isAttacking()) {
             // The slash animation owns the state until attackTimer runs out.
             return;
@@ -591,10 +565,14 @@ public class GameController {
     // ------------------------------------------------------------------
 
     private void spawnVengefulSpirit() {
+        // Void Heart swaps the fireball to its shadow (void) art set - the
+        // flag is baked into the projectile at cast time so unequipping the
+        // charm mid-flight cannot flicker the visuals.
         VengefulSpirit spirit = new VengefulSpirit(
             knight.getSpellSpawnX(),
             knight.getSpellSpawnY(),
-            knight.isFacingRight());
+            knight.isFacingRight(),
+            knight.hasCharm(Charm.VOID_HEART));
         spirits.add(new VengefulSpiritController(spirit, collider));
         // A small kick of camera shake sells the release.
         cameraRig.shake(CAST_SHAKE_AMPLITUDE, CAST_SHAKE_DURATION);
@@ -620,7 +598,8 @@ public class GameController {
         // Anchored at the knight's center/feet at the eruption instant; the
         // blast stays fixed in place per the spec.
         wraiths.add(new HowlingWraithController(
-            new HowlingWraith(knight.getX(), knight.getY(), knight.isFacingRight())));
+            new HowlingWraith(knight.getX(), knight.getY(), knight.isFacingRight(),
+                knight.hasCharm(Charm.VOID_HEART))));
         cameraRig.shake(CAST_SHAKE_AMPLITUDE, CAST_SHAKE_DURATION);
     }
 

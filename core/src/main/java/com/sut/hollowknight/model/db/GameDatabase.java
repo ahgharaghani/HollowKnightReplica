@@ -27,6 +27,7 @@ public class GameDatabase {
             try (Connection conn = getConnection()) {
                 createTables(conn);
                 migrateSettingsTable(conn);
+                migratePlayerStateTable(conn);
                 ensureSlots(conn);
                 ensureSettings(conn);
             }
@@ -80,7 +81,9 @@ public class GameDatabase {
                     "  current_room   TEXT    DEFAULT 'forgotten_crossroads_start'," +
                     "  boss_defeated  INTEGER NOT NULL DEFAULT 0," +
                     "  death_count    INTEGER NOT NULL DEFAULT 0," +
-                    "  enemy_kills    INTEGER NOT NULL DEFAULT 0" +
+                    "  enemy_kills    INTEGER NOT NULL DEFAULT 0," +
+                    "  last_spawn_name TEXT   DEFAULT NULL," +
+                    "  cleared_rooms  TEXT    NOT NULL DEFAULT ''" +
                     ")");
 
             st.executeUpdate(
@@ -121,6 +124,30 @@ public class GameDatabase {
                     "  dream_nail_key    INTEGER NOT NULL DEFAULT 1001," + // Mouse RIGHT
                     "  quick_cast_key    INTEGER NOT NULL DEFAULT 36" +    // F
                     ")");
+        }
+    }
+
+    /**
+     * Adds the save-fix columns to player_state tables created by older
+     * builds. SQLite has no "ADD COLUMN IF NOT EXISTS", so each ALTER is
+     * attempted and a "duplicate column" failure is treated as already done
+     * (the same pattern migrateSettingsTable uses).
+     */
+    private static void migratePlayerStateTable(Connection conn) throws SQLException {
+        String[][] newColumns = {
+            {"last_spawn_name", "TEXT DEFAULT NULL"},
+            {"cleared_rooms",   "TEXT NOT NULL DEFAULT ''"},
+        };
+        try (Statement st = conn.createStatement()) {
+            for (String[] col : newColumns) {
+                try {
+                    st.executeUpdate("ALTER TABLE player_state ADD COLUMN "
+                        + col[0] + " " + col[1]);
+                    Gdx.app.log("GameDatabase", "Migrated player_state." + col[0]);
+                } catch (SQLException e) {
+                    // Column already exists - nothing to migrate.
+                }
+            }
         }
     }
 
@@ -200,7 +227,8 @@ public class GameDatabase {
             // Player state
             try (PreparedStatement ps = conn.prepareStatement(
                 "SELECT hp_masks, max_masks, soul_amount, pos_x, pos_y, " +
-                    "       current_room, boss_defeated, death_count, enemy_kills " +
+                    "       current_room, boss_defeated, death_count, enemy_kills, " +
+                    "       last_spawn_name, cleared_rooms " +
                     "FROM player_state WHERE slot_index = ?")) {
                 ps.setInt(1, slotIndex);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -214,6 +242,8 @@ public class GameDatabase {
                         data.bossDefeated  = rs.getInt("boss_defeated") == 1;
                         data.deathCount    = rs.getInt("death_count");
                         data.enemyKillCount = rs.getInt("enemy_kills");
+                        data.lastSpawnName  = rs.getString("last_spawn_name");
+                        data.clearedRooms   = splitCsv(rs.getString("cleared_rooms"));
                     }
                 }
             }
@@ -285,7 +315,8 @@ public class GameDatabase {
                     "UPDATE player_state SET " +
                         "  hp_masks = ?, max_masks = ?, soul_amount = ?, " +
                         "  pos_x = ?, pos_y = ?, current_room = ?, " +
-                        "  boss_defeated = ?, death_count = ?, enemy_kills = ? " +
+                        "  boss_defeated = ?, death_count = ?, enemy_kills = ?, " +
+                        "  last_spawn_name = ?, cleared_rooms = ? " +
                         "WHERE slot_index = ?")) {
                     ps.setInt(1, data.hpMasks);
                     ps.setInt(2, data.maxMasks);
@@ -296,7 +327,9 @@ public class GameDatabase {
                     ps.setInt(7, data.bossDefeated ? 1 : 0);
                     ps.setInt(8, data.deathCount);
                     ps.setInt(9, data.enemyKillCount);
-                    ps.setInt(10, i);
+                    ps.setString(10, data.lastSpawnName);
+                    ps.setString(11, joinCsv(data.clearedRooms));
+                    ps.setInt(12, i);
                     ps.executeUpdate();
                 }
 
@@ -342,6 +375,72 @@ public class GameDatabase {
         } catch (SQLException e) {
             Gdx.app.error("GameDatabase", "Failed to save slot " + data.slotIndex, e);
         }
+    }
+
+    /**
+     * Replaces one slot's persisted achievement unlocks. Called by
+     * AchievementsRegistry.unlock() as a write-through so an unlock is
+     * durable the moment its toast appears (spec: save the achievements).
+     */
+    public static void saveAchievements(int slotIndex, List<String> ids) {
+        try (Connection conn = getConnection()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(
+                    "DELETE FROM slot_achievements WHERE slot_index = ?")) {
+                    ps.setInt(1, slotIndex);
+                    ps.executeUpdate();
+                }
+                if (ids != null) {
+                    try (PreparedStatement ps = conn.prepareStatement(
+                        "INSERT INTO slot_achievements (slot_index, achievement_id) VALUES (?, ?)")) {
+                        for (String id : ids) {
+                            ps.setInt(1, slotIndex);
+                            ps.setString(2, id);
+                            ps.executeUpdate();
+                        }
+                    }
+                }
+                conn.commit();
+            } catch (SQLException e) {
+                conn.rollback();
+                throw e;
+            }
+        } catch (SQLException e) {
+            Gdx.app.error("GameDatabase",
+                "Failed to save achievements for slot " + slotIndex, e);
+        }
+    }
+
+    /** Debug helper (Ctrl+X cheat): wipes achievement unlocks in EVERY slot. */
+    public static void clearAllAchievements() {
+        try (Connection conn = getConnection();
+             Statement st = conn.createStatement()) {
+            st.executeUpdate("DELETE FROM slot_achievements");
+            Gdx.app.log("GameDatabase", "Cleared all persisted achievements");
+        } catch (SQLException e) {
+            Gdx.app.error("GameDatabase", "Failed to clear achievements", e);
+        }
+    }
+
+    /** CSV codecs for cleared_rooms (room file names never contain commas). */
+    private static List<String> splitCsv(String csv) {
+        List<String> out = new ArrayList<>();
+        if (csv == null || csv.isEmpty()) return out;
+        for (String part : csv.split(",")) {
+            if (!part.isEmpty()) out.add(part);
+        }
+        return out;
+    }
+
+    private static String joinCsv(List<String> items) {
+        if (items == null || items.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < items.size(); i++) {
+            if (i > 0) sb.append(',');
+            sb.append(items.get(i));
+        }
+        return sb.toString();
     }
 
     public static void clearSlot(int slotIndex) {

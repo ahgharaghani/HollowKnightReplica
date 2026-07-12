@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.screens;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -32,6 +34,11 @@ public class SettingsScreen extends AbstractMenuScreen {
     private Label musicValueLabel;
     private Label languageValueLabel;
     private Label themeValueLabel;
+
+    // Kept as fields so the whole UI can be torn down and rebuilt
+    // in-place when the language toggles.
+    private Table root;
+    private Table footer;
 
     // ---- Pause-menu context (null when opened from the main menu) ----
     /** Frozen game frame shown behind the settings; owned + disposed here. */
@@ -74,17 +81,17 @@ public class SettingsScreen extends AbstractMenuScreen {
         // overlay quad, so it costs nothing per frame.
         menuBackgroundImage.setColor(0.42f, 0.42f, 0.48f, 1f);
 
-        btnBack.setText("Back to Game");
+        btnBack.setText(UiText.BACK_TO_GAME.get());
     }
 
     private void createUI() {
-        Table root = new Table();
+        root = new Table();
         root.setFillParent(true);
         root.top().padTop(50).padLeft(80).padRight(80);
         uiStage.addActor(root);
 
         Label.LabelStyle titleStyle = new Label.LabelStyle(trajanFont, Color.WHITE);
-        Label title = new Label("Settings", titleStyle);
+        Label title = new Label(UiText.SETTINGS.get(), titleStyle);
         root.add(title).colspan(2).padBottom(30).row();
 
         Table body = new Table();
@@ -95,7 +102,7 @@ public class SettingsScreen extends AbstractMenuScreen {
         rowLabelStyle.fontColor = MenuUi.TEXT_LIGHT;
 
         // --- Music volume ---
-        Label musicLabel = new Label("Music Volume", rowLabelStyle);
+        Label musicLabel = new Label(UiText.MUSIC_VOLUME.get(), rowLabelStyle);
         Slider musicSlider = new Slider(0f, 1f, 0.01f, false, skin);
         musicSlider.setValue(controller.getMusicVolume());
         musicValueLabel = new Label(volumeText(controller.getMusicVolume()), rowLabelStyle);
@@ -111,7 +118,7 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(musicValueLabel).width(80).row();
 
         // --- Music mute ---
-        Label musicMuteLabel = new Label("Mute Music", rowLabelStyle);
+        Label musicMuteLabel = new Label(UiText.MUTE_MUSIC.get(), rowLabelStyle);
         CheckBox musicMuteBox = new CheckBox("", skin);
         musicMuteBox.setChecked(controller.isMusicMuted());
         musicMuteBox.addListener(new ChangeListener() {
@@ -123,7 +130,7 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(musicMuteBox).colspan(2).left().row();
 
         // --- SFX mute ---
-        Label sfxMuteLabel = new Label("Mute SFX (default reduction)", rowLabelStyle);
+        Label sfxMuteLabel = new Label(UiText.MUTE_SFX.get(), rowLabelStyle);
         CheckBox sfxMuteBox = new CheckBox("", skin);
         sfxMuteBox.setChecked(controller.isSfxMuted());
         sfxMuteBox.addListener(new ChangeListener() {
@@ -135,7 +142,7 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(sfxMuteBox).colspan(2).left().row();
 
         // --- Brightness ---
-        Label brightnessLabel = new Label("Brightness", rowLabelStyle);
+        Label brightnessLabel = new Label(UiText.BRIGHTNESS.get(), rowLabelStyle);
         Slider brightnessSlider = new Slider(0.2f, 1.8f, 0.01f, false, skin);
         brightnessSlider.setValue(controller.getBrightness());
         brightnessValueLabel = new Label(
@@ -152,8 +159,8 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(brightnessValueLabel).width(80).row();
 
         // --- Keyboard controls ---
-        Label controlsLabel = new Label("Keyboard Controls", rowLabelStyle);
-        TextButton btnKeyBindings = new AnimatedPointerButton("Key Bindings", skin, "bodyBtn");
+        Label controlsLabel = new Label(UiText.KEYBOARD_CONTROLS.get(), rowLabelStyle);
+        TextButton btnKeyBindings = new AnimatedPointerButton(UiText.KEY_BINDINGS.get(), skin, "bodyBtn");
         btnKeyBindings.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
                 if (returnScreen != null) {
@@ -169,13 +176,15 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(btnKeyBindings).colspan(2).left().row();
 
         // --- Language ---
-        Label langLabel = new Label("Language", rowLabelStyle);
+        Label langLabel = new Label(UiText.LANGUAGE.get(), rowLabelStyle);
         languageValueLabel = new Label(controller.getLanguageName(), rowLabelStyle);
-        TextButton btnLang = new AnimatedPointerButton("Change Language", skin, "bodyBtn");
+        TextButton btnLang = new AnimatedPointerButton(UiText.CHANGE_LANGUAGE.get(), skin, "bodyBtn");
         btnLang.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
-                String newName = controller.toggleLanguage();
-                languageValueLabel.setText(newName);
+                controller.toggleLanguage();
+                // Rebuild every widget so the whole screen flips language
+                // instantly. Menu-time only - allocation is fine here.
+                rebuildUI();
             }
         });
         body.add(langLabel).left().width(280);
@@ -183,9 +192,9 @@ public class SettingsScreen extends AbstractMenuScreen {
         body.add(languageValueLabel).width(120).row();
 
         // --- Theme ---
-        Label themeLabel = new Label("Theme", rowLabelStyle);
+        Label themeLabel = new Label(UiText.THEME.get(), rowLabelStyle);
         themeValueLabel = new Label(controller.getThemeName(), rowLabelStyle);
-        TextButton btnTheme = new AnimatedPointerButton("Change Theme", skin, "bodyBtn");
+        TextButton btnTheme = new AnimatedPointerButton(UiText.CHANGE_THEME.get(), skin, "bodyBtn");
         btnTheme.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
                 String newName = controller.cycleTheme();
@@ -200,11 +209,13 @@ public class SettingsScreen extends AbstractMenuScreen {
         root.add(body).growX().row();
 
         // --- Back ---
-        btnBack = new AnimatedPointerButton("Back to Main Menu", skin, "headingBtn");
+        btnBack = new AnimatedPointerButton(UiText.BACK_TO_MAIN_MENU.get(), skin, "headingBtn");
         btnBack.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {
                 if (returnScreen != null) {
-                    // Came from the pause menu — hand the still-paused game back.
+                    // Came from the pause menu — its overlays were constructed
+                    // before Settings changed language, so refresh them first.
+                    returnScreen.refreshLocalizedUi();
                     game.setScreen(returnScreen);
                     // This click was dispatched by our own stage; defer disposal
                     // until the event pass has unwound.
@@ -215,7 +226,7 @@ public class SettingsScreen extends AbstractMenuScreen {
             }
         });
 
-        Table footer = new Table();
+        footer = new Table();
         footer.setFillParent(true);
         footer.bottom().padBottom(50);
         uiStage.addActor(footer);
@@ -227,6 +238,17 @@ public class SettingsScreen extends AbstractMenuScreen {
      * menu, or null. Package-private: shared with the KeyBindings sub-screen.
      * Ownership stays with this screen — callers must NOT dispose it.
      */
+    /** Tear down and rebuild all widgets in the current language. */
+    private void rebuildUI() {
+        root.remove();
+        footer.remove();
+        createUI();
+        if (returnScreen != null) {
+            // Pause-menu context: restore the context-sensitive BACK label.
+            btnBack.setText(UiText.BACK_TO_GAME.get());
+        }
+    }
+
     Texture getPauseBackdrop() {
         return pauseBackdrop;
     }

@@ -1,5 +1,7 @@
 package com.sut.hollowknight.controller;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.sut.hollowknight.model.GameSettings;
 import com.sut.hollowknight.model.db.GameDatabase;
@@ -28,7 +30,7 @@ public class SettingsController {
     public boolean isMusicMuted()     { return settings.isMusicMuted(); }
     public boolean isSfxMuted()       { return settings.isSfxMuted(); }
     public float getBrightness()      { return settings.getBrightness(); }
-    public String getLanguageName()   { return settings.getLanguage().name(); }
+    public String getLanguageName()   { return UiText.LANGUAGE_NAME.get(); }
     public String getThemeName()      { return settings.getCurrentMenuTheme().name(); }
 
     // ---- Mutations (view calls these on user interaction) ----
@@ -60,9 +62,9 @@ public class SettingsController {
 
     /** Toggles language and returns the new language name. */
     public String toggleLanguage() {
-        GameSettings.Language next = settings.toggleLanguage();
+        settings.toggleLanguage();
         save();
-        return next.name();
+        return UiText.LANGUAGE_NAME.get();
     }
 
     /** Cycles to the next theme and returns the new theme name. */

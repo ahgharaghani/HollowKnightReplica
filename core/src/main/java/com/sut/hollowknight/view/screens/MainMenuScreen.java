@@ -1,5 +1,7 @@
 package com.sut.hollowknight.view.screens;
 
+import com.sut.hollowknight.model.enums.UiText;
+
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.GL20;
@@ -36,11 +38,11 @@ public class MainMenuScreen extends AbstractMenuScreen {
         table.center();
         uiStage.addActor(table);
 
-        TextButton btnStart = new AnimatedPointerButton("Start Game", skin, "headingBtn");
-        TextButton btnSettings = new AnimatedPointerButton("Settings", skin, "headingBtn");
-        TextButton btnGuide = new AnimatedPointerButton("Guide", skin, "headingBtn");
-        TextButton btnAchievements = new AnimatedPointerButton("Achievements", skin, "headingBtn");
-        TextButton btnQuit = new AnimatedPointerButton("Quit Game", skin, "headingBtn");
+        TextButton btnStart = new AnimatedPointerButton(UiText.START_GAME.get(), skin, "headingBtn");
+        TextButton btnSettings = new AnimatedPointerButton(UiText.SETTINGS.get(), skin, "headingBtn");
+        TextButton btnGuide = new AnimatedPointerButton(UiText.GUIDE.get(), skin, "headingBtn");
+        TextButton btnAchievements = new AnimatedPointerButton(UiText.ACHIEVEMENTS.get(), skin, "headingBtn");
+        TextButton btnQuit = new AnimatedPointerButton(UiText.QUIT_GAME.get(), skin, "headingBtn");
 
         btnStart.addListener(new ClickListener() {
             @Override public void clicked(InputEvent event, float x, float y) {

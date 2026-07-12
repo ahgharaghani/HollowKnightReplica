@@ -62,10 +62,14 @@ public class VengefulSpirit {
     /** Enemies already hit by this ball — it passes through, damaging each once. */
     private final IntSet hitEnemies = new IntSet();
 
-    public VengefulSpirit(float x, float y, boolean facingRight) {
+    /** Cast with Void Heart equipped - the view swaps to the shadow art set. */
+    private final boolean shadow;
+
+    public VengefulSpirit(float x, float y, boolean facingRight, boolean shadow) {
         this.x = x;
         this.y = y;
         this.facingRight = facingRight;
+        this.shadow = shadow;
         this.velocityX = (facingRight ? 1f : -1f) * SPEED;
         this.originX = x;
         this.originY = y;
@@ -99,6 +103,7 @@ public class VengefulSpirit {
     public float getOriginY()      { return originY; }
     public float getAge()          { return age; }
     public boolean isFacingRight() { return facingRight; }
+    public boolean isShadow()      { return shadow; }
     public State getState()        { return state; }
     public float getStateTime()    { return stateTime; }
     public boolean isFlying()      { return state == State.FLYING; }

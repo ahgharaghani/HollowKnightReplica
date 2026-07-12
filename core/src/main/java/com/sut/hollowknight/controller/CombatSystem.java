@@ -2,6 +2,7 @@ package com.sut.hollowknight.controller;
 
 import com.sut.hollowknight.controller.enemy.CrystalGuardianController;
 import com.sut.hollowknight.controller.enemy.EnemyController;
+import com.sut.hollowknight.controller.enemy.FalseKnightController;
 import com.sut.hollowknight.controller.enemy.WingedSentryController;
 import com.sut.hollowknight.controller.spell.HowlingWraithController;
 import com.sut.hollowknight.controller.spell.VengefulSpiritController;
@@ -13,6 +14,7 @@ import com.sut.hollowknight.model.enemy.Javelin;
 import com.sut.hollowknight.model.enemy.Laser;
 import com.sut.hollowknight.model.spell.HowlingWraith;
 import com.sut.hollowknight.model.spell.VengefulSpirit;
+import com.sut.hollowknight.view.assets.Sfx;
 
 import java.util.List;
 
@@ -111,6 +113,7 @@ public class CombatSystem {
                 spirit.markHit(id);
                 float dirX = spirit.isFacingRight() ? 1f : -1f;
                 enemy.hitByNail(spellDamage(VengefulSpirit.DAMAGE), dirX, 0f, SPIRIT_KNOCKBACK_SCALE);
+                playEnemyHitSfx(enemy);
             }
         }
     }
@@ -136,6 +139,7 @@ public class CombatSystem {
                     float dirX = centerX >= wraith.getAnchorX() ? 1f : -1f;
                     enemy.hitByNail(spellDamage(HowlingWraith.DAMAGE_PER_TICK), dirX, 1f,
                         WRAITH_KNOCKBACK_SCALE);
+                    playEnemyHitSfx(enemy);
                 }
             }
         }
@@ -176,6 +180,16 @@ public class CombatSystem {
         wasDashing = dashingNow;
     }
 
+    /**
+     * Generic enemy-hurt SFX (spec: Damage SFX). The False Knight voices
+     * its own armor/head foley inside its controller, so it is skipped
+     * here to avoid doubled impacts.
+     */
+    private static void playEnemyHitSfx(EnemyController enemy) {
+        if (enemy instanceof FalseKnightController) return;
+        Sfx.play(Sfx.enemyDamage);
+    }
+
     /** Sharp Shadow: dashing through a body cuts it once per dash. */
     private void resolveSharpShadowHit(EnemyController enemy) {
         if (!isShadowDashing() || !enemy.isAlive()) return;
@@ -185,6 +199,7 @@ public class CombatSystem {
         enemy.setLastNailHitId(sharpShadowDashId);
         float dirX = enemy.getBodyBox().getCenterX() >= knight.getX() ? 1f : -1f;
         enemy.hitByNail(nailDamage(), dirX, 0f, NAIL_KNOCKBACK_SCALE);
+        playEnemyHitSfx(enemy);
     }
 
     /** Knight's active slash vs the enemy body. One hit per swing per enemy. */
@@ -209,6 +224,7 @@ public class CombatSystem {
                 break;
         }
         enemy.hitByNail(nailDamage(), dirX, dirY, nailKnockbackScale());
+        playEnemyHitSfx(enemy);
 
         // Soul Catcher: nail combat feeds the vessel faster.
         int soulGain = knight.hasCharm(Charm.SOUL_CATCHER)
