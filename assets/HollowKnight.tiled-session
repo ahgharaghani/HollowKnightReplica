@@ -9,6 +9,74 @@
             "scaleInDock": 1,
             "scaleInEditor": 1
         },
+        "BossFightArena.tmx": {
+            "expandedGroupLayers": [
+                16
+            ],
+            "expandedObjectLayers": [
+                22,
+                21,
+                20,
+                9
+            ],
+            "scale": 1,
+            "selectedLayer": 20,
+            "viewCenter": {
+                "x": 2155,
+                "y": 693
+            }
+        },
+        "BossFightArena.tmx#Mines_Layered_0000_Layer-7": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#Mines_Layered_0001_Layer-8": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#Mines_Layered_0002_Layer-6": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#Mines_Layered_0073_a": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#The Knight main sprites - atlas0 #00000357": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#crystal_spike_fg_02": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#crystal_spike_shadow": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_floor_01": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_wall_01": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_wall_01_r": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_wall_02": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_wall_02_r": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_wall_03": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mine_wall_03_r": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mines_additions_02_0009_a": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mines_additions_02_0010_a": {
+            "scaleInDock": 1
+        },
+        "BossFightArena.tmx#mines_metal_grate_02": {
+            "scaleInDock": 1
+        },
         "C:/Users/ahgha/Desktop/CityOfTears.tmx": {
             "expandedGroupLayers": [
                 12
@@ -120,6 +188,268 @@
         "C:/Users/ahgha/Desktop/CityOfTears.tmx#town_bench": {
             "scaleInDock": 1
         },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx": {
+            "scale": 0.33,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1218.181818181818,
+                "y": -2181.818181818182
+            }
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#1821-1@2x": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#927-2@2x": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#Mines_Layered_0029_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#Mines_Layered_0064_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#Mines_Layered_0066_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#Mines_Layered_0088_c": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#SpriteAtlasTexture-Break_Mines-512x1024-fmt12": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#The Knight main sprites - atlas0 #00000357": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#atlas0 #26003": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#break0000": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#break_wall_ancient_variant": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#brk_Crystal1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#crystal_barrel": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#crystal_barrel_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#crystal_barrel_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#direction_sign_breakable_0001_Layer-1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#direction_sign_breakable_0003_town": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#direction_sign_breakable_0006_Layer-0": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#fall_BG_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#laer_bug_scenery_bit": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_crystal_06": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_floor_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_platform": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_table_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_wall_01_r": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_wall_02_r": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mine_wall_03_r": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mines_BG_blur_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mines_additions_02_0009_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#mines_additions_02_0010_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#plat_float_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#plat_float_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#plat_float_09": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#roof_FG_rock_08_0001_05": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#roof_FG_rock_09_0000_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#roof_FG_rock_10_0001_05": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#shelf_tall": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#shelf_tall_bits_0004_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#spikes0003": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#summit_crystals_0003_1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx#wall_07_0000_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx": {
+            "scale": 0.296875,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 1242.9473684210527,
+                "y": -754.5263157894736
+            }
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#1821-1@2x": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#927-2@2x": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#Mines_Layered_0029_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#Mines_Layered_0064_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#Mines_Layered_0066_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#Mines_Layered_0088_c": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#SpriteAtlasTexture-Break_Mines-512x1024-fmt12": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#The Knight main sprites - atlas0 #00000357": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#atlas0 #26003": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#break0000": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#break_wall_ancient_variant": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#brk_Crystal1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#crystal_barrel": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#crystal_barrel_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#crystal_barrel_03": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#direction_sign_breakable_0001_Layer-1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#direction_sign_breakable_0003_town": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#direction_sign_breakable_0006_Layer-0": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#fall_BG_04": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#laer_bug_scenery_bit": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_crystal_06": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_floor_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_platform": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_table_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_wall_01_r": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_wall_02_r": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mine_wall_03_r": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mines_BG_blur_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mines_additions_02_0009_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#mines_additions_02_0010_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#plat_float_01": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#plat_float_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#plat_float_09": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#roof_FG_rock_08_0001_05": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#roof_FG_rock_09_0000_02": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#roof_FG_rock_10_0001_05": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#shelf_tall": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#shelf_tall_bits_0004_a": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#spikes0003": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#summit_crystals_0003_1": {
+            "scaleInDock": 1
+        },
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx#wall_07_0000_04": {
+            "scaleInDock": 1
+        },
         "CityOfTears.tmx": {
             "expandedGroupLayers": [
                 12
@@ -136,8 +466,8 @@
             "scale": 1,
             "selectedLayer": 20,
             "viewCenter": {
-                "x": 266,
-                "y": 2117
+                "x": 288,
+                "y": 4459
             }
         },
         "CityOfTears.tmx#BG_far_0008_a": {
@@ -257,6 +587,143 @@
             "scaleInDock": 1,
             "scaleInEditor": 1
         },
+        "CrystalPeaks.tmx": {
+            "expandedObjectLayers": [
+                22,
+                21,
+                20
+            ],
+            "scale": 0.33,
+            "selectedLayer": 11,
+            "viewCenter": {
+                "x": 1378.7878787878788,
+                "y": 1345.4545454545455
+            }
+        },
+        "CrystalPeaks.tmx#1821-1@2x": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#927-2@2x": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#Mines_Layered_0029_a": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#Mines_Layered_0064_a": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#Mines_Layered_0066_a": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#Mines_Layered_0088_c": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#SpriteAtlasTexture-Break_Mines-512x1024-fmt12": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#The Knight main sprites - atlas0 #00000357": {
+            "scaleInDock": 1,
+            "scaleInEditor": 1
+        },
+        "CrystalPeaks.tmx#atlas0 #26003": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#break0000": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#break_wall_ancient_variant": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#brk_Crystal1": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#crystal_barrel": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#crystal_barrel_02": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#crystal_barrel_03": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#direction_sign_breakable_0001_Layer-1": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#direction_sign_breakable_0003_town": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#direction_sign_breakable_0006_Layer-0": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#fall_BG_04": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#laer_bug_scenery_bit": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_crystal_06": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_floor_01": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_platform": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_table_02": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_wall_01_r": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_wall_02_r": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mine_wall_03_r": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mines_BG_blur_02": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mines_additions_02_0009_a": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#mines_additions_02_0010_a": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#plat_float_01": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#plat_float_02": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#plat_float_09": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#roof_FG_rock_08_0001_05": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#roof_FG_rock_09_0000_02": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#roof_FG_rock_10_0001_05": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#shelf_tall": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#shelf_tall_bits_0004_a": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#spikes0003": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#summit_crystals_0003_1": {
+            "scaleInDock": 1
+        },
+        "CrystalPeaks.tmx#wall_07_0000_04": {
+            "scaleInDock": 1
+        },
         "ruin_plat_float_06.tsx": {
             "scaleInDock": 1,
             "scaleInEditor": 1
@@ -269,7 +736,7 @@
                 8
             ],
             "scale": 0.5,
-            "selectedLayer": 7,
+            "selectedLayer": 6,
             "viewCenter": {
                 "x": 534,
                 "y": 470
@@ -302,26 +769,28 @@
     },
     "last.imagePath": "C:/Users/ahgha/IdeaProjects/HollowKnight/assets/environment/cityoftears",
     "last.objectTemplatePath": "C:/Users/ahgha/IdeaProjects/HollowKnight/assets",
-    "map.fixedSize": false,
+    "map.fixedSize": true,
     "map.lastUsedFormat": "tmx",
-    "map.tileHeight": 8,
-    "map.tileWidth": 8,
+    "map.tileHeight": 4,
+    "map.tileWidth": 4,
     "openFiles": [
         "CityOfTears.tmx"
     ],
     "project": "HollowKnight.tiled-project",
     "property.type": "string",
     "recentFiles": [
+        "C:/Users/ahgha/Desktop/CrystalPeaks.tmx",
+        "C:/Users/ahgha/Downloads/CrystalPeaks.tmx",
         "CityOfTears.tmx",
         "C:/Users/ahgha/Desktop/CityOfTears.tmx",
         "ruin_plat_float_06.tsx"
     ],
-    "resizeMap.removeObjects": true,
+    "resizeMap.removeObjects": false,
     "tileset.embedInMap": true,
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
-        "height": 8,
-        "width": 8
+        "height": 4,
+        "width": 4
     },
     "tileset.transparentColor": "#050408",
     "tileset.type": 0

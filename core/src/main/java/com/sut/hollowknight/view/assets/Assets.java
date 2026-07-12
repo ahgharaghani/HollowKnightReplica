@@ -27,6 +27,8 @@ public class Assets {
         // Game map
         manager.load("CityOfTears.tmx", TiledMap.class);
         manager.load("secretRoom.tmx", TiledMap.class); // spec: Room Transitions
+        manager.load("CrystalPeaks.tmx", TiledMap.class);
+        manager.load("BossFightArena.tmx", TiledMap.class);
 
         // Knight animations
         manager.load("animation/knight/KnightIdle.atlas", TextureAtlas.class);
