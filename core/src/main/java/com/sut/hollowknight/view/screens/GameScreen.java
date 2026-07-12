@@ -1258,6 +1258,37 @@ public class GameScreen extends AbstractScreen {
         // World charm pickups + their COLLECT prompt (Zote treatment).
         charmPickupOverlay.draw(batch);
 
+        // Enemies draw BEFORE the knight (painter's algorithm): the hero
+        // is the gameplay focus and must always read in front of the
+        // False Knight's huge sprite and every other enemy.
+        for (WingedSentryController sc : sentryControllers) {
+            sentryRenderer.draw(batch, sc.getSentry());
+
+            Javelin javelin = sc.getJavelin();
+            if (javelin != null) {
+                javelinRenderer.draw(batch, javelin);
+            }
+        }
+
+        for (TiktikController tiktikController : tiktikControllers) {
+            tiktikRenderer.draw(batch, tiktikController.getTiktik());
+        }
+
+        for (HuskHornheadController hornheadController : hornheadControllers) {
+            hornheadRenderer.draw(batch, hornheadController.getHornhead());
+        }
+
+        for (CrystalGuardianController guardianController : guardianControllers) {
+            guardianRenderer.draw(batch, guardianController.getGuardian());
+        }
+
+        if (falseKnightController != null) {
+            falseKnightRenderer.draw(batch,
+                falseKnightController.getFalseKnight(),
+                falseKnightController.getShockwave());
+        }
+
+
         // Flash while invincible: blink the sprite alpha ~10x/sec.
         boolean flashOff = !knight.isDead() && knight.isInvincible()
             && ((int) (knight.getInvincibleTimer() * INVINCIBLE_FLASH_HZ) & 1) == 0;
@@ -1316,33 +1347,6 @@ public class GameScreen extends AbstractScreen {
             } else {
                 batch.draw(effect, centerX - eW / 2f, drawY, +eW, eH);
             }
-        }
-
-        for (WingedSentryController sc : sentryControllers) {
-            sentryRenderer.draw(batch, sc.getSentry());
-
-            Javelin javelin = sc.getJavelin();
-            if (javelin != null) {
-                javelinRenderer.draw(batch, javelin);
-            }
-        }
-
-        for (TiktikController tiktikController : tiktikControllers) {
-            tiktikRenderer.draw(batch, tiktikController.getTiktik());
-        }
-
-        for (HuskHornheadController hornheadController : hornheadControllers) {
-            hornheadRenderer.draw(batch, hornheadController.getHornhead());
-        }
-
-        for (CrystalGuardianController guardianController : guardianControllers) {
-            guardianRenderer.draw(batch, guardianController.getGuardian());
-        }
-
-        if (falseKnightController != null) {
-            falseKnightRenderer.draw(batch,
-                falseKnightController.getFalseKnight(),
-                falseKnightController.getShockwave());
         }
 
         // Vengeful Spirit fireballs (index-based: no Iterator allocation).

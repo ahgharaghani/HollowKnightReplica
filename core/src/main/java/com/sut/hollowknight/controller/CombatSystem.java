@@ -20,16 +20,20 @@ public class CombatSystem {
 
     // Contact damage (enemy body touching the knight)
     private static final int   CONTACT_DAMAGE      = 1;
-    private static final float CONTACT_KNOCKBACK_X = 420f;
-    private static final float CONTACT_KNOCKBACK_Y = 260f;
+    // Knockback must carry the knight OUT of the deepest enemy hitbox:
+    // travel = vx * KNOCKBACK_DURATION(0.28s) = ~252px, which clears
+    // even the False Knight's 360px-wide body from its center. The
+    // vertical part scales with the 2400px/s^2 gravity (was 980).
+    private static final float CONTACT_KNOCKBACK_X = 900f;
+    private static final float CONTACT_KNOCKBACK_Y = 520f;
 
     // Javelin damage
-    private static final float JAVELIN_KNOCKBACK_X = 380f;
-    private static final float JAVELIN_KNOCKBACK_Y = 260f;
+    private static final float JAVELIN_KNOCKBACK_X = 700f;
+    private static final float JAVELIN_KNOCKBACK_Y = 450f;
 
     // Crystal Guardian laser damage
-    private static final float LASER_KNOCKBACK_X = 420f;
-    private static final float LASER_KNOCKBACK_Y = 260f;
+    private static final float LASER_KNOCKBACK_X = 800f;
+    private static final float LASER_KNOCKBACK_Y = 450f;
     /** March step along the beam when testing the knight's hurtbox. */
     private static final float LASER_SAMPLE_STEP = 12f;
 

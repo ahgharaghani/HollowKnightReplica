@@ -17,15 +17,23 @@ import com.sut.hollowknight.model.collision.CollisionRect;
 public class FalseKnight implements AABB {
 
     // ---- Collision box (armor torso; the art canvas is far larger) ----
-    public static final float WIDTH  = 340f;
-    public static final float HEIGHT = 420f;
+    // Measured from the Idle art: the armor mass spans canvas x 400-730
+    // (center 565) with the solid helmet dome topping out near y 256 -
+    // i.e. the body sits ~84 world px FORWARD of the sprite anchor at
+    // 1.1x scale. A symmetric box around x left empty air behind the
+    // boss and cut off the front of the armor.
+    public static final float WIDTH  = 360f;
+    public static final float HEIGHT = 380f;
+    /** Armor mass center, forward of the sprite anchor (facing-relative). */
+    public static final float BODY_OFFSET_X = 84f;
 
     // ---- Health: far more hits than the average enemy (3-6 HP) ----
     public static final int MAX_HP = 100;
     /** The one-time stun triggers at half health (spec). */
     public static final int STUN_HP_THRESHOLD = MAX_HP / 2;
-    /** Hits on the exposed maggot bite twice as hard. */
-    public static final int STUN_DAMAGE_MULT = 2;
+    /** The exposed maggot takes normal damage - the stun's value is the
+     *  free, uninterrupted 6s window, not a damage bonus. */
+    public static final int STUN_DAMAGE_MULT = 1;
 
     public enum State {
         IDLE, TURN,
@@ -143,8 +151,13 @@ public class FalseKnight implements AABB {
 
     // ---- AABB (armor torso) ----
 
-    @Override public float getLeft()   { return x - WIDTH / 2f; }
-    @Override public float getRight()  { return x + WIDTH / 2f; }
+    /** The armor mass sits forward of the anchor; mirror with facing. */
+    private float bodyCenterX() {
+        return x + (facingRight ? BODY_OFFSET_X : -BODY_OFFSET_X);
+    }
+
+    @Override public float getLeft()   { return bodyCenterX() - WIDTH / 2f; }
+    @Override public float getRight()  { return bodyCenterX() + WIDTH / 2f; }
     @Override public float getBottom() { return y; }
     @Override public float getTop()    { return y + HEIGHT; }
 

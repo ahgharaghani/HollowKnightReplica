@@ -562,7 +562,8 @@ public class FalseKnightController implements EnemyController {
 
         if (boss.isStunnedState()) {
             // Only the exposed maggot is hit here (getBodyBox routes the
-            // slash test to the head box) - and it hurts double (spec).
+            // slash test to the head box). Damage is the same as when
+            // unstunned - the stun rewards a safe window, not bonus DPS.
             boss.takeDamage(damageAmount * FalseKnight.STUN_DAMAGE_MULT);
             boss.startStunHit();
         } else {
