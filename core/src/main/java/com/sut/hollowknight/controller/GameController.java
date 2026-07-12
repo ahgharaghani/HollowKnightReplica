@@ -366,6 +366,12 @@ public class GameController {
 
         if (!knight.isDashing() && !knight.isFocusing() && !knight.isCasting()) {
             knight.setVelocityY(knight.getVelocityY() - Knight.GRAVITY * delta);
+            // Terminal velocity: the snappier 2400px/s^2 gravity would
+            // otherwise build unbounded fall speed on long drops (bad for
+            // both game feel and collision stability).
+            if (knight.getVelocityY() < -Knight.MAX_FALL_SPEED) {
+                knight.setVelocityY(-Knight.MAX_FALL_SPEED);
+            }
         }
 
         if (!knight.isInKnockback()

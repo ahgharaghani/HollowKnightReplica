@@ -17,9 +17,14 @@ public class Knight implements PhysicsBody {
     private boolean facingRight = true;
 
     // ---- Movement constants ----
-    public static final float GRAVITY      = 980f;   // px/s^2
-    public static final float MOVE_SPEED   = 340f;
-    public static final float JUMP_IMPULSE = 620f;
+    // Fast-paced tuning: high gravity + high impulse = the snappy,
+    // fast-rising jump of the original game (old 980/620 combo took
+    // 0.63s to a 196px apex; this reaches a 290px apex in 0.49s).
+    public static final float GRAVITY      = 2400f;  // px/s^2
+    /** Terminal fall velocity; high gravity must not build unbounded speed. */
+    public static final float MAX_FALL_SPEED = 1300f;
+    public static final float MOVE_SPEED   = 430f;
+    public static final float JUMP_IMPULSE = 1180f;
     public static final float FRICTION     = 600f;
     public static final float JUMP_CUT_MULTIPLIER = 0.45f;
     public static final float KNIGHT_WIDTH  = 20f;   // PHYSICS box vs terrain (not the sprite)
@@ -190,13 +195,13 @@ public class Knight implements PhysicsBody {
     private int     dashDirection;       // -1 or +1
 
     // ---- Double jump ----
-    public static final float DOUBLE_JUMP_IMPULSE = 560f;
+    public static final float DOUBLE_JUMP_IMPULSE = 1020f;
     private boolean doubleJumpAvailable;
 
     // ---- Wall slide / wall jump ----
-    public static final float WALL_SLIDE_SPEED  = 120f;   // capped fall speed while sliding
-    public static final float WALL_JUMP_VX      = 360f;
-    public static final float WALL_JUMP_VY      = 560f;
+    public static final float WALL_SLIDE_SPEED  = 170f;   // capped fall speed while sliding
+    public static final float WALL_JUMP_VX      = 430f;
+    public static final float WALL_JUMP_VY      = 1000f;
     public static final float WALL_JUMP_LOCK    = 0.18f;  // input-lock after wall jump
     public static final float WALL_JUMP_DURATION = 0.25f; // animation play time
 
