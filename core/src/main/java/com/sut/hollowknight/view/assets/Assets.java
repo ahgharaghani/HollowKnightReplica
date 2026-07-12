@@ -72,6 +72,7 @@ public class Assets {
         TiktikAssets.loadAll(manager);
         HuskHornheadAssets.loadAll(manager);
         CrystalGuardianAssets.loadAll(manager);
+        FalseKnightAssets.loadAll(manager);
         VengefulSpiritAssets.loadAll(manager);
         HowlingWraithAssets.loadAll(manager);
         HudAssets.loadAll(manager);

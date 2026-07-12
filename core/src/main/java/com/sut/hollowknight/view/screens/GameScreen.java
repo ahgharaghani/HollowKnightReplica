@@ -82,6 +82,11 @@ import com.sut.hollowknight.view.renderer.spell.HowlingWraithRenderer;
 import com.sut.hollowknight.view.renderer.spell.VengefulSpiritRenderer;
 import com.sut.hollowknight.view.renderer.ZoteRenderer;
 import com.sut.hollowknight.view.renderer.enemy.HuskHornheadRenderer;
+import com.sut.hollowknight.controller.enemy.FalseKnightController;
+import com.sut.hollowknight.model.enemy.FalseKnight;
+import com.sut.hollowknight.model.map.BossGate;
+import com.sut.hollowknight.view.assets.FalseKnightAssets;
+import com.sut.hollowknight.view.renderer.enemy.FalseKnightRenderer;
 import com.sut.hollowknight.view.renderer.enemy.JavelinRenderer;
 import com.sut.hollowknight.view.renderer.enemy.TiktikRenderer;
 import com.sut.hollowknight.view.renderer.enemy.WingedSentryRenderer;
@@ -143,6 +148,14 @@ public class GameScreen extends AbstractScreen {
     private HuskHornheadAssets hornheadAssets;
     private List<HuskHornheadController> hornheadControllers;
     private HuskHornheadRenderer hornheadRenderer;
+
+    // Boss fight (spec): the False Knight and the arena gate.
+    private FalseKnightController falseKnightController;
+    private FalseKnightRenderer falseKnightRenderer;
+    private BossGate bossGate;
+    private TiledMapTileLayer bossGateLayer;
+    /** Camera clamp before the fight seals the arena, for restore. */
+    private float camMinX, camMinY, camMaxX, camMaxY;
 
     private CrystalGuardianAssets guardianAssets;
     private List<CrystalGuardianController> guardianControllers;
@@ -277,12 +290,17 @@ public class GameScreen extends AbstractScreen {
         initTiktiks(collider, knight);
         initHornheads(collider, knight);
         initGuardians(collider, knight);
+        initFalseKnight(collider, knight);
+        initBossGate();
 
         enemyControllers = new ArrayList<>();
         enemyControllers.addAll(sentryControllers);
         enemyControllers.addAll(tiktikControllers);
         enemyControllers.addAll(hornheadControllers);
         enemyControllers.addAll(guardianControllers);
+        if (falseKnightController != null) {
+            enemyControllers.add(falseKnightController);
+        }
         combat = new CombatSystem(knight, enemyControllers);
 
         float[] bossArena = findBossArena();
@@ -536,6 +554,119 @@ public class GameScreen extends AbstractScreen {
     }
 
     /** Locate the "Boss Arena" marker object (Ctrl+B teleport target). */
+
+    /** Spawn the False Knight at the map's "FalseKnightSpawn" marker. */
+    private void initFalseKnight(TileMapCollider collider, Knight knight) {
+        float[] p = findNamedPoint("FalseKnightSpawn");
+        if (p == null) return; // not a boss map
+        falseKnightRenderer =
+            new FalseKnightRenderer(new FalseKnightAssets(Assets.manager));
+        FalseKnight boss = new FalseKnight(p[0], p[1]);
+        falseKnightController =
+            new FalseKnightController(boss, collider, knight, controller);
+        Gdx.app.log("GameScreen",
+            "False Knight spawned at (" + p[0] + ", " + p[1] + ")");
+    }
+
+    /**
+     * Boss arena gate (spec): the Gate TILE layer draws the raised gate art;
+     * the Gate OBJECT layer masks it with one rectangle. When the knight
+     * steps past the gate the tiles come down (tile-layer offset) and the
+     * same rectangle becomes solid terrain, sealing the arena until the
+     * boss falls or the knight dies.
+     */
+    private void initBossGate() {
+        if (falseKnightController == null) return;
+
+        TiledMapTileLayer tileLayer = null;
+        MapLayer objLayer = null;
+        // The tile layer and the object layer share the name "Gate":
+        // separate them by type.
+        for (MapLayer layer : tiledMap.getLayers()) {
+            if (!"Gate".equals(layer.getName())) continue;
+            if (layer instanceof TiledMapTileLayer) {
+                tileLayer = (TiledMapTileLayer) layer;
+            } else {
+                objLayer = layer;
+            }
+        }
+        if (tileLayer == null || objLayer == null) return;
+
+        Rectangle mask = null;
+        for (MapObject obj : objLayer.getObjects()) {
+            if (obj instanceof RectangleMapObject) {
+                mask = ((RectangleMapObject) obj).getRectangle();
+                break;
+            }
+        }
+        if (mask == null) return;
+
+        // Drop distance: down to the highest ground top under the mask.
+        float floorY = 0f;
+        List<CollisionRect> rects = collider.getCollisionRects();
+        for (int i = 0; i < rects.size(); i++) {
+            CollisionRect r = rects.get(i);
+            if (r.getRight() <= mask.x || r.getLeft() >= mask.x + mask.width) continue;
+            if (r.getTop() <= mask.y && r.getTop() > floorY) floorY = r.getTop();
+        }
+
+        bossGateLayer = tileLayer;
+        bossGate = new BossGate(
+            new CollisionRect(mask.x, mask.y, mask.width, mask.height), floorY);
+        // Leash the boss between the left wall and the gate.
+        falseKnightController.setArenaBounds(camMinX + 60f, mask.x - 20f);
+    }
+
+    /** Gate state machine: seal on entry, reopen on boss death/knight death. */
+    private void updateBossGate(float delta) {
+        if (bossGate == null || falseKnightController == null) return;
+        Knight knight = controller.getKnight();
+
+        switch (bossGate.getState()) {
+            case OPEN:
+                if (falseKnightController.isAlive()
+                    && !knight.isDead() && !knight.isNoclip()
+                    && knight.getX() < bossGate.getTriggerX()) {
+                    bossGate.setState(BossGate.State.CLOSING);
+                    falseKnightController.setActivated(true);
+                    // Camera locks onto the arena for the fight (spec).
+                    controller.setCameraWorldBounds(camMinX, camMinY,
+                        bossGate.getGateRect().getRight(), camMaxY);
+                }
+                break;
+            case CLOSING:
+                if (bossGate.advanceClose(delta)) {
+                    // Slammed shut: the dropped rectangle is now solid terrain.
+                    CollisionRect solid = bossGate.getSolidRect();
+                    collider.getCollisionRects().add(solid);
+                    collider.setSolidRegion(solid.getX(), solid.getY(),
+                        solid.getWidth(), solid.getHeight(), true);
+                    controller.shakeCamera(10f, 0.3f);
+                    bossGate.setState(BossGate.State.SEALED);
+                }
+                break;
+            case SEALED:
+                if (!falseKnightController.isAlive() || knight.isDead()) {
+                    CollisionRect solid = bossGate.getSolidRect();
+                    collider.setSolidRegion(solid.getX(), solid.getY(),
+                        solid.getWidth(), solid.getHeight(), false);
+                    collider.getCollisionRects().remove(solid);
+                    controller.setCameraWorldBounds(camMinX, camMinY,
+                        camMaxX, camMaxY);
+                    bossGate.setState(BossGate.State.OPENING);
+                }
+                break;
+            case OPENING:
+                if (bossGate.advanceOpen(delta)) {
+                    bossGate.setState(BossGate.State.OPEN);
+                }
+                break;
+        }
+
+        // The Gate tile layer follows the drop (positive offset = down).
+        bossGateLayer.setOffsetY(bossGate.getOffset());
+    }
+
     private float[] findBossArena() {
         for (MapLayer layer : tiledMap.getLayers()) {
             for (MapObject obj : layer.getObjects()) {
@@ -751,6 +882,8 @@ public class GameScreen extends AbstractScreen {
             if (rect.getTop()    > maxY) maxY = rect.getTop();
         }
         controller.setCameraWorldBounds(minX, minY, maxX, maxY);
+        // Remembered so the boss-arena camera lock can be undone.
+        camMinX = minX; camMinY = minY; camMaxX = maxX; camMaxY = maxY;
     }
 
     /** Plug in a real dust emitter later without touching game code. */
@@ -1052,6 +1185,8 @@ public class GameScreen extends AbstractScreen {
             enemyControllers.get(i).update(delta);
         }
 
+        updateBossGate(delta);
+
         combat.resolve(delta);
         combat.resolveSpiritHits(controller.getSpirits());
         combat.resolveWraithHits(controller.getWraiths());
@@ -1204,6 +1339,12 @@ public class GameScreen extends AbstractScreen {
             guardianRenderer.draw(batch, guardianController.getGuardian());
         }
 
+        if (falseKnightController != null) {
+            falseKnightRenderer.draw(batch,
+                falseKnightController.getFalseKnight(),
+                falseKnightController.getShockwave());
+        }
+
         // Vengeful Spirit fireballs (index-based: no Iterator allocation).
         // Void Heart: the knight's spells surge with void - tint them dark.
         boolean voidSpells = knight.hasCharm(Charm.VOID_HEART);
@@ -1308,6 +1449,22 @@ public class GameScreen extends AbstractScreen {
         for (CrystalGuardianController guardianController : guardianControllers) {
             drawBox(guardianController.getGuardian()); // guardian body box
         }
+        if (falseKnightController != null) {
+            FalseKnight boss = falseKnightController.getFalseKnight();
+            if (boss.isAlive() && !boss.isStunnedState()) {
+                drawBox(boss);                         // boss armor box
+            }
+            debugShapes.setColor(Color.ORANGE);
+            CollisionRect bossStrike = boss.getStrikeBox();
+            if (bossStrike != null) drawRect(bossStrike);  // live mace strike
+            if (boss.isStunnedState()) {
+                drawRect(boss.getHeadBox());           // vulnerable maggot
+            }
+            if (falseKnightController.getShockwave().isActive()) {
+                drawRect(falseKnightController.getShockwave().getDamageBox());
+            }
+            debugShapes.setColor(Color.LIME);
+        }
 
         debugShapes.setColor(Color.RED);
         drawRect(knight.getHurtBox());                     // knight hurtbox
@@ -1395,6 +1552,7 @@ public class GameScreen extends AbstractScreen {
         sentryRenderer.dispose();
         tiktikRenderer.dispose();
         hornheadRenderer.dispose();
+        if (falseKnightRenderer != null) falseKnightRenderer.dispose();
         guardianRenderer.dispose();
         hudRenderer.dispose();
         pauseOverlay.dispose();
